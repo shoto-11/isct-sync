@@ -131,10 +131,10 @@ export default function EventDetail({ event, onBack }) {
     </div>
   );
 }
-
+const THEME = "#88203a";
 const s = {
   container: { background:"#F4F6F5", minHeight:"100vh" },
-  backBtn: { display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#5A7370", fontSize:14, fontWeight:700, cursor:"pointer", padding:"16px", },
+  backBtn: { display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:THEME, fontSize:14, fontWeight:700, cursor:"pointer", padding:"16px" },
   heroImg: { width:"100%", height:"auto", display:"block", maxWidth:720, margin:"0 auto" },
   heroPlaceholder: { width:"100%", maxWidth:720, margin:"0 auto", aspectRatio:"16/9", display:"flex", alignItems:"center", justifyContent:"center" },
   body: { padding:"20px 16px", maxWidth:720, margin:"0 auto", display:"flex", flexDirection:"column", gap:16 },
@@ -150,6 +150,6 @@ const s = {
   sectionTitle: { fontSize:14, fontWeight:700, color:"#5A7370", marginBottom:10, margin:"0 0 10px" },
   detailText: { fontSize:14, color:"#1A2E2B", lineHeight:1.8, whiteSpace:"pre-wrap", margin:0 },
   attachList: { display:"flex", flexDirection:"column", gap:8 },
-  attachItem: { fontSize:13, color:"#007A6E", padding:"8px 12px", background:"#E6F5F4", borderRadius:8, textDecoration:"none", fontWeight:600 },
-  applyBtn: { display:"block", textAlign:"center", padding:"16px", background:"#F5A623", color:"#111", borderRadius:12, fontSize:16, fontWeight:900, textDecoration:"none", boxShadow:"0 4px 16px rgba(245,166,35,0.4)" },
+  attachItem: { fontSize:13, color:THEME, padding:"8px 12px", background:"#F9EAED", borderRadius:8, textDecoration:"none", fontWeight:600 },
+  applyBtn: { display:"block", textAlign:"center", padding:"16px", background:THEME, color:"white", borderRadius:12, fontSize:16, fontWeight:900, textDecoration:"none", boxShadow:`0 4px 16px rgba(136,32,58,0.4)` },
 };

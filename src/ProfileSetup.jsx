@@ -153,10 +153,12 @@ export default function ProfileSetup({ onComplete }) {
   );
 }
 
+const THEME = "#88203a";
+
 const s = {
   container: { minHeight:"100vh", background:"#F4F6F5", display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"32px 16px" },
   card: { background:"white", borderRadius:16, padding:"32px 24px", width:"100%", maxWidth:480, display:"flex", flexDirection:"column", gap:0, boxShadow:"0 4px 24px rgba(0,0,0,0.08)" },
-  badge: { background:"#F5A623", color:"#111", fontWeight:700, fontSize:16, padding:"4px 14px", borderRadius:6, width:"fit-content", marginBottom:12 },
+  badge: { background:THEME, color:"white", fontWeight:700, fontSize:16, padding:"4px 14px", borderRadius:6, width:"fit-content", marginBottom:12 },
   title: { fontSize:22, fontWeight:900, color:"#111", marginBottom:6 },
   sub: { fontSize:13, color:"#5A7370", marginBottom:24 },
   section: { marginBottom:20 },
@@ -166,7 +168,7 @@ const s = {
   optionGrid: { display:"flex", flexWrap:"wrap", gap:8 },
   optionRow: { display:"flex", gap:8 },
   optionBtn: { padding:"7px 14px", borderRadius:999, border:"1.5px solid #D0DDD9", background:"white", fontSize:13, fontWeight:600, color:"#5A7370", cursor:"pointer" },
-  optionBtnActive: { background:"#111", color:"white", border:"1.5px solid #111" },
-  btn: { marginTop:8, padding:14, background:"#F5A623", color:"#111", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
+  optionBtnActive: { background:THEME, color:"white", border:`1.5px solid ${THEME}` },
+  btn: { marginTop:8, padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   error: { color:"#E53935", fontSize:12, marginBottom:8 },
 };

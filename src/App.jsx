@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { auth } from "./firebase";
-import { db } from "./firebase";
+import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import Login from "./Login";
@@ -15,6 +14,7 @@ export default function App() {
   const [profileDone, setProfileDone] = useState(false);
   const [tab, setTab] = useState("home");
   const [reload, setReload] = useState(0);
+  const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -22,6 +22,7 @@ export default function App() {
       if (u) {
         const snap = await getDoc(doc(db, "users", u.uid));
         setProfileDone(snap.exists());
+        setShowLogin(false);
       }
       setLoading(false);
     });
@@ -34,9 +35,11 @@ export default function App() {
     </div>
   );
 
-  if (!user) return <Login />;
+  // ログイン画面
+  if (showLogin) return <Login onBack={() => setShowLogin(false)} />;
 
-  if (!profileDone) return (
+  // プロフィール未設定
+  if (user && !profileDone) return (
     <ProfileSetup onComplete={() => setProfileDone(true)} />
   );
 
@@ -52,10 +55,17 @@ export default function App() {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <span>さがす</span>
             </button>
-            <button style={s.iconBtn} onClick={() => signOut(auth)}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-              <span>ログアウト</span>
-            </button>
+            {user ? (
+              <button style={s.iconBtn} onClick={() => signOut(auth)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>ログアウト</span>
+              </button>
+            ) : (
+              <button style={s.iconBtn} onClick={() => setShowLogin(true)}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span>ログイン</span>
+              </button>
+            )}
             <button style={s.iconBtn}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
               <span>メニュー</span>
@@ -82,22 +92,36 @@ export default function App() {
 
       {/* ── Content ── */}
       {tab === "post" ? (
-        <PostEvent onPosted={() => { setReload(r => r+1); setTab("home"); }} />
+        user ? (
+          <PostEvent onPosted={() => { setReload(r => r+1); setTab("home"); }} />
+        ) : (
+          <div style={s.loginPrompt}>
+            <p style={s.loginPromptText}>イベントを投稿するにはログインが必要です</p>
+            <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
+          </div>
+        )
       ) : (
-        <EventList key={reload} />
+        <EventList
+          key={reload}
+          user={user}
+          onLoginRequired={() => setShowLogin(true)}
+        />
       )}
 
-      {/* ── FAB ── */}
-      <button data-fab style={s.fab} onClick={() => setTab("post")}>
-        ＋ イベントを作る
-      </button>
+      {/* ── FAB（ログイン済みのみ） ── */}
+      {user && (
+        <button data-fab style={s.fab} onClick={() => setTab("post")}>
+          ＋ イベントを作る
+        </button>
+      )}
 
     </div>
   );
 }
+const THEME = "#88203a";
 
 const s = {
-  header: { background:"#111", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,0.3)" },
+  header: { background: THEME, position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,0.3)" },
   headerTop: { display:"flex", alignItems:"center", justifyContent:"space-between", height:60, padding:"0 16px" },
   logoImg: { height:40, objectFit:"contain" },
   headerIcons: { display:"flex", gap:20, alignItems:"center" },
@@ -105,8 +129,11 @@ const s = {
   navTabs: { display:"flex", borderTop:"1px solid rgba(255,255,255,0.1)" },
   navTab: { flex:1, textAlign:"center", padding:"10px 0", color:"rgba(255,255,255,0.6)", fontSize:13, fontWeight:500, cursor:"pointer", background:"none", border:"none", borderBottom:"2px solid transparent" },
   navTabActive: { color:"white", borderBottom:"2px solid #F5A623" },
-  noticeBar: { background:"white", borderLeft:"4px solid #F5A623", margin:"12px 14px", borderRadius:6, padding:"10px 14px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 1px 4px rgba(0,0,0,0.07)" },
-  noticeIcon: { background:"#FFF8E7", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
+  noticeBar: { background:"white", borderLeft:`4px solid ${THEME}`, margin:"12px 14px", borderRadius:6, padding:"10px 14px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 1px 4px rgba(0,0,0,0.07)" },
+  noticeIcon: { background:"#F9EAED", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
   noticeText: { fontSize:12.5, color:"#5A7370", flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" },
-  fab: { position:"fixed", bottom:24, right:18, background:"#F5A623", color:"#111", border:"none", borderRadius:999, padding:"12px 20px", fontSize:14, fontWeight:900, cursor:"pointer", boxShadow:"0 4px 18px rgba(245,166,35,0.45)", zIndex:99 },
+  fab: { position:"fixed", bottom:24, right:18, background:THEME, color:"white", border:"none", borderRadius:999, padding:"12px 20px", fontSize:14, fontWeight:900, cursor:"pointer", boxShadow:`0 4px 18px rgba(136,32,58,0.45)`, zIndex:99 },
+  loginPrompt: { display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", gap:16 },
+  loginPromptText: { fontSize:15, color:"#5A7370", fontWeight:600 },
+  loginPromptBtn: { padding:"12px 32px", background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
 };

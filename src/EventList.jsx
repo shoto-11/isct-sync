@@ -68,7 +68,7 @@ function EventCard({ event, onSelect }) {
   );
 }
 
-export default function EventList() {
+export default function EventList({ user, onLoginRequired }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -95,9 +95,13 @@ export default function EventList() {
 
   // ブラウザの戻るボタン対応
   const handleSelect = (event) => {
+    if (!user) {
+        onLoginRequired();
+        return;
+    }
     setSelected(event);
     window.history.pushState({ eventId: event.id }, "");
-  };
+    };
 
   const handleBack = () => {
     setSelected(null);
@@ -197,11 +201,11 @@ export default function EventList() {
     </div>
   );
 }
-
+const THEME = "#88203a";
 const s = {
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
   sectionTitle: { fontSize:15, fontWeight:700 },
-  sectionBadge: { background:"#E6F5F4", color:"#007A6E", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
+  sectionBadge: { background:"#F9EAED", color:THEME, fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
   cardsScrollWrapper: { overflowX:"auto", WebkitOverflowScrolling:"touch", scrollbarWidth:"none", padding:"0 14px 16px" },
   cardsGrid: { display:"flex", flexDirection:"row", gap:12, width:"max-content" },
   card: { background:"white", borderRadius:12, overflow:"hidden", cursor:"pointer", width: window.innerWidth > 768 ? 280 : 160, flexShrink:0 },
@@ -217,11 +221,11 @@ const s = {
   WebkitBoxOrient:"vertical",
 },
   cardMeta: { display:"flex", justifyContent:"space-between", alignItems:"center" },
-  cardDate: { fontFamily:"monospace", fontSize:11, color:"#007A6E", fontWeight:700 },
-  ctaBanner: { margin:"4px 14px 16px", background:"linear-gradient(135deg,#007A6E,#00A896)", borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 4px 16px rgba(0,122,110,0.25)" },
+  cardDate: { fontFamily:"monospace", fontSize:11, color:THEME, fontWeight:700 },
+  ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)` },
   ctaText: { color:"white", fontSize:15, fontWeight:700 },
   ctaSub: { color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:2 },
-  ctaArrow: { background:"#C8A84B", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#0D1B2A", fontSize:18, fontWeight:900 },
+  ctaArrow: { background:"#F5A623", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#111", fontSize:18, fontWeight:900 },
   surveyBanner: { margin:"0 14px 20px", background:"linear-gradient(120deg,#FFF8E7,#FFFDE7)", border:"1.5px solid #F0D98A", borderRadius:12, padding:"14px 16px" },
   surveyLabel: { fontSize:10, fontWeight:700, color:"#C8A84B", letterSpacing:"0.1em", marginBottom:4 },
   surveyTitle: { fontSize:14, fontWeight:900, lineHeight:1.4 },
@@ -234,7 +238,7 @@ const s = {
   rankThumb: { width:52, height:52, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
   rankTitle: { fontSize:13, fontWeight:700, marginBottom:3 },
   rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8 },
-  rankParticipants: { fontSize:11, fontWeight:700, color:"#007A6E" },
+  rankParticipants: { fontSize:11, fontWeight:700, color:THEME },
   cardFooter: { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:2 },
 cardOrganizer: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap" },
 cardLocation: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap", textAlign:"right" },
