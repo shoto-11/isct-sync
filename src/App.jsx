@@ -115,13 +115,7 @@ if (showLogin) return (
             <button
               key={t}
               style={{ ...s.navTab, ...(tab===t ? s.navTabActive : {}) }}
-              onClick={() => {
-                if (t === "mypage" && !user) {
-                  setShowLogin(true);
-                  return;
-                }
-                setTab(t);
-              }}
+              onClick={() => setTab(t)}
             >
               {["イベント","さがす","マイページ"][i]}
             </button>
