@@ -2,7 +2,7 @@ import { useState } from "react";
 import { auth } from "./firebase";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 
-const ALLOWED_DOMAINS = ["m.isct.ac.jp", "m.titech.ac.jp"];
+const ALLOWED_DOMAINS = ["m.isct.ac.jp"];
 
 export default function Login() {
   const [error, setError] = useState("");
