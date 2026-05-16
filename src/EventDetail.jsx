@@ -111,7 +111,6 @@ export default function EventDetail({ event, onBack }) {
         {/* タグ */}
         {event.tags && (
         <div style={s.tagsBox}>
-            {event.tags.genre && <span style={s.tag}>{event.tags.genre}</span>}
             {event.tags.targets?.map(t => <span key={t} style={s.tag}>{t}</span>)}
             {event.tags.campus && <span style={s.tag}>{event.tags.campus}</span>}
             {event.tags.style && <span style={s.tag}>{event.tags.style}</span>}

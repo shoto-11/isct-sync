@@ -7,6 +7,7 @@ import EventList from "./EventList";
 import PostEvent from "./PostEvent";
 import ProfileSetup from "./ProfileSetup";
 import logo from "./assets/logo.png";
+import MyPage from "./MyPage";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -95,7 +96,17 @@ if (showLogin) return (
         </div>
         <div style={s.navTabs}>
           {["home","search","mypage"].map((t, i) => (
-            <button key={t} style={{ ...s.navTab, ...(tab===t ? s.navTabActive : {}) }} onClick={() => setTab(t)}>
+            <button
+              key={t}
+              style={{ ...s.navTab, ...(tab===t ? s.navTabActive : {}) }}
+              onClick={() => {
+                if (t === "mypage" && !user) {
+                  setShowLogin(true);
+                  return;
+                }
+                setTab(t);
+              }}
+            >
               {["イベント","さがす","マイページ"][i]}
             </button>
           ))}
@@ -118,6 +129,18 @@ if (showLogin) return (
         ) : (
           <div style={s.loginPrompt}>
             <p style={s.loginPromptText}>イベントを投稿するにはログインが必要です</p>
+            <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
+          </div>
+        )
+      ) : tab === "mypage" ? (
+        user ? (
+          <MyPage onEventSelect={(event) => {
+            setPendingEvent(event);
+            setTab("home");
+          }} />
+        ) : (
+          <div style={s.loginPrompt}>
+            <p style={s.loginPromptText}>マイページを見るにはログインが必要です</p>
             <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
           </div>
         )
