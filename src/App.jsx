@@ -18,18 +18,25 @@ export default function App() {
   const [pendingEvent, setPendingEvent] = useState(null);
 
   useEffect(() => {
-      const unsubscribe = onAuthStateChanged(auth, async (u) => {
-        const wasLoggedOut = !user && u;
-        setUser(u);
-        if (u) {
-          const snap = await getDoc(doc(db, "users", u.uid));
-          setProfileDone(snap.exists());
-          setShowLogin(false);
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
+      const wasLoggedOut = !user && u;
+      setUser(u);
+      if (u) {
+        const snap = await getDoc(doc(db, "users", u.uid));
+        const done = snap.exists();
+        setProfileDone(done);
+        setShowLogin(false);
+        if (wasLoggedOut && done && !pendingEvent) {
+          if (sessionStorage.getItem("pendingPost")) {
+            sessionStorage.removeItem("pendingPost");
+            setTab("post");
+          }
         }
-        setLoading(false);
-      });
-      return unsubscribe;
-    }, []);
+      }
+      setLoading(false);
+    });
+    return unsubscribe;
+  }, []);
 
   if (loading) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", color:"#111", fontSize:16 }}>
@@ -55,7 +62,15 @@ if (showLogin) return (
       {/* ── Header ── */}
       <header style={s.header}>
         <div style={s.headerTop}>
-          <img src={logo} alt="SYNC" style={s.logoImg} />
+          <img
+            src={logo}
+            alt="SYNC"
+            style={{ ...s.logoImg, cursor:"pointer" }}
+            onClick={() => {
+              setTab("home");
+              setReload(r => r + 1);
+            }}
+          />
           <div style={s.headerIcons}>
             <button style={s.iconBtn}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -119,12 +134,17 @@ if (showLogin) return (
         />
       )}
 
-      {/* ── FAB（ログイン済みのみ） ── */}
-      {user && (
-        <button data-fab style={s.fab} onClick={() => setTab("post")}>
-          ＋ イベントを作る
-        </button>
-      )}
+      {/* ── FAB ── */}
+      <button data-fab style={s.fab} onClick={() => {
+        if (!user) {
+          sessionStorage.setItem("pendingPost", "1");
+          setShowLogin(true);
+          return;
+        }
+        setTab("post");
+      }}>
+        ＋ イベントを作る
+      </button>
 
     </div>
   );
