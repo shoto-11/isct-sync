@@ -11,12 +11,15 @@ const CATEGORY_STYLES = {
 
 export default function EventDetail({ event, onBack }) {
     useEffect(() => {
-    const fab = document.querySelector('[data-fab]');
-    if (fab) fab.style.display = 'none';
-    return () => {
-        if (fab) fab.style.display = 'flex';
-    };
-    }, []);
+        // ページトップにスクロール
+        window.scrollTo(0, 0);
+
+        const fab = document.querySelector('[data-fab]');
+        if (fab) fab.style.display = 'none';
+        return () => {
+            if (fab) fab.style.display = 'flex';
+        };
+        }, []);
   const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
   const remaining = event.capacity - (event.participants?.length ?? 0);
 
@@ -50,7 +53,7 @@ export default function EventDetail({ event, onBack }) {
           <div style={s.infoRow}>
             <span style={s.infoIcon}>📅</span>
             <div>
-              <div style={s.infoLabel}>日時</div>
+              <div style={s.infoLabel}>イベント日時</div>
               <div style={s.infoValue}>
                 {event.date}
                 {event.startTime && ` ${event.startTime}`}
@@ -66,6 +69,21 @@ export default function EventDetail({ event, onBack }) {
               <div style={s.infoValue}>{event.location}</div>
             </div>
           </div>
+            {event.deadline && (
+                <>
+                    <div style={s.infoDivider} />
+                    <div style={s.infoRow}>
+                    <span style={s.infoIcon}>⏰</span>
+                    <div>
+                        <div style={s.infoLabel}>申し込み締切</div>
+                        <div style={s.infoValue}>
+                        {event.deadline}
+                        {event.deadlineTime && ` ${event.deadlineTime}`}
+                        </div>
+                    </div>
+                    </div>
+                </>
+                )}
           {event.capacity && (
             <>
               <div style={s.infoDivider} />

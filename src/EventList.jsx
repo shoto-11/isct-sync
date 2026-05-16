@@ -67,11 +67,21 @@ export default function EventList() {
 
   useEffect(() => {
     const fetch = async () => {
-      const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      setLoading(false);
-    };
+        const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        const now = new Date();
+        const list = snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .filter(event => {
+            if (!event.deadline) return true;
+            const deadlineStr = event.deadlineTime
+                ? `${event.deadline}T${event.deadlineTime}`
+                : `${event.deadline}T23:59`;
+            return new Date(deadlineStr) > now;
+            });
+        setEvents(list);
+        setLoading(false);
+        };
     fetch();
   }, []);
 
@@ -191,7 +201,13 @@ const s = {
   cardThumb: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, display:"flex", alignItems:"center", justifyContent:"center" },
   cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
   cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
-  cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B" },
+  cardTitle: { 
+  fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B",
+  overflow:"hidden",
+  display:"-webkit-box",
+  WebkitLineClamp:2,
+  WebkitBoxOrient:"vertical",
+},
   cardMeta: { display:"flex", justifyContent:"space-between", alignItems:"center" },
   cardDate: { fontFamily:"monospace", fontSize:11, color:"#007A6E", fontWeight:700 },
   ctaBanner: { margin:"4px 14px 16px", background:"linear-gradient(135deg,#007A6E,#00A896)", borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 4px 16px rgba(0,122,110,0.25)" },

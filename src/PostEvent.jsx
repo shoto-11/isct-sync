@@ -19,6 +19,8 @@ export default function PostEvent({ onPosted }) {
   const [applyLabel, setApplyLabel] = useState("");
   const [applyLink, setApplyLink] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deadline, setDeadline] = useState("");
+  const [deadlineTime, setDeadlineTime] = useState("");
 
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -37,10 +39,10 @@ export default function PostEvent({ onPosted }) {
   };
 
   const handleSubmit = async () => {
-    if (!title || !detail || !date || !location) {
-      alert("必須項目を全て入力してください");
-      return;
-    }
+    if (!title || !detail || !date || !location || !deadline) {
+        alert("必須項目を全て入力してください");
+        return;
+        }
     setLoading(true);
     try {
       let imageUrl = null;
@@ -65,6 +67,8 @@ export default function PostEvent({ onPosted }) {
         startTime,
         endTime,
         location,
+        deadline,
+        deadlineTime,
         category,
         imageUrl,
         attachments: attachmentUrls,
@@ -151,7 +155,24 @@ export default function PostEvent({ onPosted }) {
         <label style={s.label}>場所 <span style={s.required}>必須</span></label>
         <input style={s.input} placeholder="例：大岡山グラウンド" value={location} onChange={e => setLocation(e.target.value)} />
       </div>
-
+      {/* 申し込み締切日 */}
+        <div style={s.section}>
+        <label style={s.label}>申し込み締切日 <span style={s.required}>必須</span></label>
+        <input
+            style={s.input}
+            type="date"
+            value={deadline}
+            onChange={e => setDeadline(e.target.value)}
+            onFocus={e => e.target.showPicker()}
+        />
+        </div>
+        <input
+            style={{ ...s.input, marginTop:8 }}
+            type="time"
+            value={deadlineTime}
+            onChange={e => setDeadlineTime(e.target.value)}
+            onFocus={e => e.target.showPicker()}
+            />
       {/* 添付画像・資料（任意） */}
       <div style={s.section}>
         <label style={s.label}>添付画像・資料（任意）</label>
