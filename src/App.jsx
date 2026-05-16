@@ -15,19 +15,21 @@ export default function App() {
   const [tab, setTab] = useState("home");
   const [reload, setReload] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
+  const [pendingEvent, setPendingEvent] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
-      if (u) {
-        const snap = await getDoc(doc(db, "users", u.uid));
-        setProfileDone(snap.exists());
-        setShowLogin(false);
-      }
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
+      const unsubscribe = onAuthStateChanged(auth, async (u) => {
+        const wasLoggedOut = !user && u;
+        setUser(u);
+        if (u) {
+          const snap = await getDoc(doc(db, "users", u.uid));
+          setProfileDone(snap.exists());
+          setShowLogin(false);
+        }
+        setLoading(false);
+      });
+      return unsubscribe;
+    }, []);
 
   if (loading) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", color:"#111", fontSize:16 }}>
@@ -36,8 +38,12 @@ export default function App() {
   );
 
   // ログイン画面
-  if (showLogin) return <Login onBack={() => setShowLogin(false)} />;
-
+if (showLogin) return (
+  <Login onBack={() => {
+    setPendingEvent(null);
+    setShowLogin(false);
+  }} />
+);
   // プロフィール未設定
   if (user && !profileDone) return (
     <ProfileSetup onComplete={() => setProfileDone(true)} />
@@ -104,7 +110,12 @@ export default function App() {
         <EventList
           key={reload}
           user={user}
-          onLoginRequired={() => setShowLogin(true)}
+          pendingEvent={pendingEvent}
+          onPendingEventClear={() => setPendingEvent(null)}
+          onLoginRequired={(event) => {
+            setPendingEvent(event);
+            setShowLogin(true);
+          }}
         />
       )}
 

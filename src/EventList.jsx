@@ -19,7 +19,6 @@ const CATEGORY_EMOJI = {
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
   const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
-  const remaining = event.capacity - (event.participants?.length ?? 0);
 
   return (
     <div
@@ -44,64 +43,76 @@ function EventCard({ event, onSelect }) {
       <div style={s.cardBody}>
         <span style={{ ...s.cardTag, background:cs.bg, color:cs.color }}>{event.category}</span>
         <div style={{
-            ...s.cardTitle,
-            textDecoration: hovered ? "underline" : "none",
-            textDecorationColor: "#007A6E",
+          ...s.cardTitle,
+          textDecoration: hovered ? "underline" : "none",
+          textDecorationColor: "#88203a",
         }}>
-            {event.title}
+          {event.title}
         </div>
         <div style={s.cardDate}>{event.date}{event.startTime ? ` ${event.startTime}` : ""}</div>
         <div style={s.cardFooter}>
-            <span style={s.cardOrganizer}>
+          <span style={s.cardOrganizer}>
             {(event.organizerName || "").length > 12
-                ? (event.organizerName || "").slice(0, 12) + "..."
-                : (event.organizerName || "募集者不明")}
-            </span>
-            <span style={s.cardLocation}>
+              ? (event.organizerName || "").slice(0, 12) + "..."
+              : (event.organizerName || "募集者不明")}
+          </span>
+          <span style={s.cardLocation}>
             {(event.location || "").length > 5
-                ? event.location.slice(0, 5) + "..."
-                : event.location}
-            </span>
+              ? event.location.slice(0, 5) + "..."
+              : event.location}
+          </span>
         </div>
-        </div>
+      </div>
     </div>
   );
 }
 
-export default function EventList({ user, onLoginRequired }) {
+export default function EventList({ user, onLoginRequired, pendingEvent, onPendingEventClear }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     const fetch = async () => {
-        const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        const now = new Date();
-        const list = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
-            .filter(event => {
-            if (!event.deadline) return true;
-            const deadlineStr = event.deadlineTime
-                ? `${event.deadline}T${event.deadlineTime}`
-                : `${event.deadline}T23:59`;
-            return new Date(deadlineStr) > now;
-            });
-        setEvents(list);
-        setLoading(false);
-        };
+      const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+      const now = new Date();
+      const list = snapshot.docs
+        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .filter(event => {
+          if (!event.deadline) return true;
+          const deadlineStr = event.deadlineTime
+            ? `${event.deadline}T${event.deadlineTime}`
+            : `${event.deadline}T23:59`;
+          return new Date(deadlineStr) > now;
+        });
+      setEvents(list);
+      setLoading(false);
+    };
     fetch();
   }, []);
+
+  // ログイン後に保留中のイベントを表示
+  useEffect(() => {
+    if (user && pendingEvent && !selected) {
+      const timer = setTimeout(() => {
+        setSelected(pendingEvent);
+        onPendingEventClear();
+        window.history.pushState({ eventId: pendingEvent.id }, "");
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [user, pendingEvent]);
 
   // ブラウザの戻るボタン対応
   const handleSelect = (event) => {
     if (!user) {
-        onLoginRequired();
-        return;
+      onLoginRequired(event);
+      return;
     }
     setSelected(event);
     window.history.pushState({ eventId: event.id }, "");
-    };
+  };
 
   const handleBack = () => {
     setSelected(null);
@@ -109,9 +120,7 @@ export default function EventList({ user, onLoginRequired }) {
   };
 
   useEffect(() => {
-    const onPopState = () => {
-      setSelected(null);
-    };
+    const onPopState = () => setSelected(null);
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
@@ -122,18 +131,10 @@ export default function EventList({ user, onLoginRequired }) {
     <EventDetail event={selected} onBack={handleBack} />
   );
 
-  if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
-
-  // 詳細画面
-  if (selected) return (
-    <EventDetail event={selected} onBack={() => setSelected(null)} />
-  );
-
   return (
     <div>
-      {/* ── Section heading ── */}
       <div style={s.sectionHeading}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#007A6E" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#88203a" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span style={s.sectionTitle}>募集中のイベント</span>
         <span style={s.sectionBadge}>全{events.length}件</span>
       </div>
@@ -150,26 +151,23 @@ export default function EventList({ user, onLoginRequired }) {
         </div>
       )}
 
-      {/* ── CTA banner ── */}
       <div style={s.ctaBanner}>
         <div>
-          <div style={s.ctaText}>現在募集中の春イベントを見る</div>
+          <div style={s.ctaText}>現在募集中のイベントを見る</div>
           <div style={s.ctaSub}>全{events.length}件のイベントが掲載中</div>
         </div>
         <div style={s.ctaArrow}>›</div>
       </div>
 
-      {/* ── Survey banner ── */}
       <div style={s.surveyBanner}>
         <div style={s.surveyLabel}>在学生限定</div>
         <div style={s.surveyTitle}>2026春イベント<br />リクエスト＆アンケート実施中！！</div>
         <div style={s.surveyDeadline}>📅 5/22 まで</div>
       </div>
 
-      {/* ── Ranking ── */}
       <div style={s.rankingHeader}>
         <span style={{ fontSize:15, fontWeight:700 }}>⭐ 人気ランキング</span>
-        <span style={{ fontSize:12, color:"#007A6E", fontWeight:600 }}>すべて見る ›</span>
+        <span style={{ fontSize:12, color:"#88203a", fontWeight:600 }}>すべて見る ›</span>
       </div>
 
       <div style={s.rankingList}>
@@ -201,6 +199,7 @@ export default function EventList({ user, onLoginRequired }) {
     </div>
   );
 }
+
 const THEME = "#88203a";
 const s = {
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
@@ -213,15 +212,11 @@ const s = {
   cardThumb: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, display:"flex", alignItems:"center", justifyContent:"center" },
   cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
   cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
-  cardTitle: { 
-  fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B",
-  overflow:"hidden",
-  display:"-webkit-box",
-  WebkitLineClamp:2,
-  WebkitBoxOrient:"vertical",
-},
-  cardMeta: { display:"flex", justifyContent:"space-between", alignItems:"center" },
+  cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B", overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" },
   cardDate: { fontFamily:"monospace", fontSize:11, color:THEME, fontWeight:700 },
+  cardFooter: { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:2 },
+  cardOrganizer: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap" },
+  cardLocation: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap", textAlign:"right" },
   ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)` },
   ctaText: { color:"white", fontSize:15, fontWeight:700 },
   ctaSub: { color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:2 },
@@ -239,7 +234,4 @@ const s = {
   rankTitle: { fontSize:13, fontWeight:700, marginBottom:3 },
   rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8 },
   rankParticipants: { fontSize:11, fontWeight:700, color:THEME },
-  cardFooter: { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:2 },
-cardOrganizer: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap" },
-cardLocation: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap", textAlign:"right" },
 };
