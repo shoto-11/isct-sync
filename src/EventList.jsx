@@ -87,10 +87,12 @@ export default function EventList() {
       {events.length === 0 ? (
         <p style={{ padding:"16px 14px", color:"#5A7370", fontSize:14 }}>まだイベントがありません。最初のイベントを作りましょう！</p>
       ) : (
-        <div style={s.cardsGrid}>
-          {events.map(event => (
-            <EventCard key={event.id} event={event} />
-          ))}
+        <div style={s.cardsScrollWrapper}>
+            <div style={s.cardsGrid}>
+                {events.map(event => (
+                <EventCard key={event.id} event={event} />
+                ))}
+            </div>
         </div>
       )}
 
@@ -150,19 +152,28 @@ const s = {
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
   sectionTitle: { fontSize:15, fontWeight:700 },
   sectionBadge: { background:"#E6F5F4", color:"#007A6E", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
-
-  // PCでグリッド、スマホで横スクロール
-  cardsGrid: {
-    display:"grid",
-    gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))",
-    gap:16,
-    padding:"0 14px 16px",
-  },
-
-  card: { background:"white", borderRadius:12, overflow:"hidden", cursor:"pointer", minWidth:0 },
-  cardImg: { width:"100%", height:140, objectFit:"cover", display:"block" },
-  cardThumb: { width:"100%", height:140, display:"flex", alignItems:"center", justifyContent:"center" },
-  cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
+cardsScrollWrapper: {
+  overflowX: "auto",
+  WebkitOverflowScrolling: "touch",
+  scrollbarWidth: "none",
+  padding: "0 14px 16px",
+},
+cardsGrid: {
+  display: "flex",
+  flexDirection: "row",
+  gap: 12,
+  width: "max-content",
+},
+card: {
+  background: "white",
+  borderRadius: 12,
+  overflow: "hidden",
+  cursor: "pointer",
+  width: 180,
+  flexShrink: 0,
+},
+cardImg: { width:"100%", height:120, objectFit:"cover", display:"block" },
+cardThumb: { width:"100%", height:120, display:"flex", alignItems:"center", justifyContent:"center" },  cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
   cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
   cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B" },
   cardMeta: { display:"flex", justifyContent:"space-between", alignItems:"center" },
