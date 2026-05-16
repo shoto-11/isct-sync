@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const CATEGORY_STYLES = {
   スポーツ: { bg:"#E8F5E9", color:"#2E7D32" },
@@ -10,6 +10,13 @@ const CATEGORY_STYLES = {
 };
 
 export default function EventDetail({ event, onBack }) {
+    useEffect(() => {
+    const fab = document.querySelector('[data-fab]');
+    if (fab) fab.style.display = 'none';
+    return () => {
+        if (fab) fab.style.display = 'flex';
+    };
+    }, []);
   const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
   const remaining = event.capacity - (event.participants?.length ?? 0);
 

@@ -88,7 +88,7 @@ export default function App() {
       )}
 
       {/* ── FAB ── */}
-      <button style={s.fab} onClick={() => setTab("post")}>
+      <button data-fab style={s.fab} onClick={() => setTab("post")}>
         ＋ イベントを作る
       </button>
 
