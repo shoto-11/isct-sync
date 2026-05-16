@@ -152,13 +152,12 @@ const s = {
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
   sectionTitle: { fontSize:15, fontWeight:700 },
   sectionBadge: { background:"#E6F5F4", color:"#007A6E", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
-cardsScrollWrapper: {
+  cardsScrollWrapper: {
   overflowX: "auto",
   WebkitOverflowScrolling: "touch",
   scrollbarWidth: "none",
   padding: "0 14px 16px",
-},
-cardsGrid: {
+  },cardsGrid: {
   display: "flex",
   flexDirection: "row",
   gap: 12,
@@ -169,11 +168,12 @@ card: {
   borderRadius: 12,
   overflow: "hidden",
   cursor: "pointer",
-  width: 180,
+  width: window.innerWidth > 768 ? 280 : 160,
   flexShrink: 0,
 },
-cardImg: { width:"100%", height:120, objectFit:"cover", display:"block" },
-cardThumb: { width:"100%", height:120, display:"flex", alignItems:"center", justifyContent:"center" },  cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
+cardImg: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, objectFit:"cover", display:"block" },
+cardThumb: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, display:"flex", alignItems:"center", justifyContent:"center" },
+cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
   cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
   cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B" },
   cardMeta: { display:"flex", justifyContent:"space-between", alignItems:"center" },
