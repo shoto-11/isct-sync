@@ -15,6 +15,49 @@ const CATEGORY_EMOJI = {
   スポーツ:"⚽", 勉強会:"📚", 文化:"🎨", テック:"💻", 交流:"🎉", その他:"📌"
 };
 
+function EventCard({ event }) {
+  const [hovered, setHovered] = useState(false);
+  const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
+  const remaining = event.capacity - (event.participants?.length ?? 0);
+
+  return (
+    <div
+      style={{
+        ...s.card,
+        background: hovered ? "#F8FAFA" : "white",
+        transform: hovered ? "translateY(-2px)" : "none",
+        boxShadow: hovered ? "0 6px 20px rgba(0,0,0,0.13)" : "0 2px 10px rgba(0,0,0,0.08)",
+        transition: "all 0.18s",
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {event.imageUrl ? (
+        <img src={event.imageUrl} alt={event.title} style={s.cardImg} />
+      ) : (
+        <div style={{ ...s.cardThumb, background: cs.bg }}>
+          <span style={{ fontSize:40 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
+        </div>
+      )}
+      <div style={s.cardBody}>
+        <span style={{ ...s.cardTag, background:cs.bg, color:cs.color }}>{event.category}</span>
+        <div style={{
+          ...s.cardTitle,
+          textDecoration: hovered ? "underline" : "none",
+          textDecorationColor: "#007A6E",
+        }}>
+          {event.title}
+        </div>
+        <div style={s.cardMeta}>
+          <span style={s.cardDate}>{event.date}{event.startTime ? ` ${event.startTime}` : ""}</span>
+          {event.capacity && <span style={{ fontSize:11, color:"#5A7370" }}>残{remaining}枠</span>}
+        </div>
+        <div style={{ fontSize:11, color:"#5A7370", marginTop:2 }}>📍 {event.location}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function EventList() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,32 +87,10 @@ export default function EventList() {
       {events.length === 0 ? (
         <p style={{ padding:"16px 14px", color:"#5A7370", fontSize:14 }}>まだイベントがありません。最初のイベントを作りましょう！</p>
       ) : (
-        <div style={s.cardsScroll}>
-          {events.map(event => {
-            const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
-            const remaining = event.capacity - (event.participants?.length ?? 0);
-            return (
-              <div key={event.id} style={s.card}>
-                {/* サムネイル：画像があれば表示、なければ絵文字 */}
-                {event.imageUrl ? (
-                  <img src={event.imageUrl} alt={event.title} style={s.cardImg} />
-                ) : (
-                  <div style={{ ...s.cardThumb, background: cs.bg }}>
-                    <span style={{ fontSize:36 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
-                  </div>
-                )}
-                <div style={s.cardBody}>
-                  <span style={{ ...s.cardTag, background:cs.bg, color:cs.color }}>{event.category}</span>
-                  <div style={s.cardTitle}>{event.title}</div>
-                  <div style={s.cardMeta}>
-                    <span style={s.cardDate}>{event.date}</span>
-                    <span style={{ fontSize:11, color:"#5A7370" }}>残{remaining}枠</span>
-                  </div>
-                  <div style={{ fontSize:11, color:"#5A7370", marginTop:2 }}>📍 {event.location}</div>
-                </div>
-              </div>
-            );
-          })}
+        <div style={s.cardsGrid}>
+          {events.map(event => (
+            <EventCard key={event.id} event={event} />
+          ))}
         </div>
       )}
 
@@ -112,7 +133,7 @@ export default function EventList() {
               <div style={{ flex:1 }}>
                 <div style={s.rankTitle}>{event.title}</div>
                 <div style={s.rankMeta}>
-                  <span>📅 {event.date}</span>
+                  <span>📅 {event.date}{event.startTime ? ` ${event.startTime}` : ""}</span>
                   <span>📍 {event.location}</span>
                 </div>
               </div>
@@ -129,15 +150,24 @@ const s = {
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
   sectionTitle: { fontSize:15, fontWeight:700 },
   sectionBadge: { background:"#E6F5F4", color:"#007A6E", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
-  cardsScroll: { display:"flex", gap:12, padding:"0 14px 16px", overflowX:"auto", scrollbarWidth:"none" },
-  card: { background:"white", borderRadius:12, overflow:"hidden", minWidth:180, maxWidth:180, boxShadow:"0 2px 10px rgba(0,0,0,0.08)", flexShrink:0, cursor:"pointer" },
-  cardImg: { width:"100%", height:110, objectFit:"cover", display:"block" },
-  cardThumb: { width:"100%", height:110, display:"flex", alignItems:"center", justifyContent:"center" },
-  cardBody: { padding:"10px 12px", display:"flex", flexDirection:"column", gap:4 },
+
+  // PCでグリッド、スマホで横スクロール
+  cardsGrid: {
+    display:"grid",
+    gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))",
+    gap:16,
+    padding:"0 14px 16px",
+  },
+
+  card: { background:"white", borderRadius:12, overflow:"hidden", cursor:"pointer", minWidth:0 },
+  cardImg: { width:"100%", height:140, objectFit:"cover", display:"block" },
+  cardThumb: { width:"100%", height:140, display:"flex", alignItems:"center", justifyContent:"center" },
+  cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
   cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
-  cardTitle: { fontSize:13, fontWeight:700, lineHeight:1.3 },
+  cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B" },
   cardMeta: { display:"flex", justifyContent:"space-between", alignItems:"center" },
-  cardDate: { fontFamily:"monospace", fontSize:10, color:"#007A6E", fontWeight:700 },
+  cardDate: { fontFamily:"monospace", fontSize:11, color:"#007A6E", fontWeight:700 },
+
   ctaBanner: { margin:"4px 14px 16px", background:"linear-gradient(135deg,#007A6E,#00A896)", borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 4px 16px rgba(0,122,110,0.25)" },
   ctaText: { color:"white", fontSize:15, fontWeight:700 },
   ctaSub: { color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:2 },

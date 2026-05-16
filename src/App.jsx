@@ -4,6 +4,7 @@ import { onAuthStateChanged, signOut } from "firebase/auth";
 import Login from "./Login";
 import EventList from "./EventList";
 import PostEvent from "./PostEvent";
+import logo from "./assets/logo.png";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -33,12 +34,11 @@ export default function App() {
       {/* ── Header ── */}
       <header style={s.header}>
         <div style={s.headerTop}>
-          <div style={s.logo}>
-            <span style={s.badge}>ISCT</span>
-            <span style={s.logoText}>Eventsサイト</span>
-          </div>
+          {/* ロゴ画像 */}
+          <img src={logo} alt="SYNC" style={s.logoImg} />
+
           <div style={s.headerIcons}>
-            <button style={s.iconBtn} onClick={() => setTab("post")}>
+            <button style={s.iconBtn}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <span>さがす</span>
             </button>
@@ -102,21 +102,19 @@ export default function App() {
 }
 
 const s = {
-  header: { background:"#007A6E", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,0.18)" },
-  headerTop: { display:"flex", alignItems:"center", justifyContent:"space-between", height:56, padding:"0 16px" },
-  logo: { display:"flex", alignItems:"center", gap:8 },
-  badge: { background:"#C8A84B", color:"#0D1B2A", fontWeight:700, fontSize:13, padding:"3px 8px", borderRadius:4 },
-  logoText: { color:"white", fontWeight:700, fontSize:15 },
+  header: { background:"#111", position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,0.3)" },
+  headerTop: { display:"flex", alignItems:"center", justifyContent:"space-between", height:60, padding:"0 16px" },
+  logoImg: { height:40, objectFit:"contain" },
   headerIcons: { display:"flex", gap:20, alignItems:"center" },
   iconBtn: { display:"flex", flexDirection:"column", alignItems:"center", gap:2, color:"rgba(255,255,255,0.9)", fontSize:10, background:"none", border:"none", cursor:"pointer" },
-  navTabs: { display:"flex", borderTop:"1px solid rgba(255,255,255,0.15)" },
-  navTab: { flex:1, textAlign:"center", padding:"10px 0", color:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:500, cursor:"pointer", background:"none", border:"none", borderBottom:"2px solid transparent" },
-  navTabActive: { color:"white", borderBottom:"2px solid #C8A84B" },
-  noticeBar: { background:"white", borderLeft:"4px solid #C8A84B", margin:"12px 14px", borderRadius:6, padding:"10px 14px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 1px 4px rgba(0,0,0,0.07)" },
-  noticeIcon: { background:"#E6F5F4", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
+  navTabs: { display:"flex", borderTop:"1px solid rgba(255,255,255,0.1)" },
+  navTab: { flex:1, textAlign:"center", padding:"10px 0", color:"rgba(255,255,255,0.6)", fontSize:13, fontWeight:500, cursor:"pointer", background:"none", border:"none", borderBottom:"2px solid transparent" },
+  navTabActive: { color:"white", borderBottom:"2px solid #F5A623" },
+  noticeBar: { background:"white", borderLeft:"4px solid #F5A623", margin:"12px 14px", borderRadius:6, padding:"10px 14px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 1px 4px rgba(0,0,0,0.07)" },
+  noticeIcon: { background:"#FFF8E7", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
   noticeText: { fontSize:12.5, color:"#5A7370", flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" },
-  fab: { position:"fixed", bottom:88, right:18, background:"#C8A84B", color:"#0D1B2A", border:"none", borderRadius:999, padding:"12px 20px", fontSize:14, fontWeight:900, cursor:"pointer", boxShadow:"0 4px 18px rgba(200,168,75,0.45)", zIndex:99 },
+  fab: { position:"fixed", bottom:88, right:18, background:"#F5A623", color:"#111", border:"none", borderRadius:999, padding:"12px 20px", fontSize:14, fontWeight:900, cursor:"pointer", boxShadow:"0 4px 18px rgba(245,166,35,0.45)", zIndex:99 },
   bottomNav: { position:"fixed", bottom:0, left:0, right:0, background:"white", borderTop:"1px solid #E0E8E7", display:"flex", padding:"8px 0 20px", zIndex:100, boxShadow:"0 -2px 12px rgba(0,0,0,0.06)" },
   bottomNavItem: { flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:3, cursor:"pointer", background:"none", border:"none", color:"#B0BEC5", fontSize:10 },
-  bottomNavActive: { color:"#007A6E" },
+  bottomNavActive: { color:"#F5A623" },
 };
