@@ -21,7 +21,7 @@ export default function Login() {
 
       if (!ALLOWED_DOMAINS.includes(domain)) {
         await auth.signOut();
-        setError(`@m.isct.ac.jp または @m.titech.ac.jp のアカウントでログインしてください（${email} は使用できません）`);
+        setError(`@m.isct.ac.jpのアカウントでログインしてください（${email} は使用できません）`);
       }
     } catch (err) {
       if (err.code !== "auth/popup-closed-by-user") {
@@ -36,7 +36,7 @@ export default function Login() {
       <div style={s.card}>
 
         <div style={s.badge}>ISCT</div>
-        <h1 style={s.title}>ISCT Sync</h1>
+        <h1 style={s.title}>ISCT SYNC</h1>
         <p style={s.sub}>東京科学大学 イベントプラットフォーム</p>
 
         <div style={s.divider} />
@@ -57,7 +57,7 @@ export default function Login() {
         {error && <p style={s.error}>{error}</p>}
 
         <div style={s.note}>
-          🔒 @m.isct.ac.jp または @m.titech.ac.jp の<br />学籍アカウントのみ利用できます
+          🔒 @m.isct.ac.jp の学籍アカウントのみ<br />利用できます
         </div>
 
       </div>
