@@ -3,23 +3,28 @@ import { db } from "./firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import EventDetail from "./EventDetail";
 
-const CATEGORY_STYLES = {
-  スポーツ: { bg:"#E8F5E9", color:"#2E7D32" },
-  勉強会:   { bg:"#E3F2FD", color:"#1565C0" },
-  文化:     { bg:"#FFF3E0", color:"#E65100" },
-  テック:   { bg:"#E0F2F1", color:"#00695C" },
-  交流:     { bg:"#F3E5F5", color:"#6A1B9A" },
-  その他:   { bg:"#F5F5F5", color:"#616161" },
+const GENRE_STYLES = {
+  "#起業・ビジネス": { bg:"#E3F2FD", color:"#1565C0" },
+  "#キャリア・就活": { bg:"#E8F5E9", color:"#2E7D32" },
+  "#文化・芸術":     { bg:"#FFF3E0", color:"#E65100" },
+  "#スポーツ・交流": { bg:"#F3E5F5", color:"#6A1B9A" },
+  "#スキルアップ":   { bg:"#E0F2F1", color:"#00695C" },
+  "#研究・産学連携": { bg:"#FFF8E7", color:"#F57F17" },
 };
 
-const CATEGORY_EMOJI = {
-  スポーツ:"⚽", 勉強会:"📚", 文化:"🎨", テック:"💻", 交流:"🎉", その他:"📌"
+const GENRE_EMOJI = {
+  "#起業・ビジネス": "💼",
+  "#キャリア・就活": "🎓",
+  "#文化・芸術":     "🎨",
+  "#スポーツ・交流": "⚽",
+  "#スキルアップ":   "📚",
+  "#研究・産学連携": "🔬",
 };
 
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
-  const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
-
+  const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
+  const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
   return (
     <div
       style={{
@@ -37,12 +42,11 @@ function EventCard({ event, onSelect }) {
         <img src={event.imageUrl} alt={event.title} style={s.cardImg} />
       ) : (
         <div style={{ ...s.cardThumb, background: cs.bg }}>
-          <span style={{ fontSize:40 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
+          <span style={{ fontSize:40 }}>{emoji}</span>
         </div>
       )}
       <div style={s.cardBody}>
-        <span style={{ ...s.cardTag, background:cs.bg, color:cs.color }}>{event.category}</span>
-        <div style={{
+         <div style={{
           ...s.cardTitle,
           textDecoration: hovered ? "underline" : "none",
           textDecorationColor: "#88203a",
@@ -171,31 +175,32 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
       </div>
 
       <div style={s.rankingList}>
-        {events.slice(0, 4).map((event, i) => {
-          const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
-          const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
-          return (
-            <div key={event.id} style={s.rankItem} onClick={() => handleSelect(event)}>
-              <div style={{ ...s.rankNum, color: rankColors[i] }}>{i+1}</div>
-              {event.imageUrl ? (
-                <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
-              ) : (
-                <div style={{ ...s.rankThumb, background: cs.bg }}>
-                  <span style={{ fontSize:24 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
-                </div>
-              )}
-              <div style={{ flex:1 }}>
-                <div style={s.rankTitle}>{event.title}</div>
-                <div style={s.rankMeta}>
-                  <span>📅 {event.date}{event.startTime ? ` ${event.startTime}` : ""}</span>
-                  <span>📍 {event.location}</span>
-                </div>
-              </div>
-              <div style={s.rankParticipants}>{event.participants?.length ?? 0}人</div>
+    {events.slice(0, 4).map((event, i) => {
+        const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
+        const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+        const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
+        return (
+        <div key={event.id} style={s.rankItem} onClick={() => handleSelect(event)}>
+            <div style={{ ...s.rankNum, color: rankColors[i] }}>{i+1}</div>
+            {event.imageUrl ? (
+            <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
+            ) : (
+            <div style={{ ...s.rankThumb, background: cs.bg }}>
+                <span style={{ fontSize:24 }}>{emoji}</span>
             </div>
-          );
-        })}
-      </div>
+            )}
+            <div style={{ flex:1 }}>
+            <div style={s.rankTitle}>{event.title}</div>
+            <div style={s.rankMeta}>
+                <span>📅 {event.date}{event.startTime ? ` ${event.startTime}` : ""}</span>
+                <span>📍 {event.location}</span>
+            </div>
+            </div>
+            <div style={s.rankParticipants}>{event.participants?.length ?? 0}人</div>
+        </div>
+        );
+    })}
+    </div>
     </div>
   );
 }

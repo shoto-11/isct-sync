@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 
-const CATEGORY_STYLES = {
-  スポーツ: { bg:"#E8F5E9", color:"#2E7D32" },
-  勉強会:   { bg:"#E3F2FD", color:"#1565C0" },
-  文化:     { bg:"#FFF3E0", color:"#E65100" },
-  テック:   { bg:"#E0F2F1", color:"#00695C" },
-  交流:     { bg:"#F3E5F5", color:"#6A1B9A" },
-  その他:   { bg:"#F5F5F5", color:"#616161" },
+const GENRE_EMOJI = {
+  "#起業・ビジネス": "💼",
+  "#キャリア・就活": "🎓",
+  "#文化・芸術":     "🎨",
+  "#スポーツ・交流": "⚽",
+  "#スキルアップ":   "📚",
+  "#研究・産学連携": "🔬",
 };
 
 export default function EventDetail({ event, onBack }) {
@@ -20,8 +20,16 @@ export default function EventDetail({ event, onBack }) {
             if (fab) fab.style.display = 'flex';
         };
         }, []);
-  const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
-  const remaining = event.capacity - (event.participants?.length ?? 0);
+        const GENRE_STYLES = {
+        "#起業・ビジネス": { bg:"#E3F2FD" },
+        "#キャリア・就活": { bg:"#E8F5E9" },
+        "#文化・芸術":     { bg:"#FFF3E0" },
+        "#スポーツ・交流": { bg:"#F3E5F5" },
+        "#スキルアップ":   { bg:"#E0F2F1" },
+        "#研究・産学連携": { bg:"#FFF8E7" },
+        };
+        const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5" };
+        const remaining = event.capacity - (event.participants?.length ?? 0);
 
   return (
     <div style={s.container}>
@@ -36,18 +44,21 @@ export default function EventDetail({ event, onBack }) {
         <img src={event.imageUrl} alt={event.title} style={s.heroImg} />
       ) : (
         <div style={{ ...s.heroPlaceholder, background: cs.bg }}>
-          <span style={{ fontSize:64 }}>
-            {{"スポーツ":"⚽","勉強会":"📚","文化":"🎨","テック":"💻","交流":"🎉"}[event.category] || "📌"}
-          </span>
+        <span style={{ fontSize:64 }}>
+            {GENRE_EMOJI[event.tags?.genre] || "📌"}
+        </span>
         </div>
       )}
 
       <div style={s.body}>
 
-        {/* カテゴリ＋タイトル */}
-        <span style={{ ...s.tag, background:cs.bg, color:cs.color }}>{event.category}</span>
+        {/* タイトル */}
         <h1 style={s.title}>{event.title}</h1>
-
+        {event.tags?.genre && (
+        <span style={{ ...s.tag, background:"#F9EAED", color:"#88203a" }}>
+            {event.tags.genre}
+        </span>
+        )}
         {/* 日時・場所 */}
         <div style={s.infoBox}>
           <div style={s.infoRow}>
@@ -97,7 +108,16 @@ export default function EventDetail({ event, onBack }) {
             </>
           )}
         </div>
-
+        {/* タグ */}
+        {event.tags && (
+        <div style={s.tagsBox}>
+            {event.tags.genre && <span style={s.tag}>{event.tags.genre}</span>}
+            {event.tags.targets?.map(t => <span key={t} style={s.tag}>{t}</span>)}
+            {event.tags.campus && <span style={s.tag}>{event.tags.campus}</span>}
+            {event.tags.style && <span style={s.tag}>{event.tags.style}</span>}
+            {event.tags.organizer && <span style={s.tag}>{event.tags.organizer}</span>}
+        </div>
+        )}
         {/* 詳細 */}
         {event.detail && (
           <div style={s.section}>
@@ -152,4 +172,6 @@ const s = {
   attachList: { display:"flex", flexDirection:"column", gap:8 },
   attachItem: { fontSize:13, color:THEME, padding:"8px 12px", background:"#F9EAED", borderRadius:8, textDecoration:"none", fontWeight:600 },
   applyBtn: { display:"block", textAlign:"center", padding:"16px", background:THEME, color:"white", borderRadius:12, fontSize:16, fontWeight:900, textDecoration:"none", boxShadow:`0 4px 16px rgba(136,32,58,0.4)` },
+  tagsBox: { display:"flex", flexWrap:"wrap", gap:6 },
+tag: { background:"#F9EAED", color:"#88203a", fontSize:12, fontWeight:700, padding:"4px 10px", borderRadius:999 },
 };

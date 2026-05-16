@@ -3,7 +3,11 @@ import { db, storage, auth } from "./firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
-const CATEGORIES = ["スポーツ", "勉強会", "文化", "テック", "交流", "その他"];
+const GENRE_TAGS = ["#起業・ビジネス", "#キャリア・就活", "#文化・芸術", "#スポーツ・交流", "#スキルアップ", "#研究・産学連携"];
+const TARGET_TAGS = ["#全学対象", "#新入生向け", "#大学1年生向け", "#大学2年生向け", "#大学3年生向け", "#大学4年生向け", "#学部生向け", "#大学院生向け", "#留学生歓迎"];
+const CAMPUS_TAGS = ["#大岡山キャンパス", "#横浜キャンパス", "#外部", "#オンライン"];
+const STYLE_TAGS = ["#事前登録不要", "#参加無料", "#ランチ持込可", "#謝礼あり"];
+const ORGANIZER_TAGS = ["#サークル", "#一般学生", "#大学講師", "#企業"];
 
 export default function PostEvent({ onPosted }) {
   const [title, setTitle] = useState("");
@@ -12,7 +16,6 @@ export default function PostEvent({ onPosted }) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
-  const [category, setCategory] = useState("スポーツ");
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [attachments, setAttachments] = useState([]);
@@ -21,6 +24,11 @@ export default function PostEvent({ onPosted }) {
   const [loading, setLoading] = useState(false);
   const [deadline, setDeadline] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
+  const [genreTag, setGenreTag] = useState("");
+    const [targetTags, setTargetTags] = useState([]);
+    const [campusTag, setCampusTag] = useState("");
+    const [styleTag, setStyleTag] = useState("");
+    const [organizerTag, setOrganizerTag] = useState("");
 
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -39,10 +47,10 @@ export default function PostEvent({ onPosted }) {
   };
 
   const handleSubmit = async () => {
-    if (!title || !detail || !date || !location || !deadline) {
+    if (!title || !detail || !date || !location || !deadline || !genreTag || !targetTags.length || !campusTag || !organizerTag) {
         alert("必須項目を全て入力してください");
         return;
-        }
+    }
     setLoading(true);
     try {
       let imageUrl = null;
@@ -69,7 +77,13 @@ export default function PostEvent({ onPosted }) {
         location,
         deadline,
         deadlineTime,
-        category,
+        tags: {
+            genre: genreTag,
+            targets: targetTags,
+            campus: campusTag,
+            style: styleTag,
+            organizer: organizerTag,
+        },
         imageUrl,
         attachments: attachmentUrls,
         applyLabel: applyLabel || "参加を申し込む",
@@ -103,22 +117,6 @@ export default function PostEvent({ onPosted }) {
             </div>
           )}
           <input id="imgInput" type="file" accept="image/*" style={{ display:"none" }} onChange={handleImage} />
-        </div>
-      </div>
-
-      {/* カテゴリ */}
-      <div style={s.section}>
-        <label style={s.label}>カテゴリ</label>
-        <div style={s.categoryRow}>
-          {CATEGORIES.map(c => (
-            <button
-              key={c}
-              style={{ ...s.categoryBtn, ...(category === c ? s.categoryBtnActive : {}) }}
-              onClick={() => setCategory(c)}
-            >
-              {c}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -200,7 +198,87 @@ export default function PostEvent({ onPosted }) {
             </div>
             )}
       </div>
+        {/* ① ジャンル（一つ選択） */}
+        <div style={s.section}>
+        <label style={s.label}>① ジャンル <span style={s.required}>必須</span></label>
+        <div style={s.optionGrid}>
+            {GENRE_TAGS.map(t => (
+            <button
+                key={t}
+                style={{ ...s.tagBtn, ...(genreTag === t ? s.tagBtnActive : {}) }}
+                onClick={() => setGenreTag(t)}
+            >
+                {t}
+            </button>
+            ))}
+        </div>
+        </div>
 
+        {/* ② 対象者（複数選択） */}
+        <div style={s.section}>
+        <label style={s.label}>② 対象者 <span style={s.required}>必須</span></label>
+        <div style={s.optionGrid}>
+            {TARGET_TAGS.map(t => (
+            <button
+                key={t}
+                style={{ ...s.tagBtn, ...(targetTags.includes(t) ? s.tagBtnActive : {}) }}
+                onClick={() => setTargetTags(prev =>
+                prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]
+                )}
+            >
+                {t}
+            </button>
+            ))}
+        </div>
+        </div>
+
+        {/* ③ キャンパス（一つ選択） */}
+        <div style={s.section}>
+        <label style={s.label}>③ キャンパス <span style={s.required}>必須</span></label>
+        <div style={s.optionGrid}>
+            {CAMPUS_TAGS.map(t => (
+            <button
+                key={t}
+                style={{ ...s.tagBtn, ...(campusTag === t ? s.tagBtnActive : {}) }}
+                onClick={() => setCampusTag(t)}
+            >
+                {t}
+            </button>
+            ))}
+        </div>
+        </div>
+
+        {/* ④ 参加スタイル（一つ選択） */}
+        <div style={s.section}>
+        <label style={s.label}>④ 参加スタイル（任意）</label>
+        <div style={s.optionGrid}>
+            {STYLE_TAGS.map(t => (
+            <button
+                key={t}
+                style={{ ...s.tagBtn, ...(styleTag === t ? s.tagBtnActive : {}) }}
+                onClick={() => setStyleTag(prev => prev === t ? "" : t)}
+            >
+                {t}
+            </button>
+            ))}
+        </div>
+        </div>
+
+        {/* ⑤ 募集者（一つ選択） */}
+        <div style={s.section}>
+        <label style={s.label}>⑤ 募集者 <span style={s.required}>必須</span></label>
+        <div style={s.optionGrid}>
+            {ORGANIZER_TAGS.map(t => (
+            <button
+                key={t}
+                style={{ ...s.tagBtn, ...(organizerTag === t ? s.tagBtnActive : {}) }}
+                onClick={() => setOrganizerTag(t)}
+            >
+                {t}
+            </button>
+            ))}
+        </div>
+        </div>
       {/* 申し込みボタン名（任意） */}
       <div style={s.section}>
         <label style={s.label}>申し込みボタンの名前（任意）</label>
@@ -242,4 +320,7 @@ const s = {
   attachItem: { fontSize:12, color:"#5A7370", padding:"6px 10px", background:"#F4F6F5", borderRadius:6, display:"flex", alignItems:"center", justifyContent:"space-between" },
   removeBtn: { background:"none", border:"none", color:"#B0BEC5", fontSize:14, cursor:"pointer", padding:"0 4px", fontWeight:700, lineHeight:1 },
   btn: { marginTop:8, padding:14, background:"#C8A84B", color:"#0D1B2A", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
+  optionGrid: { display:"flex", flexWrap:"wrap", gap:8 },
+    tagBtn: { padding:"6px 12px", borderRadius:999, border:`1.5px solid #D0DDD9`, background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
+    tagBtnActive: { background:"#88203a", color:"white", border:"1.5px solid #88203a" },
 };
