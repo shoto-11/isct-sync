@@ -40,7 +40,7 @@ export default function EventList() {
         <span style={s.sectionBadge}>全{events.length}件</span>
       </div>
 
-      {/* ── Horizontal scroll cards ── */}
+      {/* ── Cards ── */}
       {events.length === 0 ? (
         <p style={{ padding:"16px 14px", color:"#5A7370", fontSize:14 }}>まだイベントがありません。最初のイベントを作りましょう！</p>
       ) : (
@@ -50,9 +50,14 @@ export default function EventList() {
             const remaining = event.capacity - (event.participants?.length ?? 0);
             return (
               <div key={event.id} style={s.card}>
-                <div style={{ ...s.cardThumb, background: cs.bg }}>
-                  <span style={{ fontSize:36 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
-                </div>
+                {/* サムネイル：画像があれば表示、なければ絵文字 */}
+                {event.imageUrl ? (
+                  <img src={event.imageUrl} alt={event.title} style={s.cardImg} />
+                ) : (
+                  <div style={{ ...s.cardThumb, background: cs.bg }}>
+                    <span style={{ fontSize:36 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
+                  </div>
+                )}
                 <div style={s.cardBody}>
                   <span style={{ ...s.cardTag, background:cs.bg, color:cs.color }}>{event.category}</span>
                   <div style={s.cardTitle}>{event.title}</div>
@@ -97,9 +102,13 @@ export default function EventList() {
           return (
             <div key={event.id} style={s.rankItem}>
               <div style={{ ...s.rankNum, color: rankColors[i] }}>{i+1}</div>
-              <div style={{ ...s.rankThumb, background: cs.bg }}>
-                <span style={{ fontSize:24 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
-              </div>
+              {event.imageUrl ? (
+                <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
+              ) : (
+                <div style={{ ...s.rankThumb, background: cs.bg }}>
+                  <span style={{ fontSize:24 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
+                </div>
+              )}
               <div style={{ flex:1 }}>
                 <div style={s.rankTitle}>{event.title}</div>
                 <div style={s.rankMeta}>
@@ -112,7 +121,6 @@ export default function EventList() {
           );
         })}
       </div>
-
     </div>
   );
 }
@@ -123,6 +131,7 @@ const s = {
   sectionBadge: { background:"#E6F5F4", color:"#007A6E", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
   cardsScroll: { display:"flex", gap:12, padding:"0 14px 16px", overflowX:"auto", scrollbarWidth:"none" },
   card: { background:"white", borderRadius:12, overflow:"hidden", minWidth:180, maxWidth:180, boxShadow:"0 2px 10px rgba(0,0,0,0.08)", flexShrink:0, cursor:"pointer" },
+  cardImg: { width:"100%", height:110, objectFit:"cover", display:"block" },
   cardThumb: { width:"100%", height:110, display:"flex", alignItems:"center", justifyContent:"center" },
   cardBody: { padding:"10px 12px", display:"flex", flexDirection:"column", gap:4 },
   cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
@@ -141,6 +150,7 @@ const s = {
   rankingList: { padding:"0 14px 16px", display:"flex", flexDirection:"column", gap:8 },
   rankItem: { background:"white", borderRadius:10, padding:"12px 14px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 5px rgba(0,0,0,0.06)", cursor:"pointer" },
   rankNum: { fontFamily:"monospace", fontSize:18, fontWeight:700, width:28, textAlign:"center", flexShrink:0 },
+  rankImg: { width:52, height:52, borderRadius:8, objectFit:"cover", flexShrink:0 },
   rankThumb: { width:52, height:52, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
   rankTitle: { fontSize:13, fontWeight:700, marginBottom:3 },
   rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8 },
