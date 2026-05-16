@@ -102,6 +102,9 @@ export default function PostEvent({ onPosted }) {
 
   return (
     <div style={s.container}>
+        <button style={s.backBtn} onClick={() => window.history.back()}>
+            ← 戻る
+        </button>
       <h2 style={s.heading}>✏️ イベントを作る</h2>
 
       {/* イベント画像（任意） */}
@@ -323,4 +326,5 @@ const s = {
   optionGrid: { display:"flex", flexWrap:"wrap", gap:8 },
     tagBtn: { padding:"6px 12px", borderRadius:999, border:`1.5px solid #D0DDD9`, background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
     tagBtnActive: { background:"#88203a", color:"white", border:"1.5px solid #88203a" },
+    backBtn: { background:"none", border:"none", color:"#88203a", fontSize:14, fontWeight:700, cursor:"pointer", padding:"0 0 12px", alignSelf:"flex-start" },
 };

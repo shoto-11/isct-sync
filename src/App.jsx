@@ -38,6 +38,22 @@ export default function App() {
     });
     return unsubscribe;
   }, []);
+  // 投稿ページの戻るボタン対応
+  useEffect(() => {
+    if (tab === "post") {
+      window.history.pushState({ tab: "post" }, "");
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    const onPopState = (e) => {
+      if (tab === "post") {
+        setTab("home");
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [tab]);
 
   if (loading) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", color:"#111", fontSize:16 }}>
@@ -158,16 +174,18 @@ if (showLogin) return (
       )}
 
       {/* ── FAB ── */}
-      <button data-fab style={s.fab} onClick={() => {
-        if (!user) {
-          sessionStorage.setItem("pendingPost", "1");
-          setShowLogin(true);
-          return;
-        }
-        setTab("post");
-      }}>
-        ＋ イベントを作る
-      </button>
+        {tab !== "post" && tab !== "mypage" && (
+          <button data-fab style={s.fab} onClick={() => {
+            if (!user) {
+              sessionStorage.setItem("pendingPost", "1");
+              setShowLogin(true);
+              return;
+            }
+            setTab("post");
+          }}>
+            ＋ イベントを作る
+          </button>
+        )}
 
     </div>
   );

@@ -2,6 +2,23 @@ import { useState, useEffect } from "react";
 import { db, auth, storage } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+const GENRE_STYLES = {
+  "#起業・ビジネス": { bg:"#E3F2FD" },
+  "#キャリア・就活": { bg:"#E8F5E9" },
+  "#文化・芸術":     { bg:"#FFF3E0" },
+  "#スポーツ・交流": { bg:"#F3E5F5" },
+  "#スキルアップ":   { bg:"#E0F2F1" },
+  "#研究・産学連携": { bg:"#FFF8E7" },
+};
+
+const GENRE_EMOJI = {
+  "#起業・ビジネス": "💼",
+  "#キャリア・就活": "🎓",
+  "#文化・芸術":     "🎨",
+  "#スポーツ・交流": "⚽",
+  "#スキルアップ":   "📚",
+  "#研究・産学連携": "🔬",
+};
 
 const GAKUIN = {
   "理学院": ["数学系", "物理学系", "化学系", "地球惑星科学系"],
@@ -37,29 +54,38 @@ export default function MyPage({ onEventSelect }) {
   const [editGakunen, setEditGakunen] = useState("");
   const [editGender, setEditGender] = useState("");
 
+// 履歴用state
+  const [history, setHistory] = useState([]);
+
   const uid = auth.currentUser?.uid;
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (!uid) return;
-      const snap = await getDoc(doc(db, "users", uid));
-      if (snap.exists()) {
-        const data = snap.data();
-        setProfile(data);
-        setAvatarUrl(data.avatarUrl || null);
-        setEditName(data.displayName || "");
-        setEditGakuin(data.gakuin || "");
-        setEditGakukei(data.gakukei || "");
-        setEditGakunen(data.gakunen || "");
-        setEditGender(data.gender || "");
-      }
-      const q = query(collection(db, "events"), where("createdBy", "==", uid));
-      const eventSnap = await getDocs(q);
-      setMyEvents(eventSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+  const fetchData = async () => {
+    if (!uid) return;
+    const snap = await getDoc(doc(db, "users", uid));
+    if (snap.exists()) {
+      const data = snap.data();
+      setProfile(data);
+      setAvatarUrl(data.avatarUrl || null);
+      setEditName(data.displayName || "");
+      setEditGakuin(data.gakuin || "");
+      setEditGakukei(data.gakukei || "");
+      setEditGakunen(data.gakunen || "");
+      setEditGender(data.gender || "");
+    }
+    const q = query(collection(db, "events"), where("createdBy", "==", uid));
+    const eventSnap = await getDocs(q);
+    setMyEvents(eventSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+    // 履歴を取得
+    const key = `history_${uid}`;
+    const hist = JSON.parse(localStorage.getItem(key) || "[]");
+    setHistory(hist);
+
+    setLoading(false);
+  };
+  fetchData();
+}, []);
 
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
@@ -275,7 +301,31 @@ export default function MyPage({ onEventSelect }) {
           )}
           {activeTab === "liked" && <p style={s.empty}>いいねしたイベントはありません</p>}
           {activeTab === "joined" && <p style={s.empty}>参加予定のイベントはありません</p>}
-          {activeTab === "history" && <p style={s.empty}>閲覧履歴はありません</p>}
+          {activeTab === "history" && (
+                history.length === 0 ? (
+                    <p style={s.empty}>閲覧履歴はありません</p>
+                ) : (
+                    history.map(event => {
+                    const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
+                    const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+                    return (
+                        <div key={event.id} style={s.eventItem} onClick={() => onEventSelect(event)}>
+                        {event.imageUrl ? (
+                            <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
+                        ) : (
+                            <div style={{ ...s.eventThumb, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>
+                            {emoji}
+                            </div>
+                        )}
+                        <div style={s.eventInfo}>
+                            <div style={s.eventTitle}>{event.title}</div>
+                            <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                        </div>
+                        </div>
+                    );
+                    })
+                )
+                )}
         </div>
 
       </div>

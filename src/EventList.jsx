@@ -111,12 +111,19 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   // ブラウザの戻るボタン対応
   const handleSelect = (event) => {
     if (!user) {
-      onLoginRequired(event);
-      return;
+        onLoginRequired(event);
+        return;
     }
+    // 閲覧履歴をlocalStorageに保存
+    const key = `history_${user.uid}`;
+    const prev = JSON.parse(localStorage.getItem(key) || "[]");
+    const filtered = prev.filter(e => e.id !== event.id);
+    const updated = [event, ...filtered].slice(0, 30);
+    localStorage.setItem(key, JSON.stringify(updated));
+
     setSelected(event);
     window.history.pushState({ eventId: event.id }, "");
-  };
+    };
 
   const handleBack = () => {
     setSelected(null);
