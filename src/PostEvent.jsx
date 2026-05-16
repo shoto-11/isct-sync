@@ -132,16 +132,16 @@ export default function PostEvent({ onPosted }) {
       {/* イベント日時（必須） */}
       <div style={s.section}>
         <label style={s.label}>イベント日時 <span style={s.required}>必須</span></label>
-        <input style={s.input} type="date" value={date} onChange={e => setDate(e.target.value)} />
+        <input  style={s.input}  type="date"  value={date}  onChange={e => setDate(e.target.value)}  onFocus={e => e.target.showPicker()}/>
         <div style={s.timeRow}>
           <div style={{ flex:1 }}>
             <label style={{ ...s.label, fontSize:11 }}>開始時刻</label>
-            <input style={s.input} type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+            <input style={s.input} type="time" value={startTime} onChange={e => setStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
           </div>
           <div style={s.timeSeparator}>〜</div>
           <div style={{ flex:1 }}>
             <label style={{ ...s.label, fontSize:11 }}>終了時刻</label>
-            <input style={s.input} type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+            <input style={s.input} type="time" value={endTime} onChange={e => setEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
           </div>
         </div>
       </div>
