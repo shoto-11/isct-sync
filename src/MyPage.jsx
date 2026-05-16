@@ -286,19 +286,29 @@ export default function MyPage({ onEventSelect }) {
         <div style={s.tabContent}>
           {activeTab === "info" && (
             myEvents.length === 0 ? (
-              <p style={s.empty}>まだ募集中のイベントはありません</p>
+                <p style={s.empty}>まだ募集中のイベントはありません</p>
             ) : (
-              myEvents.map(event => (
-                <div key={event.id} style={s.eventItem} onClick={() => onEventSelect(event)}>
-                  {event.imageUrl && <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />}
-                  <div style={s.eventInfo}>
-                    <div style={s.eventTitle}>{event.title}</div>
-                    <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
-                  </div>
-                </div>
-              ))
+                myEvents.map(event => {
+                const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
+                const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+                return (
+                    <div key={event.id} style={s.eventItem} onClick={() => onEventSelect(event)}>
+                    {event.imageUrl ? (
+                        <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
+                    ) : (
+                        <div style={{ ...s.eventThumb, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>
+                        {emoji}
+                        </div>
+                    )}
+                    <div style={s.eventInfo}>
+                        <div style={s.eventTitle}>{event.title}</div>
+                        <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                    </div>
+                    </div>
+                );
+                })
             )
-          )}
+            )}
           {activeTab === "liked" && <p style={s.empty}>いいねしたイベントはありません</p>}
           {activeTab === "joined" && <p style={s.empty}>参加予定のイベントはありません</p>}
           {activeTab === "history" && (
