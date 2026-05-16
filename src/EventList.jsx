@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import EventDetail from "./EventDetail";
 
 const CATEGORY_STYLES = {
   スポーツ: { bg:"#E8F5E9", color:"#2E7D32" },
@@ -15,7 +16,7 @@ const CATEGORY_EMOJI = {
   スポーツ:"⚽", 勉強会:"📚", 文化:"🎨", テック:"💻", 交流:"🎉", その他:"📌"
 };
 
-function EventCard({ event }) {
+function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
   const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
   const remaining = event.capacity - (event.participants?.length ?? 0);
@@ -29,6 +30,7 @@ function EventCard({ event }) {
         boxShadow: hovered ? "0 6px 20px rgba(0,0,0,0.13)" : "0 2px 10px rgba(0,0,0,0.08)",
         transition: "all 0.18s",
       }}
+      onClick={() => onSelect(event)}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -61,6 +63,7 @@ function EventCard({ event }) {
 export default function EventList() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -74,6 +77,11 @@ export default function EventList() {
 
   if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
 
+  // 詳細画面
+  if (selected) return (
+    <EventDetail event={selected} onBack={() => setSelected(null)} />
+  );
+
   return (
     <div>
       {/* ── Section heading ── */}
@@ -83,16 +91,15 @@ export default function EventList() {
         <span style={s.sectionBadge}>全{events.length}件</span>
       </div>
 
-      {/* ── Cards ── */}
       {events.length === 0 ? (
         <p style={{ padding:"16px 14px", color:"#5A7370", fontSize:14 }}>まだイベントがありません。最初のイベントを作りましょう！</p>
       ) : (
         <div style={s.cardsScrollWrapper}>
-            <div style={s.cardsGrid}>
-                {events.map(event => (
-                <EventCard key={event.id} event={event} />
-                ))}
-            </div>
+          <div style={s.cardsGrid}>
+            {events.map(event => (
+              <EventCard key={event.id} event={event} onSelect={setSelected} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -123,7 +130,7 @@ export default function EventList() {
           const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
           const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
           return (
-            <div key={event.id} style={s.rankItem}>
+            <div key={event.id} style={s.rankItem} onClick={() => setSelected(event)}>
               <div style={{ ...s.rankNum, color: rankColors[i] }}>{i+1}</div>
               {event.imageUrl ? (
                 <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
@@ -152,33 +159,16 @@ const s = {
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
   sectionTitle: { fontSize:15, fontWeight:700 },
   sectionBadge: { background:"#E6F5F4", color:"#007A6E", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
-  cardsScrollWrapper: {
-  overflowX: "auto",
-  WebkitOverflowScrolling: "touch",
-  scrollbarWidth: "none",
-  padding: "0 14px 16px",
-  },cardsGrid: {
-  display: "flex",
-  flexDirection: "row",
-  gap: 12,
-  width: "max-content",
-},
-card: {
-  background: "white",
-  borderRadius: 12,
-  overflow: "hidden",
-  cursor: "pointer",
-  width: window.innerWidth > 768 ? 280 : 160,
-  flexShrink: 0,
-},
-cardImg: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, objectFit:"cover", display:"block" },
-cardThumb: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, display:"flex", alignItems:"center", justifyContent:"center" },
-cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
+  cardsScrollWrapper: { overflowX:"auto", WebkitOverflowScrolling:"touch", scrollbarWidth:"none", padding:"0 14px 16px" },
+  cardsGrid: { display:"flex", flexDirection:"row", gap:12, width:"max-content" },
+  card: { background:"white", borderRadius:12, overflow:"hidden", cursor:"pointer", width: window.innerWidth > 768 ? 280 : 160, flexShrink:0 },
+  cardImg: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, objectFit:"cover", display:"block" },
+  cardThumb: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, display:"flex", alignItems:"center", justifyContent:"center" },
+  cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
   cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
   cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B" },
   cardMeta: { display:"flex", justifyContent:"space-between", alignItems:"center" },
   cardDate: { fontFamily:"monospace", fontSize:11, color:"#007A6E", fontWeight:700 },
-
   ctaBanner: { margin:"4px 14px 16px", background:"linear-gradient(135deg,#007A6E,#00A896)", borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 4px 16px rgba(0,122,110,0.25)" },
   ctaText: { color:"white", fontSize:15, fontWeight:700 },
   ctaSub: { color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:2 },
