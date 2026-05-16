@@ -28,7 +28,12 @@ export default function PostEvent({ onPosted }) {
   };
 
   const handleAttachments = (e) => {
-    setAttachments(Array.from(e.target.files));
+    const newFiles = Array.from(e.target.files);
+    setAttachments(prev => [...prev, ...newFiles]);
+  };
+
+  const removeAttachment = (index) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
@@ -158,12 +163,20 @@ export default function PostEvent({ onPosted }) {
           <input id="attachInput" type="file" multiple style={{ display:"none" }} onChange={handleAttachments} />
         </div>
         {attachments.length > 0 && (
-          <div style={s.attachList}>
-            {attachments.map((f, i) => (
-              <div key={i} style={s.attachItem}>📄 {f.name}</div>
-            ))}
-          </div>
-        )}
+            <div style={s.attachList}>
+                {attachments.map((f, i) => (
+                <div key={i} style={s.attachItem}>
+                    <span>📄 {f.name}</span>
+                    <button
+                    style={s.removeBtn}
+                    onClick={() => removeAttachment(i)}
+                    >
+                    ✕
+                    </button>
+                </div>
+                ))}
+            </div>
+            )}
       </div>
 
       {/* 申し込みボタン名（任意） */}
@@ -204,6 +217,7 @@ const s = {
   timeSeparator: { fontSize:16, color:"#5A7370", paddingBottom:10, flexShrink:0 },
   attachArea: { width:"100%", padding:"14px", borderRadius:8, border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:"#F4F6F5" },
   attachList: { marginTop:8, display:"flex", flexDirection:"column", gap:4 },
-  attachItem: { fontSize:12, color:"#5A7370", padding:"4px 8px", background:"#F4F6F5", borderRadius:4 },
+  attachItem: { fontSize:12, color:"#5A7370", padding:"6px 10px", background:"#F4F6F5", borderRadius:6, display:"flex", alignItems:"center", justifyContent:"space-between" },
+  removeBtn: { background:"none", border:"none", color:"#B0BEC5", fontSize:14, cursor:"pointer", padding:"0 4px", fontWeight:700, lineHeight:1 },
   btn: { marginTop:8, padding:14, background:"#C8A84B", color:"#0D1B2A", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
 };
