@@ -2,6 +2,19 @@ import { useEffect, useState } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 
+const CATEGORY_STYLES = {
+  スポーツ: { bg:"#E8F5E9", color:"#2E7D32" },
+  勉強会:   { bg:"#E3F2FD", color:"#1565C0" },
+  文化:     { bg:"#FFF3E0", color:"#E65100" },
+  テック:   { bg:"#E0F2F1", color:"#00695C" },
+  交流:     { bg:"#F3E5F5", color:"#6A1B9A" },
+  その他:   { bg:"#F5F5F5", color:"#616161" },
+};
+
+const CATEGORY_EMOJI = {
+  スポーツ:"⚽", 勉強会:"📚", 文化:"🎨", テック:"💻", 交流:"🎉", その他:"📌"
+};
+
 export default function EventList() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,78 +23,126 @@ export default function EventList() {
     const fetch = async () => {
       const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setEvents(list);
+      setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setLoading(false);
     };
     fetch();
   }, []);
 
-  if (loading) return <p style={{ padding: 24 }}>読み込み中...</p>;
-
-  if (events.length === 0) return (
-    <p style={{ padding: 24, color: "#5A7370" }}>まだイベントがありません</p>
-  );
+  if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
 
   return (
-    <div style={styles.list}>
-      {events.map(event => (
-        <div key={event.id} style={styles.card}>
-          <div style={styles.tag}>{event.category}</div>
-          <div style={styles.title}>{event.title}</div>
-          <div style={styles.meta}>
-            <span>📅 {event.date}</span>
-            <span>📍 {event.location}</span>
-          </div>
-          <div style={styles.capacity}>
-            残り {event.capacity - (event.participants?.length ?? 0)} 枠
-          </div>
+    <div>
+      {/* ── Section heading ── */}
+      <div style={s.sectionHeading}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#007A6E" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <span style={s.sectionTitle}>募集中のイベント</span>
+        <span style={s.sectionBadge}>全{events.length}件</span>
+      </div>
+
+      {/* ── Horizontal scroll cards ── */}
+      {events.length === 0 ? (
+        <p style={{ padding:"16px 14px", color:"#5A7370", fontSize:14 }}>まだイベントがありません。最初のイベントを作りましょう！</p>
+      ) : (
+        <div style={s.cardsScroll}>
+          {events.map(event => {
+            const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
+            const remaining = event.capacity - (event.participants?.length ?? 0);
+            return (
+              <div key={event.id} style={s.card}>
+                <div style={{ ...s.cardThumb, background: cs.bg }}>
+                  <span style={{ fontSize:36 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
+                </div>
+                <div style={s.cardBody}>
+                  <span style={{ ...s.cardTag, background:cs.bg, color:cs.color }}>{event.category}</span>
+                  <div style={s.cardTitle}>{event.title}</div>
+                  <div style={s.cardMeta}>
+                    <span style={s.cardDate}>{event.date}</span>
+                    <span style={{ fontSize:11, color:"#5A7370" }}>残{remaining}枠</span>
+                  </div>
+                  <div style={{ fontSize:11, color:"#5A7370", marginTop:2 }}>📍 {event.location}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
-      ))}
+      )}
+
+      {/* ── CTA banner ── */}
+      <div style={s.ctaBanner}>
+        <div>
+          <div style={s.ctaText}>現在募集中の春イベントを見る</div>
+          <div style={s.ctaSub}>全{events.length}件のイベントが掲載中</div>
+        </div>
+        <div style={s.ctaArrow}>›</div>
+      </div>
+
+      {/* ── Survey banner ── */}
+      <div style={s.surveyBanner}>
+        <div style={s.surveyLabel}>在学生限定</div>
+        <div style={s.surveyTitle}>2026春イベント<br />リクエスト＆アンケート実施中！！</div>
+        <div style={s.surveyDeadline}>📅 5/22 まで</div>
+      </div>
+
+      {/* ── Ranking ── */}
+      <div style={s.rankingHeader}>
+        <span style={{ fontSize:15, fontWeight:700 }}>⭐ 人気ランキング</span>
+        <span style={{ fontSize:12, color:"#007A6E", fontWeight:600 }}>すべて見る ›</span>
+      </div>
+
+      <div style={s.rankingList}>
+        {events.slice(0, 4).map((event, i) => {
+          const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
+          const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
+          return (
+            <div key={event.id} style={s.rankItem}>
+              <div style={{ ...s.rankNum, color: rankColors[i] }}>{i+1}</div>
+              <div style={{ ...s.rankThumb, background: cs.bg }}>
+                <span style={{ fontSize:24 }}>{CATEGORY_EMOJI[event.category] || "📌"}</span>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={s.rankTitle}>{event.title}</div>
+                <div style={s.rankMeta}>
+                  <span>📅 {event.date}</span>
+                  <span>📍 {event.location}</span>
+                </div>
+              </div>
+              <div style={s.rankParticipants}>{event.participants?.length ?? 0}人</div>
+            </div>
+          );
+        })}
+      </div>
+
     </div>
   );
 }
 
-const styles = {
-  list: {
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-    padding: "0 16px 16px",
-  },
-  card: {
-    background: "white",
-    borderRadius: 12,
-    padding: "14px 16px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.07)",
-    display: "flex",
-    flexDirection: "column",
-    gap: 6,
-  },
-  tag: {
-    display: "inline-block",
-    background: "#E6F5F4",
-    color: "#007A6E",
-    fontSize: 11,
-    fontWeight: 700,
-    padding: "2px 8px",
-    borderRadius: 999,
-    width: "fit-content",
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: 700,
-    color: "#1A2E2B",
-  },
-  meta: {
-    fontSize: 12,
-    color: "#5A7370",
-    display: "flex",
-    gap: 12,
-  },
-  capacity: {
-    fontSize: 12,
-    fontWeight: 700,
-    color: "#007A6E",
-  },
+const s = {
+  sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
+  sectionTitle: { fontSize:15, fontWeight:700 },
+  sectionBadge: { background:"#E6F5F4", color:"#007A6E", fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
+  cardsScroll: { display:"flex", gap:12, padding:"0 14px 16px", overflowX:"auto", scrollbarWidth:"none" },
+  card: { background:"white", borderRadius:12, overflow:"hidden", minWidth:180, maxWidth:180, boxShadow:"0 2px 10px rgba(0,0,0,0.08)", flexShrink:0, cursor:"pointer" },
+  cardThumb: { width:"100%", height:110, display:"flex", alignItems:"center", justifyContent:"center" },
+  cardBody: { padding:"10px 12px", display:"flex", flexDirection:"column", gap:4 },
+  cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
+  cardTitle: { fontSize:13, fontWeight:700, lineHeight:1.3 },
+  cardMeta: { display:"flex", justifyContent:"space-between", alignItems:"center" },
+  cardDate: { fontFamily:"monospace", fontSize:10, color:"#007A6E", fontWeight:700 },
+  ctaBanner: { margin:"4px 14px 16px", background:"linear-gradient(135deg,#007A6E,#00A896)", borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:"0 4px 16px rgba(0,122,110,0.25)" },
+  ctaText: { color:"white", fontSize:15, fontWeight:700 },
+  ctaSub: { color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:2 },
+  ctaArrow: { background:"#C8A84B", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#0D1B2A", fontSize:18, fontWeight:900 },
+  surveyBanner: { margin:"0 14px 20px", background:"linear-gradient(120deg,#FFF8E7,#FFFDE7)", border:"1.5px solid #F0D98A", borderRadius:12, padding:"14px 16px" },
+  surveyLabel: { fontSize:10, fontWeight:700, color:"#C8A84B", letterSpacing:"0.1em", marginBottom:4 },
+  surveyTitle: { fontSize:14, fontWeight:900, lineHeight:1.4 },
+  surveyDeadline: { display:"inline-flex", alignItems:"center", gap:4, background:"#C8A84B", color:"#0D1B2A", fontFamily:"monospace", fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:999, marginTop:8 },
+  rankingHeader: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 14px" },
+  rankingList: { padding:"0 14px 16px", display:"flex", flexDirection:"column", gap:8 },
+  rankItem: { background:"white", borderRadius:10, padding:"12px 14px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 5px rgba(0,0,0,0.06)", cursor:"pointer" },
+  rankNum: { fontFamily:"monospace", fontSize:18, fontWeight:700, width:28, textAlign:"center", flexShrink:0 },
+  rankThumb: { width:52, height:52, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
+  rankTitle: { fontSize:13, fontWeight:700, marginBottom:3 },
+  rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8 },
+  rankParticipants: { fontSize:11, fontWeight:700, color:"#007A6E" },
 };
