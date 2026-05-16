@@ -75,6 +75,31 @@ export default function EventList() {
     fetch();
   }, []);
 
+  // ブラウザの戻るボタン対応
+  const handleSelect = (event) => {
+    setSelected(event);
+    window.history.pushState({ eventId: event.id }, "");
+  };
+
+  const handleBack = () => {
+    setSelected(null);
+    window.history.back();
+  };
+
+  useEffect(() => {
+    const onPopState = () => {
+      setSelected(null);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
+
+  if (selected) return (
+    <EventDetail event={selected} onBack={handleBack} />
+  );
+
   if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
 
   // 詳細画面
@@ -97,7 +122,7 @@ export default function EventList() {
         <div style={s.cardsScrollWrapper}>
           <div style={s.cardsGrid}>
             {events.map(event => (
-              <EventCard key={event.id} event={event} onSelect={setSelected} />
+              <EventCard key={event.id} event={event} onSelect={handleSelect} />
             ))}
           </div>
         </div>
@@ -130,7 +155,7 @@ export default function EventList() {
           const cs = CATEGORY_STYLES[event.category] || CATEGORY_STYLES["その他"];
           const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
           return (
-            <div key={event.id} style={s.rankItem} onClick={() => setSelected(event)}>
+            <div key={event.id} style={s.rankItem} onClick={() => handleSelect(event)}>
               <div style={{ ...s.rankNum, color: rankColors[i] }}>{i+1}</div>
               {event.imageUrl ? (
                 <img src={event.imageUrl} alt={event.title} style={s.rankImg} />

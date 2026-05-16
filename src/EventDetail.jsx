@@ -110,8 +110,8 @@ export default function EventDetail({ event, onBack }) {
 const s = {
   container: { background:"#F4F6F5", minHeight:"100vh" },
   backBtn: { display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#5A7370", fontSize:14, fontWeight:700, cursor:"pointer", padding:"16px", },
-  heroImg: { width:"100%", height:260, objectFit:"cover", display:"block" },
-  heroPlaceholder: { width:"100%", height:260, display:"flex", alignItems:"center", justifyContent:"center" },
+  heroImg: { width:"100%", height:"auto", display:"block", maxWidth:720, margin:"0 auto" },
+  heroPlaceholder: { width:"100%", maxWidth:720, margin:"0 auto", aspectRatio:"16/9", display:"flex", alignItems:"center", justifyContent:"center" },
   body: { padding:"20px 16px", maxWidth:720, margin:"0 auto", display:"flex", flexDirection:"column", gap:16 },
   tag: { display:"inline-block", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999, width:"fit-content" },
   title: { fontSize:24, fontWeight:900, color:"#111", lineHeight:1.3, margin:0 },
