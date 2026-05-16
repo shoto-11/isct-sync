@@ -77,6 +77,7 @@ export default function PostEvent({ onPosted }) {
         participants: [],
         createdBy: auth.currentUser.uid,
         createdAt: serverTimestamp(),
+        organizerName: auth.currentUser.displayName || auth.currentUser.email,
       });
       onPosted();
     } catch (err) {

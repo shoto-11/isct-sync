@@ -44,18 +44,26 @@ function EventCard({ event, onSelect }) {
       <div style={s.cardBody}>
         <span style={{ ...s.cardTag, background:cs.bg, color:cs.color }}>{event.category}</span>
         <div style={{
-          ...s.cardTitle,
-          textDecoration: hovered ? "underline" : "none",
-          textDecorationColor: "#007A6E",
+            ...s.cardTitle,
+            textDecoration: hovered ? "underline" : "none",
+            textDecorationColor: "#007A6E",
         }}>
-          {event.title}
+            {event.title}
         </div>
-        <div style={s.cardMeta}>
-          <span style={s.cardDate}>{event.date}{event.startTime ? ` ${event.startTime}` : ""}</span>
-          {event.capacity && <span style={{ fontSize:11, color:"#5A7370" }}>残{remaining}枠</span>}
+        <div style={s.cardDate}>{event.date}{event.startTime ? ` ${event.startTime}` : ""}</div>
+        <div style={s.cardFooter}>
+            <span style={s.cardOrganizer}>
+            {(event.organizerName || "").length > 12
+                ? (event.organizerName || "").slice(0, 12) + "..."
+                : (event.organizerName || "募集者不明")}
+            </span>
+            <span style={s.cardLocation}>
+            {(event.location || "").length > 5
+                ? event.location.slice(0, 5) + "..."
+                : event.location}
+            </span>
         </div>
-        <div style={{ fontSize:11, color:"#5A7370", marginTop:2 }}>📍 {event.location}</div>
-      </div>
+        </div>
     </div>
   );
 }
@@ -227,4 +235,7 @@ const s = {
   rankTitle: { fontSize:13, fontWeight:700, marginBottom:3 },
   rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8 },
   rankParticipants: { fontSize:11, fontWeight:700, color:"#007A6E" },
+  cardFooter: { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:2 },
+cardOrganizer: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap" },
+cardLocation: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap", textAlign:"right" },
 };
