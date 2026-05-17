@@ -10,8 +10,36 @@ import ProfileSetup from "./ProfileSetup";
 import logo from "./assets/logo.png";
 import MyPage from "./MyPage";
 import Contact from "./Contact";
+import { Routes, Route, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import EventDetail from "./EventDetail";
+
+function EventPageWrapper({ user }) {
+  const { eventId } = useParams();
+  const navigate = useNavigate();
+  const [event, setEvent] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const snap = await getDoc(doc(db, "events", eventId));
+      if (snap.exists()) {
+        setEvent({ id: snap.id, ...snap.data() });
+      }
+      setLoading(false);
+    };
+    fetch();
+  }, [eventId]);
+
+  if (loading) return <p style={{ padding:24 }}>読み込み中...</p>;
+  if (!event) return <p style={{ padding:24 }}>イベントが見つかりません</p>;
+
+  return <EventDetail event={event} onBack={() => navigate(-1)} />;
+}
+
 
 export default function App() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [profileDone, setProfileDone] = useState(false);
@@ -103,14 +131,14 @@ export default function App() {
             src={logo}
             alt="SYNC"
             style={{ ...s.logoImg, cursor:"pointer" }}
-            onClick={() => { setTab("home"); setReload(r => r + 1); }}
+            onClick={() => navigate('/')}
           />
           <div style={s.headerIcons}>
             <button style={s.iconBtn}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <span>さがす</span>
             </button>
-            <button style={s.iconBtn} onClick={() => setTab("mypage")}>
+            <button style={s.iconBtn} onClick={() => navigate('/mypage')}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               <span>マイページ</span>
             </button>
@@ -136,47 +164,60 @@ export default function App() {
             <Contact onBack={() => setShowContact(false)} />
           </div>
         )}
-        {/* ── Content ── */}
-      {tab === "post" ? (
-        user ? (
-          <PostEvent onPosted={() => { setReload(r => r+1); setTab("home"); }} />
-        ) : (
-          <div style={s.loginPrompt}>
-            <p style={s.loginPromptText}>イベントを投稿するにはログインが必要です</p>
-            <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
-          </div>
-        )
-      ) : tab === "mypage" ? (
-        user ? (
-          <MyPage onEventSelect={(event) => {
-            setPendingEvent(event);
-            setTab("home");
-          }} />
-        ) : (
-          <div style={s.loginPrompt}>
-            <p style={s.loginPromptText}>マイページを見るにはログインが必要です</p>
-            <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
-          </div>
-        )
-      ) : (
-        <EventList
-          key={reload}
-          user={user}
-          pendingEvent={pendingEvent}
-          onPendingEventClear={() => setPendingEvent(null)}
-          onLoginRequired={(event) => {
-            setPendingEvent(event);
-            setShowLogin(true);
-          }}
-        />
-      )}
+                {/* ── Content ── */}
+        <Routes>
+          <Route path="/" element={
+            <EventList
+              user={user}
+              pendingEvent={pendingEvent}
+              onPendingEventClear={() => setPendingEvent(null)}
+              onLoginRequired={(event) => {
+                setPendingEvent(event);
+                setShowLogin(true);
+              }}
+            />
+          } />
+          <Route path="/events/:eventId" element={
+            user ? <EventPageWrapper user={user} /> : (
+              <div style={s.loginPrompt}>
+                <p style={s.loginPromptText}>イベントの詳細を見るにはログインが必要です</p>
+                <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
+              </div>
+            )
+          } />
+          <Route path="/post" element={
+            user ? (
+              <PostEvent onPosted={() => { navigate('/'); }} />
+            ) : (
+              <div style={s.loginPrompt}>
+                <p style={s.loginPromptText}>イベントを投稿するにはログインが必要です</p>
+                <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
+              </div>
+            )
+          } />
+          <Route path="/mypage" element={
+            user ? (
+              <MyPage onEventSelect={(event) => navigate(`/events/${event.id}`)} />
+            ) : (
+              <div style={s.loginPrompt}>
+                <p style={s.loginPromptText}>マイページを見るにはログインが必要です</p>
+                <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
+              </div>
+            )
+          } />
+        </Routes>
 
       {/* ── FAB ── */}
-      {tab !== "post" && tab !== "mypage" && (
-        <button data-fab style={s.fab} onClick={() => setTab("post")}>
+      <button data-fab style={s.fab} onClick={() => {
+          if (!user) {
+            sessionStorage.setItem("pendingPost", "1");
+            setShowLogin(true);
+            return;
+          }
+          navigate('/post');
+        }}>
           ＋ イベントを作る
         </button>
-      )}
       {/* ── Footer ── */}
       {tab !== "post" && (
         <footer style={s.footer}>
@@ -217,17 +258,15 @@ export default function App() {
 
           {/* メニュー項目 */}
           <div style={s.menuItems}>
-            <button style={s.menuItem} onClick={() => { setTab("home"); setMenuOpen(false); }}>
+            <button style={s.menuItem} onClick={() => { navigate('/'); setMenuOpen(false); }}>
               <span style={s.menuItemLeft}>🏠 ホーム</span>
               <span style={s.menuChevron}>›</span>
             </button>
-            <div style={s.menuDivider} />
-            <button style={s.menuItem} onClick={() => { setTab("mypage"); setMenuOpen(false); }}>
+            <button style={s.menuItem} onClick={() => { navigate('/mypage'); setMenuOpen(false); }}>
               <span style={s.menuItemLeft}>👤 マイページ</span>
               <span style={s.menuChevron}>›</span>
             </button>
-            <div style={s.menuDivider} />
-            <button style={s.menuItem} onClick={() => { setTab("post"); setMenuOpen(false); }}>
+            <button style={s.menuItem} onClick={() => { navigate('/post'); setMenuOpen(false); }}>
               <span style={s.menuItemLeft}>✏️ イベントを作る</span>
               <span style={s.menuChevron}>›</span>
             </button>

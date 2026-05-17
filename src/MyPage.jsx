@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { db, auth, storage } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 const GENRE_STYLES = {
   "#起業・ビジネス": { bg:"#E3F2FD" },
   "#キャリア・就活": { bg:"#E8F5E9" },
@@ -53,6 +54,8 @@ export default function MyPage({ onEventSelect }) {
   const [editGakukei, setEditGakukei] = useState("");
   const [editGakunen, setEditGakunen] = useState("");
   const [editGender, setEditGender] = useState("");
+  const [likedEvents, setLikedEvents] = useState([]);
+const [joinedEvents, setJoinedEvents] = useState([]);
 
 // 履歴用state
   const [history, setHistory] = useState([]);
@@ -81,7 +84,24 @@ export default function MyPage({ onEventSelect }) {
     const key = `history_${uid}`;
     const hist = JSON.parse(localStorage.getItem(key) || "[]");
     setHistory(hist);
+    // いいね・参加予定のイベント取得
+    const statsSnap = await getDocs(collection(db, "eventStats"));
+    const eventsSnap = await getDocs(collection(db, "events"));
+    const allEvents = eventsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
+    const liked = [];
+    const joined = [];
+
+    statsSnap.docs.forEach(d => {
+    const data = d.data();
+    const event = allEvents.find(e => e.id === data.eventId);
+    if (!event) return;
+    if ((data.likes || []).some(l => l.uid === uid)) liked.push(event);
+    if ((data.joins || []).some(j => j.uid === uid)) joined.push(event);
+    });
+
+    setLikedEvents(liked);
+    setJoinedEvents(joined);
     setLoading(false);
   };
   fetchData();
@@ -309,8 +329,57 @@ export default function MyPage({ onEventSelect }) {
                 })
             )
             )}
-          {activeTab === "liked" && <p style={s.empty}>いいねしたイベントはありません</p>}
-          {activeTab === "joined" && <p style={s.empty}>参加予定のイベントはありません</p>}
+            {activeTab === "liked" && (
+                likedEvents.length === 0 ? (
+                    <p style={s.empty}>いいねしたイベントはありません</p>
+                ) : (
+                    likedEvents.map(event => {
+                    const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
+                    const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+                    return (
+                        <div key={event.id} style={s.eventItem} onClick={() => onEventSelect(event)}>
+                        {event.imageUrl ? (
+                            <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
+                        ) : (
+                            <div style={{ ...s.eventThumb, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>
+                            {emoji}
+                            </div>
+                        )}
+                        <div style={s.eventInfo}>
+                            <div style={s.eventTitle}>{event.title}</div>
+                            <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                        </div>
+                        </div>
+                    );
+                    })
+                )
+                )}
+
+                {activeTab === "joined" && (
+                joinedEvents.length === 0 ? (
+                    <p style={s.empty}>参加予定のイベントはありません</p>
+                ) : (
+                    joinedEvents.map(event => {
+                    const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
+                    const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+                    return (
+                        <div key={event.id} style={s.eventItem} onClick={() => onEventSelect(event)}>
+                        {event.imageUrl ? (
+                            <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
+                        ) : (
+                            <div style={{ ...s.eventThumb, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>
+                            {emoji}
+                            </div>
+                        )}
+                        <div style={s.eventInfo}>
+                            <div style={s.eventTitle}>{event.title}</div>
+                            <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                        </div>
+                        </div>
+                    );
+                    })
+                )
+                )}
           {activeTab === "history" && (
                 history.length === 0 ? (
                     <p style={s.empty}>閲覧履歴はありません</p>

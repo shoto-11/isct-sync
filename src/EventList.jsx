@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, orderBy, query, getDoc, doc } from "firebase/firestore";
 import EventDetail from "./EventDetail";
+import { useNavigate } from 'react-router-dom';
 
 const GENRE_STYLES = {
   "#起業・ビジネス": { bg:"#E3F2FD", color:"#1565C0" },
@@ -202,6 +203,7 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   const [likeRanking, setLikeRanking] = useState([]);
   const [joinRanking, setJoinRanking] = useState([]);
   const [rankTab, setRankTab] = useState("view");
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetch = async () => {
@@ -273,18 +275,17 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   }, [user, pendingEvent]);
 
   const handleSelect = (event) => {
-    if (!user) {
-      setSelected(event);
-      return;
-    }
-    const key = `history_${user.uid}`;
-    const prev = JSON.parse(localStorage.getItem(key) || "[]");
-    const filtered = prev.filter(e => e.id !== event.id);
-    const updated = [event, ...filtered].slice(0, 30);
-    localStorage.setItem(key, JSON.stringify(updated));
-    setSelected(event);
-    window.history.pushState({ eventId: event.id }, "");
-  };
+        if (!user) {
+            setSelected(event);
+            return;
+        }
+        const key = `history_${user.uid}`;
+        const prev = JSON.parse(localStorage.getItem(key) || "[]");
+        const filtered = prev.filter(e => e.id !== event.id);
+        const updated = [event, ...filtered].slice(0, 30);
+        localStorage.setItem(key, JSON.stringify(updated));
+        navigate(`/events/${event.id}`);
+        };
 
   const handleBack = () => {
     setSelected(null);
@@ -301,14 +302,10 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
 
   if (selected && !user) return (
     <div style={s2.loginPrompt}>
-      <p style={s2.loginPromptText}>イベントの詳細を見るにはログインが必要です</p>
-      <button style={s2.loginPromptBtn} onClick={() => onLoginRequired(selected)}>ログイン</button>
+        <p style={s2.loginPromptText}>イベントの詳細を見るにはログインが必要です</p>
+        <button style={s2.loginPromptBtn} onClick={() => onLoginRequired(selected)}>ログイン</button>
     </div>
-  );
-
-  if (selected) return (
-    <EventDetail event={selected} onBack={handleBack} />
-  );
+    );
 
   const currentRanking = rankTab === "view" ? viewRanking : rankTab === "like" ? likeRanking : joinRanking;
   const rankLabel = rankTab === "view" ? "閲覧" : rankTab === "like" ? "いいね" : "参加予定";

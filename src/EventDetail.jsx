@@ -195,7 +195,7 @@ const handleJoin = async () => {
     <div style={s.container}>
       <div style={{ maxWidth:720, margin:"0 auto", width:"100%", padding:"8px 16px" }}>
         <button style={s.backBtn} onClick={() => setEditMode(false)}>← 編集をキャンセル</button>
-        </div>
+      </div>
       <div style={s.editBox}>
         <h2 style={s.editTitle}>イベントを編集</h2>
 
