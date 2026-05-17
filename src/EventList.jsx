@@ -100,19 +100,92 @@ function RankItem({ event, rank, count, label, onSelect }) {
 }
 
 function Section({ title, badge, events, onSelect }) {
+  const [showLeft, setShowLeft] = useState(false);
+  const [showRight, setShowRight] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+  const [dragged, setDragged] = useState(false);
+  const ref = { current: null };
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    setShowRight(el.scrollWidth > el.clientWidth + 10);
+  });
+
   if (events.length === 0) return null;
+
+  const scroll = (dir) => {
+    const el = ref.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -300 : 300, behavior: "smooth" });
+  };
+
+  const handleScroll = (e) => {
+    const el = e.target;
+    setShowLeft(el.scrollLeft > 10);
+    setShowRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  };
+
+  const handleMouseDown = (e) => {
+  const el = ref.current;
+  if (!el) return;
+  setIsDragging(true);
+  setDragged(false);
+  setStartX(e.pageX - el.offsetLeft);
+  setScrollLeft(el.scrollLeft);
+  el.style.cursor = "grabbing";
+};
+
+  const handleMouseMove = (e) => {
+  if (!isDragging) return;
+  const el = ref.current;
+  if (!el) return;
+  e.preventDefault();
+  const x = e.pageX - el.offsetLeft;
+  const walk = (x - startX) * 1.5;
+  if (Math.abs(walk) > 5) setDragged(true);
+  el.scrollLeft = scrollLeft - walk;
+};
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    if (ref.current) ref.current.style.cursor = "grab";
+  };
+
   return (
     <>
       <div style={s.sectionHeading}>
         <span style={s.sectionTitle}>{title}</span>
         <span style={s.sectionBadge}>{badge || `全${events.length}件`}</span>
       </div>
-      <div style={s.cardsScrollWrapper}>
-        <div style={s.cardsGrid}>
-          {events.map(event => (
-            <EventCard key={event.id} event={event} onSelect={onSelect} />
-          ))}
+      <div style={{ position:"relative" }}>
+        {showLeft && (
+          <button style={{ ...s.scrollArrow, left:0 }} onClick={() => scroll("left")}>‹</button>
+        )}
+        {showLeft && <div style={{ ...s.fade, left:0, background:"linear-gradient(to right, white, transparent)" }} />}
+
+        <div
+          ref={el => ref.current = el}
+          style={{ ...s.cardsScrollWrapper, cursor:"grab", userSelect:"none" }}
+          onScroll={handleScroll}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+        >
+          <div style={s.cardsGrid}>
+            {events.map(event => (
+              <EventCard key={event.id} event={event} onSelect={dragged ? () => {} : onSelect} />
+            ))}
+          </div>
         </div>
+
+        {showRight && <div style={{ ...s.fade, right:0, background:"linear-gradient(to left, white, transparent)" }} />}
+        {showRight && (
+          <button style={{ ...s.scrollArrow, right:0 }} onClick={() => scroll("right")}>›</button>
+        )}
       </div>
     </>
   );
@@ -347,10 +420,13 @@ const s = {
   rankTitle: { fontSize:13, fontWeight:700, marginBottom:3 },
   rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8 },
   rankParticipants: { fontSize:11, fontWeight:700, color:THEME },
+  scrollArrow: { position:"absolute", top:"50%", transform:"translateY(-50%)", zIndex:10, background:"white", border:"none", borderRadius:"50%", width:36, height:36, fontSize:24, fontWeight:900, cursor:"pointer", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#88203a" },
+fade: { position:"absolute", top:0, bottom:16, width:60, zIndex:9, pointerEvents:"none" },
 };
 
 const s2 = {
   loginPrompt: { display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", gap:16, minHeight:"60vh" },
   loginPromptText: { fontSize:15, color:"#5A7370", fontWeight:600 },
   loginPromptBtn: { padding:"12px 32px", background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
+  
 };
