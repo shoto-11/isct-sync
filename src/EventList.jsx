@@ -109,21 +109,19 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   }, [user, pendingEvent]);
 
   // ブラウザの戻るボタン対応
-  const handleSelect = (event) => {
-    if (!user) {
-        onLoginRequired(event);
-        return;
-    }
-    // 閲覧履歴をlocalStorageに保存
-    const key = `history_${user.uid}`;
-    const prev = JSON.parse(localStorage.getItem(key) || "[]");
-    const filtered = prev.filter(e => e.id !== event.id);
-    const updated = [event, ...filtered].slice(0, 30);
-    localStorage.setItem(key, JSON.stringify(updated));
-
+const handleSelect = (event) => {
+  if (!user) {
     setSelected(event);
-    window.history.pushState({ eventId: event.id }, "");
-    };
+    return;
+  }
+  const key = `history_${user.uid}`;
+  const prev = JSON.parse(localStorage.getItem(key) || "[]");
+  const filtered = prev.filter(e => e.id !== event.id);
+  const updated = [event, ...filtered].slice(0, 30);
+  localStorage.setItem(key, JSON.stringify(updated));
+  setSelected(event);
+  window.history.pushState({ eventId: event.id }, "");
+};
 
   const handleBack = () => {
     setSelected(null);
@@ -138,9 +136,16 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
 
   if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
 
-  if (selected) return (
-    <EventDetail event={selected} onBack={handleBack} />
-  );
+  if (selected && !user) return (
+  <div style={s2.loginPrompt}>
+    <p style={s2.loginPromptText}>イベントの詳細を見るにはログインが必要です</p>
+    <button style={s2.loginPromptBtn} onClick={() => onLoginRequired(selected)}>ログイン</button>
+  </div>
+);
+
+if (selected) return (
+  <EventDetail event={selected} onBack={handleBack} />
+);
 
   return (
     <div>
@@ -246,4 +251,9 @@ const s = {
   rankTitle: { fontSize:13, fontWeight:700, marginBottom:3 },
   rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8 },
   rankParticipants: { fontSize:11, fontWeight:700, color:THEME },
+};
+const s2 = {
+  loginPrompt: { display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", gap:16, minHeight:"60vh" },
+  loginPromptText: { fontSize:15, color:"#5A7370", fontWeight:600 },
+  loginPromptBtn: { padding:"12px 32px", background:"#88203a", color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
 };

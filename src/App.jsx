@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
+import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import Login from "./Login";
 import EventList from "./EventList";
 import PostEvent from "./PostEvent";
@@ -17,6 +18,23 @@ export default function App() {
   const [reload, setReload] = useState(0);
   const [showLogin, setShowLogin] = useState(false);
   const [pendingEvent, setPendingEvent] = useState(null);
+// メールリンクからのログイン処理
+useEffect(() => {
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+      let email = window.localStorage.getItem("emailForSignIn");
+      if (!email) {
+        email = window.prompt("確認のためメールアドレスを入力してください");
+      }
+      signInWithEmailLink(auth, email, window.location.href)
+        .then(() => {
+          window.localStorage.removeItem("emailForSignIn");
+          window.history.replaceState({}, "", "/");
+        })
+        .catch(err => {
+          console.error(err);
+        });
+    }
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
@@ -131,8 +149,7 @@ if (showLogin) return (
         <div style={s.noticeText}>【新着】イベントを投稿して仲間を集めよう！</div>
         <div style={{ color:"#B0BEC5", fontSize:16 }}>›</div>
       </div>
-
-      {/* ── Content ── */}
+{/* ── Content ── */}
       {tab === "post" ? (
         user ? (
           <PostEvent onPosted={() => { setReload(r => r+1); setTab("home"); }} />
@@ -168,18 +185,13 @@ if (showLogin) return (
       )}
 
       {/* ── FAB ── */}
-        {tab !== "post" && tab !== "mypage" && (
-          <button data-fab style={s.fab} onClick={() => {
-            if (!user) {
-              sessionStorage.setItem("pendingPost", "1");
-              setShowLogin(true);
-              return;
-            }
-            setTab("post");
-          }}>
-            ＋ イベントを作る
-          </button>
-        )}
+      {tab !== "post" && tab !== "mypage" && (
+        <button data-fab style={s.fab} onClick={() => {
+          setTab("post");
+        }}>
+          ＋ イベントを作る
+        </button>
+      )}
 
     </div>
   );
