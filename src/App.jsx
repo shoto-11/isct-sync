@@ -39,6 +39,10 @@ function EventPageWrapper({ user }) {
     fetch();
   }, [eventId]);
 
+    useEffect(() => {
+      window.scrollTo(0, 0);
+    }, [eventId]);
+
   if (loading || !authChecked) return (
   <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#F4F6F5"  }}>
   </div>
