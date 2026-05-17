@@ -166,9 +166,9 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
         return { event, viewCount, likeCount, joinCount };
       }).filter(Boolean);
 
-      setViewRanking([...statsData].sort((a, b) => b.viewCount - a.viewCount).slice(0, 4));
-      setLikeRanking([...statsData].sort((a, b) => b.likeCount - a.likeCount).slice(0, 4));
-      setJoinRanking([...statsData].sort((a, b) => b.joinCount - a.joinCount).slice(0, 4));
+      setViewRanking([...statsData].sort((a, b) => b.viewCount - a.viewCount).slice(0, 5));
+        setLikeRanking([...statsData].sort((a, b) => b.likeCount - a.likeCount).slice(0, 5));
+        setJoinRanking([...statsData].sort((a, b) => b.joinCount - a.joinCount).slice(0, 5));
 
       // おすすめ
       if (user) {
