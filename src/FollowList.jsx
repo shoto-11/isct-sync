@@ -2,10 +2,11 @@ import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { BG_COLOR } from "./constants";
 
 const THEME = "#88203a";
 const s = {
-  container: { background:"#F4F6F5", minHeight:"100vh" },
+  container: { background:BG_COLOR, minHeight:"100vh" },
   header: { background:THEME, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 },
   backBtn: { background:"none", border:"none", color:"white", fontSize:14, fontWeight:700, cursor:"pointer" },
   title: { color:"white", fontSize:18, fontWeight:900, margin:0 },

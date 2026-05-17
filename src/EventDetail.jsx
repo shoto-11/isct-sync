@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { BG_COLOR } from "./constants";
 
 export default function EventDetail({ event: initialEvent, onBack }) {
   const [event, setEvent] = useState(initialEvent);
@@ -465,7 +466,7 @@ const handleJoin = async () => {
 
 const THEME = "#88203a";
 const s = {
-  container: { background:"#F4F6F5", minHeight:"100vh" },
+  container: { background:BG_COLOR, minHeight:"100vh" },
   topBar: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px", maxWidth:720, margin:"0 auto", width:"100%" },
   backBtn: { display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:THEME, fontSize:14, fontWeight:700, cursor:"pointer", padding:"8px 0" },
   editEventBtn: { background:THEME, color:"white", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer" },
@@ -512,7 +513,7 @@ body: { padding:"20px 16px", maxWidth:720, margin:"0 auto", display:"flex", flex
   required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
   input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box" },
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
-  imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:"#F4F6F5" },
+  imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR },
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },
   imagePlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", gap:8 },
   imagePlaceholderText: { fontSize:13, color:"#5A7370", fontWeight:600 },

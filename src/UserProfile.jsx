@@ -3,7 +3,7 @@ import { db, auth } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { GENRE_STYLES, GENRE_EMOJI } from "./constants";
-
+import { BG_COLOR } from "./constants";
 
 export default function UserProfile({ userId, onBack, onEventSelect }) {
   const [profile, setProfile] = useState(null);
@@ -141,7 +141,7 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
 
 const THEME = "#88203a";
 const s = {
-  container: { background:"#F4F6F5", minHeight:"100vh", paddingBottom:40 },
+  container: { background:BG_COLOR, minHeight:"100vh", paddingBottom:40 },
   profileHeader: { background:"white", padding:"20px", display:"flex", alignItems:"flex-start", gap:16, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" },
   backBtn: { background:"none", border:"none", color:THEME, fontSize:14, fontWeight:700, cursor:"pointer", padding:"16px" },
   avatar: { width:80, height:80, borderRadius:"50%", objectFit:"cover", flexShrink:0 },

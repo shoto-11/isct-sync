@@ -4,6 +4,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "fireb
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { GENRE_STYLES, GENRE_EMOJI, GAKUIN, GAKUNEN, GENDER } from "./constants";
 import FollowList from "./FollowList";
+import { BG_COLOR } from "./constants";
 
 function FollowButton({ count, label, onClick }) {
   const [hovered, setHovered] = useState(false);
@@ -406,12 +407,12 @@ const [showFollowList, setShowFollowList] = useState(null); // "follows" | "foll
 
 const THEME = "#88203a";
 const s = {
-  outer: { background:"#F4F6F5", minHeight:"100vh", padding:"0 0 40px" },
+  outer: { background:BG_COLOR, minHeight:"100vh", padding:"0 0 40px" },
   container: { maxWidth:720, margin:"0 auto", display:"flex", flexDirection:"column", gap:12 },
   profileHeader: { background:"white", padding:"24px 20px", display:"flex", flexDirection:"column", alignItems:"center", gap:10, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" },
   avatarWrap: { position:"relative", width:90, height:90 },
   avatar: { width:90, height:90, borderRadius:"50%", objectFit:"cover" },
-  avatarPlaceholder: { width:90, height:90, borderRadius:"50%", background:"#F4F6F5", display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #E0E8E7" },
+  avatarPlaceholder: { width:90, height:90, borderRadius:"50%", background:BG_COLOR, display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid #E0E8E7" },
   avatarEditBtn: { position:"absolute", bottom:0, right:0, background:THEME, color:"white", border:"none", borderRadius:"50%", width:28, height:28, fontSize:14, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" },
   nameRow: { display:"flex", alignItems:"center", gap:8 },
   name: { fontSize:20, fontWeight:900, color:"#111", margin:0 },
@@ -432,7 +433,7 @@ const s = {
   optionBtnActive: { background:THEME, color:"white", border:`1.5px solid ${THEME}` },
   editBtnRow: { display:"flex", gap:10, justifyContent:"flex-end" },
   saveBtn: { padding:"10px 24px", background:THEME, color:"white", border:"none", borderRadius:8, fontSize:14, fontWeight:700, cursor:"pointer" },
-  cancelBtn: { padding:"10px 24px", background:"#F4F6F5", color:"#5A7370", border:"none", borderRadius:8, fontSize:14, fontWeight:700, cursor:"pointer" },
+  cancelBtn: { padding:"10px 24px", background:BG_COLOR, color:"#5A7370", border:"none", borderRadius:8, fontSize:14, fontWeight:700, cursor:"pointer" },
   infoBox: { background:"white", margin:"0 14px", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", gap:10 },
   infoRow: { display:"flex", justifyContent:"space-between", alignItems:"center" },
   infoLabel: { fontSize:13, color:"#5A7370", fontWeight:600 },

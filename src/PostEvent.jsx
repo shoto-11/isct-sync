@@ -3,6 +3,7 @@ import { db, storage, auth } from "./firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, serverTimestamp, getDoc, doc } from "firebase/firestore";
 import { GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from "./constants";
+import { BG_COLOR } from "./constants";
 
 export default function PostEvent({ onPosted }) {
   const [title, setTitle] = useState("");
@@ -321,7 +322,7 @@ const s = {
   required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
   input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box" },
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
-  imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:"#F4F6F5" },
+  imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR },
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },
   imagePlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", gap:8 },
   imagePlaceholderText: { fontSize:13, color:"#5A7370", fontWeight:600 },
@@ -330,9 +331,9 @@ const s = {
   categoryBtnActive: { background:"#007A6E", color:"white", border:"1.5px solid #007A6E" },
   timeRow: { display:"flex", alignItems:"flex-end", gap:8, marginTop:8 },
   timeSeparator: { fontSize:16, color:"#5A7370", paddingBottom:10, flexShrink:0 },
-  attachArea: { width:"100%", padding:"14px", borderRadius:8, border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:"#F4F6F5" },
+  attachArea: { width:"100%", padding:"14px", borderRadius:8, border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:BG_COLOR },
   attachList: { marginTop:8, display:"flex", flexDirection:"column", gap:4 },
-  attachItem: { fontSize:12, color:"#5A7370", padding:"6px 10px", background:"#F4F6F5", borderRadius:6, display:"flex", alignItems:"center", justifyContent:"space-between" },
+  attachItem: { fontSize:12, color:"#5A7370", padding:"6px 10px", background:BG_COLOR, borderRadius:6, display:"flex", alignItems:"center", justifyContent:"space-between" },
   removeBtn: { background:"none", border:"none", color:"#B0BEC5", fontSize:14, cursor:"pointer", padding:"0 4px", fontWeight:700, lineHeight:1 },
   btn: { marginTop:8, padding:14, background:"#C8A84B", color:"#0D1B2A", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   optionGrid: { display:"flex", flexWrap:"wrap", gap:8 },

@@ -3,7 +3,7 @@ import { db } from "./firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from "./constants";
-
+import { BG_COLOR } from "./constants";
 export default function Search() {
   const [keyword, setKeyword] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
@@ -160,7 +160,7 @@ export default function Search() {
 }
 
 const s = {
-  container: { background:"#F4F6F5", minHeight:"100vh" },
+  container: { background:BG_COLOR, minHeight:"100vh" },
   inner: { maxWidth:800, margin:"0 auto", padding:"24px 16px" },
   heading: { fontSize:22, fontWeight:900, color:"#111", marginBottom:20 },
   searchBar: { display:"flex", gap:8, marginBottom:24 },

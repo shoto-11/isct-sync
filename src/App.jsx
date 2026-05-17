@@ -15,6 +15,7 @@ import { useParams } from 'react-router-dom';
 import EventDetail from "./EventDetail";
 import UserProfile from "./UserProfile";
 import Search from "./Search";
+import { BG_COLOR } from "./constants";
 
 function EventPageWrapper({ user }) {
   const { eventId } = useParams();
@@ -44,13 +45,13 @@ function EventPageWrapper({ user }) {
     }, [eventId]);
 
   if (loading || !authChecked) return (
-  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#F4F6F5"  }}>
+  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:BG_COLOR  }}>
   </div>
 );
   if (!event) return <p style={{ padding:24 }}>イベントが見つかりません</p>;
 
   if (!user) return (
-    <div style={{ background:"#F4F6F5", minHeight:"100vh" }}>
+    <div style={{ background:BG_COLOR, minHeight:"100vh" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px", maxWidth:720, margin:"0 auto", width:"100%" }}>
         <button style={{ background:"none", border:"none", color:"#88203a", fontSize:14, fontWeight:700, cursor:"pointer", padding:"8px 0" }} onClick={() => navigate(-1)}>← 戻る</button>
       </div>
@@ -196,7 +197,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ background:"#F4F6F5", minHeight:"100vh", display:"flex", flexDirection:"column" }}>
+    <div style={{ background:BG_COLOR, minHeight:"100vh", display:"flex", flexDirection:"column" }}>
 
       {/* ── Header ── */}
       <header style={s.header}>
@@ -382,12 +383,12 @@ const s = {
   loginPromptText: { fontSize:15, color:"#5A7370", fontWeight:600 },
   loginPromptBtn: { padding:"12px 32px", background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
   overlay: { position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:200 },
-  menu: { position:"fixed", top:0, right:0, bottom:0, width:280, background:"#F4F6F5", zIndex:201, boxShadow:"-4px 0 24px rgba(0,0,0,0.15)", transition:"transform 0.3s ease", display:"flex", flexDirection:"column" },
+  menu: { position:"fixed", top:0, right:0, bottom:0, width:280, background:BG_COLOR, zIndex:201, boxShadow:"-4px 0 24px rgba(0,0,0,0.15)", transition:"transform 0.3s ease", display:"flex", flexDirection:"column" },
   menuHeader: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"16px 20px", background:THEME },
   menuCloseBtn: { background:"none", border:"none", color:"white", fontSize:18, cursor:"pointer", fontWeight:700 },
   menuItems: { display:"flex", flexDirection:"column", padding:"8px 16px", flex:1 },
   menuItem: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 16px", background:"white", border:"none", borderBottom:"1px solid #F0F0F0", fontSize:14, fontWeight:600, color:"#1A2E2B", cursor:"pointer", width:"100%", textAlign:"left", borderRadius:8, marginBottom:8 },
-  menuDivider: { height:8, background:"#F4F6F5" },
+  menuDivider: { height:8, background:BG_COLOR },
 menuIcon: { fontSize:18, width:24, textAlign:"center" },
 
   menuUserSection: { background:THEME, padding:"20px", display:"flex", alignItems:"center", gap:12 },

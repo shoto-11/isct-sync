@@ -2,6 +2,7 @@ import { useState } from "react";
 import { db, auth } from "./firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { GAKUIN, GAKUNEN, GENDER } from "./constants";
+import { BG_COLOR } from "./constants";
 
 export default function ProfileSetup({ onComplete }) {
   const [gakuin, setGakuin] = useState("");
@@ -139,7 +140,7 @@ export default function ProfileSetup({ onComplete }) {
 const THEME = "#88203a";
 
 const s = {
-  container: { minHeight:"100vh", background:"#F4F6F5", display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"32px 16px" },
+  container: { minHeight:"100vh", background:BG_COLOR, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"32px 16px" },
   card: { background:"white", borderRadius:16, padding:"32px 24px", width:"100%", maxWidth:480, display:"flex", flexDirection:"column", gap:0, boxShadow:"0 4px 24px rgba(0,0,0,0.08)" },
   badge: { background:THEME, color:"white", fontWeight:700, fontSize:16, padding:"4px 14px", borderRadius:6, width:"fit-content", marginBottom:12 },
   title: { fontSize:22, fontWeight:900, color:"#111", marginBottom:6 },

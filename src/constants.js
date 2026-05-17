@@ -41,3 +41,5 @@ export const GAKUNEN = [
 ];
 
 export const GENDER = ["男", "女", "回答しない"];
+
+export const BG_COLOR = "#d6d6d6ff";

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import logo from "./assets/logo.png";
 import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { useEffect, useState, useRef } from "react";
+import { BG_COLOR } from "./constants";
 
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
@@ -414,7 +415,7 @@ const [carouselStartX, setCarouselStartX] = useState(0);
     }, [events.length]);
 
   if (loading) return (
-  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#F4F6F5"}}>
+  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:BG_COLOR}}>
   </div>
 );
   if (selected && !user) return (
