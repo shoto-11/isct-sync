@@ -20,23 +20,64 @@ function EventPageWrapper({ user }) {
   const navigate = useNavigate();
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, () => {
+      setAuthChecked(true);
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const fetch = async () => {
       const snap = await getDoc(doc(db, "events", eventId));
-      if (snap.exists()) {
-        setEvent({ id: snap.id, ...snap.data() });
-      }
+      if (snap.exists()) setEvent({ id: snap.id, ...snap.data() });
       setLoading(false);
     };
     fetch();
   }, [eventId]);
 
-  if (loading) return <p style={{ padding:24 }}>読み込み中...</p>;
+  if (loading || !authChecked) return <p style={{ padding:24 }}>読み込み中...</p>;
   if (!event) return <p style={{ padding:24 }}>イベントが見つかりません</p>;
+
+  if (!user) return (
+    <div style={{ background:"#F4F6F5", minHeight:"100vh" }}>
+      <header style={{ background:"#88203a", height:60, display:"flex", alignItems:"center", padding:"0 24px", position:"sticky", top:0, zIndex:100 }}>
+        <img src={logo} alt="SYNC" style={{ height:40, objectFit:"contain", cursor:"pointer" }} onClick={() => navigate('/')} />
+      </header>
+      {event.imageUrl ? (
+        <img src={event.imageUrl} alt={event.title} style={{ width:"100%", height:"auto", maxWidth:720, display:"block", margin:"0 auto" }} />
+      ) : (
+        <div style={{ width:"100%", maxWidth:720, aspectRatio:"16/9", background:"#F9EAED", margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"center", fontSize:64 }}>📌</div>
+      )}
+      <div style={{ maxWidth:720, margin:"0 auto", padding:"20px 16px", display:"flex", flexDirection:"column", gap:16 }}>
+        <h1 style={{ fontSize:24, fontWeight:900, color:"#111" }}>{event.title}</h1>
+        <div style={{ background:"white", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.07)" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <span style={{ fontSize:20 }}>📅</span>
+            <div>
+              <div style={{ fontSize:11, color:"#5A7370", fontWeight:700, marginBottom:2 }}>イベント日時</div>
+              <div style={{ fontSize:15, fontWeight:700, color:"#111" }}>
+                {event.date}{event.startTime && ` ${event.startTime}`}{event.endTime && ` 〜 ${event.endTime}`}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style={{ background:"white", borderRadius:12, padding:"32px 20px", boxShadow:"0 2px 8px rgba(0,0,0,0.07)", display:"flex", flexDirection:"column", alignItems:"center", gap:16, textAlign:"center" }}>
+          <span style={{ fontSize:40 }}>🔒</span>
+          <p style={{ fontSize:15, color:"#5A7370", fontWeight:600 }}>イベントの詳細を見るにはログインが必要です</p>
+          <button style={{ padding:"12px 40px", background:"#88203a", color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" }} onClick={() => navigate('/')}>
+            ログイン
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return <EventDetail event={event} onBack={() => navigate(-1)} />;
 }
+
 function UserProfileWrapper() {
   const { userId } = useParams();
   const navigate = useNavigate();
@@ -188,14 +229,7 @@ export default function App() {
               }}
             />
           } />
-          <Route path="/events/:eventId" element={
-            user ? <EventPageWrapper user={user} /> : (
-              <div style={s.loginPrompt}>
-                <p style={s.loginPromptText}>イベントの詳細を見るにはログインが必要です</p>
-                <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
-              </div>
-            )
-          } />
+          <Route path="/events/:eventId" element={<EventPageWrapper user={user} />} />
           <Route path="/post" element={
             user ? (
               <PostEvent onPosted={() => { navigate('/'); }} />

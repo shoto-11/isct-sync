@@ -275,17 +275,17 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   }, [user, pendingEvent]);
 
   const handleSelect = (event) => {
-        if (!user) {
-            setSelected(event);
-            return;
-        }
-        const key = `history_${user.uid}`;
-        const prev = JSON.parse(localStorage.getItem(key) || "[]");
-        const filtered = prev.filter(e => e.id !== event.id);
-        const updated = [event, ...filtered].slice(0, 30);
-        localStorage.setItem(key, JSON.stringify(updated));
+    if (!user) {
         navigate(`/events/${event.id}`);
-        };
+        return;
+    }
+    const key = `history_${user.uid}`;
+    const prev = JSON.parse(localStorage.getItem(key) || "[]");
+    const filtered = prev.filter(e => e.id !== event.id);
+    const updated = [event, ...filtered].slice(0, 30);
+    localStorage.setItem(key, JSON.stringify(updated));
+    navigate(`/events/${event.id}`);
+    };
 
   const handleBack = () => {
     setSelected(null);
