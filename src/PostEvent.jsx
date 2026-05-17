@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { db, storage, auth } from "./firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, addDoc, serverTimestamp, getDoc, doc } from "firebase/firestore";
 
 const GENRE_TAGS = ["#起業・ビジネス", "#キャリア・就活", "#文化・芸術", "#スポーツ・交流", "#スキルアップ", "#研究・産学連携"];
 const TARGET_TAGS = ["#全学対象", "#新入生向け", "#大学1年生向け", "#大学2年生向け", "#大学3年生向け", "#大学4年生向け", "#学部生向け", "#大学院生向け", "#留学生歓迎"];
@@ -29,6 +29,7 @@ export default function PostEvent({ onPosted }) {
     const [campusTag, setCampusTag] = useState("");
     const [styleTag, setStyleTag] = useState("");
     const [organizerTag, setOrganizerTag] = useState("");
+    const [contact, setContact] = useState("");
 
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -52,6 +53,9 @@ export default function PostEvent({ onPosted }) {
         return;
     }
     setLoading(true);
+    // Firestoreから表示名を取得
+        const userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
+        const displayName = userSnap.exists() ? userSnap.data().displayName : auth.currentUser.email;
     try {
       let imageUrl = null;
       if (image) {
@@ -91,7 +95,9 @@ export default function PostEvent({ onPosted }) {
         participants: [],
         createdBy: auth.currentUser.uid,
         createdAt: serverTimestamp(),
-        organizerName: auth.currentUser.displayName || auth.currentUser.email,
+        organizerName: displayName,
+        contact,
+        
       });
       onPosted();
     } catch (err) {
@@ -296,7 +302,15 @@ export default function PostEvent({ onPosted }) {
         <label style={s.label}>申し込みリンク（任意）</label>
         <input style={s.input} type="url" placeholder="https://forms.gle/..." value={applyLink} onChange={e => setApplyLink(e.target.value)} />
       </div>
-
+      <div style={s.section}>
+        <label style={s.label}>お問い合わせ先（任意）</label>
+        <input
+            style={s.input}
+            placeholder="例：example@m.isct.ac.jp / @Twitter"
+            value={contact}
+            onChange={e => setContact(e.target.value)}
+        />
+        </div>
       <button style={s.btn} onClick={handleSubmit} disabled={loading}>
         {loading ? "投稿中..." : "イベントを投稿する"}
       </button>

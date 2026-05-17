@@ -55,6 +55,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     const [joining, setJoining] = useState(false);
     const [likeCount, setLikeCount] = useState(0);
     const [joinCount, setJoinCount] = useState(0);
+    const [organizer, setOrganizer] = useState(null);
 
   const isOwner = auth.currentUser?.uid === event.createdBy;
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5" };
@@ -100,6 +101,15 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     };
     recordView();
     }, [event.id]);
+
+  useEffect(() => {
+    const fetchOrganizer = async () => {
+      if (!event.createdBy) return;
+      const orgSnap = await getDoc(doc(db, "users", event.createdBy));
+      if (orgSnap.exists()) setOrganizer(orgSnap.data());
+    };
+    fetchOrganizer();
+  }, [event.createdBy]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -429,6 +439,32 @@ const handleJoin = async () => {
             {event.applyLabel || "参加を申し込む"} →
           </a>
         )}
+        {organizer && (
+            <div style={s.section}>
+                <h2 style={s.sectionTitle}>募集者</h2>
+                <div
+                style={{ display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}
+                onClick={() => {
+                    if (auth.currentUser?.uid === event.createdBy) {
+                        window.location.href = '/mypage';
+                    } else {
+                        window.location.href = `/users/${event.createdBy}`;
+                    }
+                    }}
+                >
+                {organizer.avatarUrl ? (
+                    <img src={organizer.avatarUrl} alt="avatar" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover" }} />
+                ) : (
+                    <div style={{ width:44, height:44, borderRadius:"50%", background:"#F9EAED", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>👤</div>
+                )}
+                <div>
+                    <div style={{ fontSize:15, fontWeight:700, color:"#111" }}>{organizer.displayName}</div>
+                    <div style={{ fontSize:12, color:"#5A7370" }}>{organizer.gakuin} {organizer.gakukei}</div>
+                </div>
+                <span style={{ marginLeft:"auto", color:"#B0BEC5", fontSize:18 }}>›</span>
+                </div>
+            </div>
+            )}
         {/* いいね・参加予定ボタン */}
         {auth.currentUser && (
         <div style={s.actionRow}>

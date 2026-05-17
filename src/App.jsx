@@ -13,6 +13,7 @@ import Contact from "./Contact";
 import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import EventDetail from "./EventDetail";
+import UserProfile from "./UserProfile";
 
 function EventPageWrapper({ user }) {
   const { eventId } = useParams();
@@ -36,7 +37,17 @@ function EventPageWrapper({ user }) {
 
   return <EventDetail event={event} onBack={() => navigate(-1)} />;
 }
-
+function UserProfileWrapper() {
+  const { userId } = useParams();
+  const navigate = useNavigate();
+  return (
+    <UserProfile
+      userId={userId}
+      onBack={() => navigate(-1)}
+      onEventSelect={(event) => navigate(`/events/${event.id}`)}
+    />
+  );
+}
 
 export default function App() {
   const navigate = useNavigate();
@@ -205,6 +216,14 @@ export default function App() {
               </div>
             )
           } />
+          <Route path="/users/:userId" element={
+            <UserProfile
+              userId={useParams().userId}
+              onBack={() => navigate(-1)}
+              onEventSelect={(event) => navigate(`/events/${event.id}`)}
+            />
+          } />
+          <Route path="/users/:userId" element={<UserProfileWrapper />} />
         </Routes>
 
       {/* ── FAB ── */}
