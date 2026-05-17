@@ -43,13 +43,27 @@ function EventPageWrapper({ user }) {
 
   if (!user) return (
     <div style={{ background:"#F4F6F5", minHeight:"100vh" }}>
-      <header style={{ background:"#88203a", height:60, display:"flex", alignItems:"center", padding:"0 24px", position:"sticky", top:0, zIndex:100 }}>
-        <img src={logo} alt="SYNC" style={{ height:40, objectFit:"contain", cursor:"pointer" }} onClick={() => navigate('/')} />
-      </header>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px", maxWidth:720, margin:"0 auto", width:"100%" }}>
+        <button style={{ background:"none", border:"none", color:"#88203a", fontSize:14, fontWeight:700, cursor:"pointer", padding:"8px 0" }} onClick={() => navigate(-1)}>← 戻る</button>
+      </div>
       {event.imageUrl ? (
         <img src={event.imageUrl} alt={event.title} style={{ width:"100%", height:"auto", maxWidth:720, display:"block", margin:"0 auto" }} />
       ) : (
-        <div style={{ width:"100%", maxWidth:720, aspectRatio:"16/9", background:"#F9EAED", margin:"0 auto", display:"flex", alignItems:"center", justifyContent:"center", fontSize:64 }}>📌</div>
+        <div style={{ 
+          width:"100%", 
+          maxWidth:720, 
+          aspectRatio:"16/9", 
+          background: event.tags?.genre ? 
+            ({"#起業・ビジネス":"#E3F2FD","#キャリア・就活":"#E8F5E9","#文化・芸術":"#FFF3E0","#スポーツ・交流":"#F3E5F5","#スキルアップ":"#E0F2F1","#研究・産学連携":"#FFF8E7"}[event.tags.genre] || "#F5F5F5") 
+            : "#F5F5F5", 
+          margin:"0 auto", 
+          display:"flex", 
+          alignItems:"center", 
+          justifyContent:"center", 
+          fontSize:80 
+        }}>
+          {{"#起業・ビジネス":"💼","#キャリア・就活":"🎓","#文化・芸術":"🎨","#スポーツ・交流":"⚽","#スキルアップ":"📚","#研究・産学連携":"🔬"}[event.tags?.genre] || "📌"}
+        </div>
       )}
       <div style={{ maxWidth:720, margin:"0 auto", padding:"20px 16px", display:"flex", flexDirection:"column", gap:16 }}>
         <h1 style={{ fontSize:24, fontWeight:900, color:"#111" }}>{event.title}</h1>
