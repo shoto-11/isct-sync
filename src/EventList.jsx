@@ -219,7 +219,16 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
             : `${event.deadline}T23:59`;
           return new Date(deadlineStr) > now;
         });
-      setEvents(list);
+      // 各イベントの作成者の表示名を取得
+        const updatedList = await Promise.all(list.map(async (event) => {
+        if (!event.createdBy) return event;
+        const userSnap = await getDoc(doc(db, "users", event.createdBy));
+        if (userSnap.exists()) {
+            return { ...event, organizerName: userSnap.data().displayName };
+        }
+        return event;
+        }));
+        setEvents(updatedList);
 
       // サークル募集
       setCircleEvents(list.filter(e => e.tags?.organizer === "#サークル"));
