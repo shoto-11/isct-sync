@@ -168,13 +168,16 @@ export default function PostEvent({ onPosted }) {
             onFocus={e => e.target.showPicker()}
         />
         </div>
+        <div style={s.section}>
+        <label style={s.label}>申し込み締切時間</label>
         <input
-            style={{ ...s.input, marginTop:8 }}
+            style={s.input}
             type="time"
             value={deadlineTime}
             onChange={e => setDeadlineTime(e.target.value)}
             onFocus={e => e.target.showPicker()}
-            />
+        />
+        </div>
       {/* 添付画像・資料（任意） */}
       <div style={s.section}>
         <label style={s.label}>添付画像・資料（任意）</label>
@@ -302,12 +305,12 @@ export default function PostEvent({ onPosted }) {
 }
 
 const s = {
-  container: { background:"white", borderRadius:16, padding:"24px 20px", margin:"16px auto", maxWidth:720, boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", gap:0 },
+  container: { background:"white", borderRadius:16, padding:"24px 20px", margin:"16px auto", maxWidth:720, boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", gap:0, overflow:"hidden" },
   heading: { fontSize:17, fontWeight:900, color:"#1A2E2B", marginBottom:20 },
   section: { marginBottom:18 },
   label: { display:"block", fontSize:12, fontWeight:700, color:"#5A7370", letterSpacing:"0.05em", marginBottom:6 },
   required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
-  input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit" },
+  input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box" },
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
   imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:"#F4F6F5" },
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },

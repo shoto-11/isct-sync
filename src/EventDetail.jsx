@@ -170,8 +170,11 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         <div style={s.editSection}>
           <label style={s.editLabel}>申し込み締切日</label>
           <input style={s.input} type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
-          <input style={{ ...s.input, marginTop:8 }} type="time" value={editDeadlineTime} onChange={e => setEditDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-        </div>
+          <div style={s.editSection}>
+            <label style={s.editLabel}>申し込み締切時間</label>
+            <input style={s.input} type="time" value={editDeadlineTime} onChange={e => setEditDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+            </div>
+            </div>
 
         {/* ジャンル */}
         <div style={s.editSection}>
@@ -377,7 +380,7 @@ const s = {
   editSection: { display:"flex", flexDirection:"column", gap:8 },
   editLabel: { fontSize:12, fontWeight:700, color:"#5A7370", letterSpacing:"0.05em" },
   required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
-  input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit" },
+  input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box" },
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
   imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:"#F4F6F5" },
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },
