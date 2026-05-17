@@ -303,9 +303,10 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
 
   const currentRanking = rankTab === "view" ? viewRanking : rankTab === "like" ? likeRanking : joinRanking;
   const rankLabel = rankTab === "view" ? "閲覧" : rankTab === "like" ? "いいね" : "参加予定";
+  
+return (
+  <div style={{ maxWidth:1200, margin:"0 auto", padding: window.innerWidth > 768 ? "0 24px" : "0", overflow:"hidden" }}>
 
-  return (
-  <div style={{ maxWidth:1200, margin:"0 auto", padding: window.innerWidth > 768 ? "0 24px" : "0" }}>
       {/* 募集中のイベント */}
       <Section title="📅 募集中のイベント" events={events} onSelect={handleSelect} />
 
@@ -391,11 +392,11 @@ const s = {
   cardFooter: { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:2 },
   cardOrganizer: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap" },
   cardLocation: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap", textAlign:"right" },
-  ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)` },
+  ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)`, boxSizing:"border-box" },
   ctaText: { color:"white", fontSize:15, fontWeight:700 },
   ctaSub: { color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:2 },
   ctaArrow: { background:"#F5A623", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#111", fontSize:18, fontWeight:900 },
-  surveyBanner: { margin:"0 14px 20px", background:"linear-gradient(120deg,#FFF8E7,#FFFDE7)", border:"1.5px solid #F0D98A", borderRadius:12, padding:"14px 16px" },
+  surveyBanner: { margin:"0 14px 20px", background:"linear-gradient(120deg,#FFF8E7,#FFFDE7)", border:"1.5px solid #F0D98A", borderRadius:12, padding:"14px 16px", boxSizing:"border-box" },
   surveyLabel: { fontSize:10, fontWeight:700, color:"#C8A84B", letterSpacing:"0.1em", marginBottom:4 },
   surveyTitle: { fontSize:14, fontWeight:900, lineHeight:1.4 },
   surveyDeadline: { display:"inline-flex", alignItems:"center", gap:4, background:"#C8A84B", color:"#0D1B2A", fontFamily:"monospace", fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:999, marginTop:8 },
@@ -403,8 +404,8 @@ const s = {
   rankTabs: { display:"flex", gap:8, padding:"0 14px 12px" },
   rankTab: { padding:"6px 14px", borderRadius:999, border:`1.5px solid #D0DDD9`, background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
   rankTabActive: { background:THEME, color:"white", border:`1.5px solid ${THEME}` },
-  rankingList: { padding:"0 14px 16px", display:"flex", flexDirection:"column", gap:8 },
-  rankItem: { background:"white", borderRadius:10, padding:"12px 14px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 5px rgba(0,0,0,0.06)", cursor:"pointer" },
+  rankingList: { padding:"0 14px 16px", display:"flex", flexDirection:"column", gap:8, boxSizing:"border-box" },
+  rankItem: { background:"white", borderRadius:10, padding:"12px 14px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 5px rgba(0,0,0,0.06)", cursor:"pointer", boxSizing:"border-box", overflow:"hidden" },
   rankNum: { fontFamily:"monospace", fontSize:18, fontWeight:700, width:28, textAlign:"center", flexShrink:0 },
   rankImg: { width:92, height:52, borderRadius:8, objectFit:"cover", flexShrink:0 },
   rankThumb: { width:92, height:52, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
