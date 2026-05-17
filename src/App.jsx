@@ -254,11 +254,11 @@ export default function App() {
 const THEME = "#88203a";
 const s = {
   header: { background: THEME, position:"sticky", top:0, zIndex:100, boxShadow:"0 2px 12px rgba(0,0,0,0.3)" },
-  headerTop: { display:"flex", alignItems:"center", justifyContent:"space-between", height:60, padding:"0 24px" },
+  headerTop: { display:"flex", alignItems:"center", justifyContent:"space-between", height:60, padding:"0 40px", maxWidth:1200, margin:"0 auto", width:"100%" },
   logoImg: { height:40, objectFit:"contain" },
   headerIcons: { display:"flex", gap:24, alignItems:"center" },
   iconBtn: { display:"flex", flexDirection:"column", alignItems:"center", gap:2, color:"rgba(255,255,255,0.9)", fontSize:10, background:"none", border:"none", cursor:"pointer" },
-  navTabs: { display:"flex", borderTop:"1px solid rgba(255,255,255,0.1)", padding:"0 8px" },
+  navTabs: { display:"flex", borderTop:"1px solid rgba(255,255,255,0.1)", padding:"0 40px", maxWidth:1200, margin:"0 auto" },
   navTab: { flex:1, textAlign:"center", padding:"10px 0", color:"rgba(255,255,255,0.6)", fontSize:13, fontWeight:500, cursor:"pointer", background:"none", border:"none", borderBottom:"2px solid transparent" },
   navTabActive: { color:"white", borderBottom:"2px solid #F5A623" },
   noticeBar: { background:"white", borderLeft:`4px solid ${THEME}`, margin:"12px 14px", borderRadius:6, padding:"10px 14px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 1px 4px rgba(0,0,0,0.07)" },

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+
 
 const GENRE_EMOJI = {
   "#起業・ビジネス": "💼",
@@ -50,6 +51,10 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [editCampus, setEditCampus] = useState(event.tags?.campus || "");
   const [editStyle, setEditStyle] = useState(event.tags?.style || "");
   const [editOrganizer, setEditOrganizer] = useState(event.tags?.organizer || "");
+  const [liked, setLiked] = useState(false);
+    const [joining, setJoining] = useState(false);
+    const [likeCount, setLikeCount] = useState(0);
+    const [joinCount, setJoinCount] = useState(0);
 
   const isOwner = auth.currentUser?.uid === event.createdBy;
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5" };
@@ -59,7 +64,42 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     const fab = document.querySelector('[data-fab]');
     if (fab) fab.style.display = 'none';
     return () => { if (fab) fab.style.display = 'flex'; };
-  }, []);
+    }, []);
+
+    useEffect(() => {
+    const recordView = async () => {
+        if (!auth.currentUser || !event.id) return;
+        const uid = auth.currentUser.uid;
+        const now = new Date();
+        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        const viewRef = doc(db, "eventStats", event.id);
+        const snap = await getDoc(viewRef);
+        if (snap.exists()) {
+        const data = snap.data();
+        setLikeCount((data.likes || []).length);
+        setJoinCount((data.joins || []).length);
+        setLiked((data.likes || []).some(l => l.uid === uid));
+        setJoining((data.joins || []).some(j => j.uid === uid));
+        // 閲覧記録
+        const views = (data.views || []).filter(v => new Date(v.date) > weekAgo);
+        const alreadyViewed = views.some(v => v.uid === uid);
+        if (!alreadyViewed) {
+            await updateDoc(viewRef, {
+            views: arrayUnion({ uid, date: now.toISOString() }),
+            });
+        }
+        } else {
+        await setDoc(viewRef, {
+            eventId: event.id,
+            deadline: event.deadline || null,
+            views: [{ uid, date: now.toISOString() }],
+            likes: [],
+            joins: [],
+        });
+        }
+    };
+    recordView();
+    }, [event.id]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -105,6 +145,50 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     }
     setSaving(false);
   };
+  
+  const handleLike = async () => {
+  if (!auth.currentUser) return;
+  const uid = auth.currentUser.uid;
+  const viewRef = doc(db, "eventStats", event.id);
+  const snap = await getDoc(viewRef);
+  if (!snap.exists()) return;
+  const data = snap.data();
+  const likes = data.likes || [];
+  
+  if (liked) {
+    const newLikes = likes.filter(l => l.uid !== uid);
+    await updateDoc(viewRef, { likes: newLikes });
+    setLiked(false);
+    setLikeCount(c => c - 1);
+  } else {
+    const newLikes = [...likes, { uid, date: new Date().toISOString() }];
+    await updateDoc(viewRef, { likes: newLikes });
+    setLiked(true);
+    setLikeCount(c => c + 1);
+  }
+};
+
+const handleJoin = async () => {
+  if (!auth.currentUser) return;
+  const uid = auth.currentUser.uid;
+  const viewRef = doc(db, "eventStats", event.id);
+  const snap = await getDoc(viewRef);
+  if (!snap.exists()) return;
+  const data = snap.data();
+  const joins = data.joins || [];
+
+  if (joining) {
+    const newJoins = joins.filter(j => j.uid !== uid);
+    await updateDoc(viewRef, { joins: newJoins });
+    setJoining(false);
+    setJoinCount(c => c - 1);
+  } else {
+    const newJoins = [...joins, { uid, date: new Date().toISOString() }];
+    await updateDoc(viewRef, { joins: newJoins });
+    setJoining(true);
+    setJoinCount(c => c + 1);
+  }
+};
 
   // 編集モード
   if (editMode) return (
@@ -345,6 +429,23 @@ export default function EventDetail({ event: initialEvent, onBack }) {
             {event.applyLabel || "参加を申し込む"} →
           </a>
         )}
+        {/* いいね・参加予定ボタン */}
+        {auth.currentUser && (
+        <div style={s.actionRow}>
+            <button
+            style={{ ...s.actionBtn, ...(liked ? s.actionBtnActive : {}) }}
+            onClick={handleLike}
+            >
+            {liked ? "❤️" : "🤍"} いいね {likeCount > 0 && likeCount}
+            </button>
+            <button
+            style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
+            onClick={handleJoin}
+            >
+            {joining ? "✅" : "📅"} 参加予定 {joinCount > 0 && joinCount}
+            </button>
+        </div>
+        )}
       </div>
     </div>
   );
@@ -392,4 +493,8 @@ const s = {
   tagBtn: { padding:"6px 12px", borderRadius:999, border:"1.5px solid #D0DDD9", background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
   tagBtnActive: { background:THEME, color:"white", border:`1.5px solid ${THEME}` },
   saveBtn: { padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
+  actionRow: { display:"flex", gap:12 },
+    actionBtn: { flex:1, padding:"12px", background:"white", border:"1.5px solid #D0DDD9", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 },
+    actionBtnActive: { background:"#FFF0F0", border:"1.5px solid #E53935", color:"#E53935" },
+    actionBtnJoinActive: { background:"#E8F5E9", border:"1.5px solid #2E7D32", color:"#2E7D32" },
 };

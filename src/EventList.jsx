@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { db } from "./firebase";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { collection, getDocs, orderBy, query, getDoc, doc } from "firebase/firestore";
 import EventDetail from "./EventDetail";
 
 const GENRE_STYLES = {
@@ -20,6 +20,8 @@ const GENRE_EMOJI = {
   "#スキルアップ":   "📚",
   "#研究・産学連携": "🔬",
 };
+
+const THEME = "#88203a";
 
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
@@ -46,10 +48,10 @@ function EventCard({ event, onSelect }) {
         </div>
       )}
       <div style={s.cardBody}>
-         <div style={{
+        <div style={{
           ...s.cardTitle,
           textDecoration: hovered ? "underline" : "none",
-          textDecorationColor: "#88203a",
+          textDecorationColor: THEME,
         }}>
           {event.title}
         </div>
@@ -71,10 +73,62 @@ function EventCard({ event, onSelect }) {
   );
 }
 
+function RankItem({ event, rank, count, label, onSelect }) {
+  const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
+  const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+  const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
+  return (
+    <div style={s.rankItem} onClick={() => onSelect(event)}>
+      <div style={{ ...s.rankNum, color: rankColors[rank] }}>{rank+1}</div>
+      {event.imageUrl ? (
+        <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
+      ) : (
+        <div style={{ ...s.rankThumb, background: cs.bg }}>
+          <span style={{ fontSize:24 }}>{emoji}</span>
+        </div>
+      )}
+      <div style={{ flex:1 }}>
+        <div style={s.rankTitle}>{event.title}</div>
+        <div style={s.rankMeta}>
+          <span>📅 {event.date}</span>
+          <span>📍 {event.location}</span>
+        </div>
+      </div>
+      <div style={s.rankParticipants}>{count} {label}</div>
+    </div>
+  );
+}
+
+function Section({ title, badge, events, onSelect }) {
+  if (events.length === 0) return null;
+  return (
+    <>
+      <div style={s.sectionHeading}>
+        <span style={s.sectionTitle}>{title}</span>
+        <span style={s.sectionBadge}>{badge || `全${events.length}件`}</span>
+      </div>
+      <div style={s.cardsScrollWrapper}>
+        <div style={s.cardsGrid}>
+          {events.map(event => (
+            <EventCard key={event.id} event={event} onSelect={onSelect} />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function EventList({ user, onLoginRequired, pendingEvent, onPendingEventClear }) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  const [circleEvents, setCircleEvents] = useState([]);
+  const [todayDeadlineEvents, setTodayDeadlineEvents] = useState([]);
+  const [recommendedEvents, setRecommendedEvents] = useState([]);
+  const [viewRanking, setViewRanking] = useState([]);
+  const [likeRanking, setLikeRanking] = useState([]);
+  const [joinRanking, setJoinRanking] = useState([]);
+  const [rankTab, setRankTab] = useState("view");
 
   useEffect(() => {
     const fetch = async () => {
@@ -82,7 +136,7 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
       const snapshot = await getDocs(q);
       const now = new Date();
       const list = snapshot.docs
-        .map(doc => ({ id: doc.id, ...doc.data() }))
+        .map(d => ({ id: d.id, ...d.data() }))
         .filter(event => {
           if (!event.deadline) return true;
           const deadlineStr = event.deadlineTime
@@ -91,12 +145,49 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
           return new Date(deadlineStr) > now;
         });
       setEvents(list);
+
+      // サークル募集
+      setCircleEvents(list.filter(e => e.tags?.organizer === "#サークル"));
+
+      // 今日が締め切り
+      const today = now.toISOString().split("T")[0];
+      setTodayDeadlineEvents(list.filter(e => e.deadline === today));
+
+      // ランキング取得
+      const statsSnap = await getDocs(collection(db, "eventStats"));
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const statsData = statsSnap.docs.map(d => {
+        const data = d.data();
+        const event = list.find(e => e.id === data.eventId);
+        if (!event) return null;
+        const viewCount = (data.views || []).filter(v => new Date(v.date) > weekAgo).length;
+        const likeCount = (data.likes || []).filter(l => new Date(l.date) > weekAgo).length;
+        const joinCount = (data.joins || []).filter(j => new Date(j.date) > weekAgo).length;
+        return { event, viewCount, likeCount, joinCount };
+      }).filter(Boolean);
+
+      setViewRanking([...statsData].sort((a, b) => b.viewCount - a.viewCount).slice(0, 4));
+      setLikeRanking([...statsData].sort((a, b) => b.likeCount - a.likeCount).slice(0, 4));
+      setJoinRanking([...statsData].sort((a, b) => b.joinCount - a.joinCount).slice(0, 4));
+
+      // おすすめ
+      if (user) {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        if (userSnap.exists()) {
+          const userData = userSnap.data();
+          setRecommendedEvents(list.filter(e =>
+            e.tags?.targets?.includes(`#${userData.gakunen}向け`) ||
+            e.tags?.targets?.includes("#全学対象") ||
+            e.tags?.targets?.includes("#学部生向け")
+          ));
+        }
+      }
+
       setLoading(false);
     };
     fetch();
   }, []);
 
-  // ログイン後に保留中のイベントを表示
   useEffect(() => {
     if (user && pendingEvent && !selected) {
       const timer = setTimeout(() => {
@@ -108,20 +199,19 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
     }
   }, [user, pendingEvent]);
 
-  // ブラウザの戻るボタン対応
-const handleSelect = (event) => {
-  if (!user) {
+  const handleSelect = (event) => {
+    if (!user) {
+      setSelected(event);
+      return;
+    }
+    const key = `history_${user.uid}`;
+    const prev = JSON.parse(localStorage.getItem(key) || "[]");
+    const filtered = prev.filter(e => e.id !== event.id);
+    const updated = [event, ...filtered].slice(0, 30);
+    localStorage.setItem(key, JSON.stringify(updated));
     setSelected(event);
-    return;
-  }
-  const key = `history_${user.uid}`;
-  const prev = JSON.parse(localStorage.getItem(key) || "[]");
-  const filtered = prev.filter(e => e.id !== event.id);
-  const updated = [event, ...filtered].slice(0, 30);
-  localStorage.setItem(key, JSON.stringify(updated));
-  setSelected(event);
-  window.history.pushState({ eventId: event.id }, "");
-};
+    window.history.pushState({ eventId: event.id }, "");
+  };
 
   const handleBack = () => {
     setSelected(null);
@@ -137,36 +227,34 @@ const handleSelect = (event) => {
   if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
 
   if (selected && !user) return (
-  <div style={s2.loginPrompt}>
-    <p style={s2.loginPromptText}>イベントの詳細を見るにはログインが必要です</p>
-    <button style={s2.loginPromptBtn} onClick={() => onLoginRequired(selected)}>ログイン</button>
-  </div>
-);
+    <div style={s2.loginPrompt}>
+      <p style={s2.loginPromptText}>イベントの詳細を見るにはログインが必要です</p>
+      <button style={s2.loginPromptBtn} onClick={() => onLoginRequired(selected)}>ログイン</button>
+    </div>
+  );
 
-if (selected) return (
-  <EventDetail event={selected} onBack={handleBack} />
-);
+  if (selected) return (
+    <EventDetail event={selected} onBack={handleBack} />
+  );
+
+  const currentRanking = rankTab === "view" ? viewRanking : rankTab === "like" ? likeRanking : joinRanking;
+  const rankLabel = rankTab === "view" ? "閲覧" : rankTab === "like" ? "いいね" : "参加予定";
 
   return (
     <div>
-      <div style={s.sectionHeading}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#88203a" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        <span style={s.sectionTitle}>募集中のイベント</span>
-        <span style={s.sectionBadge}>全{events.length}件</span>
-      </div>
+      {/* 募集中のイベント */}
+      <Section title="📅 募集中のイベント" events={events} onSelect={handleSelect} />
 
-      {events.length === 0 ? (
-        <p style={{ padding:"16px 14px", color:"#5A7370", fontSize:14 }}>まだイベントがありません。最初のイベントを作りましょう！</p>
-      ) : (
-        <div style={s.cardsScrollWrapper}>
-          <div style={s.cardsGrid}>
-            {events.map(event => (
-              <EventCard key={event.id} event={event} onSelect={handleSelect} />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* サークル募集 */}
+      <Section title="🏫 サークル募集" events={circleEvents} onSelect={handleSelect} />
 
+      {/* 今日が締め切り */}
+      <Section title="⏰ 今日が締め切り" events={todayDeadlineEvents} onSelect={handleSelect} />
+
+      {/* あなたへのおすすめ */}
+      {user && <Section title="🎯 あなたへのおすすめ" events={recommendedEvents} onSelect={handleSelect} />}
+
+      {/* CTA */}
       <div style={s.ctaBanner}>
         <div>
           <div style={s.ctaText}>現在募集中のイベントを見る</div>
@@ -175,49 +263,55 @@ if (selected) return (
         <div style={s.ctaArrow}>›</div>
       </div>
 
+      {/* Survey */}
       <div style={s.surveyBanner}>
         <div style={s.surveyLabel}>在学生限定</div>
         <div style={s.surveyTitle}>2026春イベント<br />リクエスト＆アンケート実施中！！</div>
         <div style={s.surveyDeadline}>📅 5/22 まで</div>
       </div>
 
+      {/* ランキング */}
       <div style={s.rankingHeader}>
-        <span style={{ fontSize:15, fontWeight:700 }}>⭐ 人気ランキング</span>
-        <span style={{ fontSize:12, color:"#88203a", fontWeight:600 }}>すべて見る ›</span>
+        <span style={{ fontSize:15, fontWeight:700 }}>⭐ 週間ランキング</span>
+      </div>
+
+      {/* ランキングタブ */}
+      <div style={s.rankTabs}>
+        {[
+          { id:"view", label:"👁 閲覧数" },
+          { id:"like", label:"❤️ いいね" },
+          { id:"join", label:"📅 参加予定" },
+        ].map(t => (
+          <button
+            key={t.id}
+            style={{ ...s.rankTab, ...(rankTab === t.id ? s.rankTabActive : {}) }}
+            onClick={() => setRankTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       <div style={s.rankingList}>
-    {events.slice(0, 4).map((event, i) => {
-        const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
-        const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
-        const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
-        return (
-        <div key={event.id} style={s.rankItem} onClick={() => handleSelect(event)}>
-            <div style={{ ...s.rankNum, color: rankColors[i] }}>{i+1}</div>
-            {event.imageUrl ? (
-            <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
-            ) : (
-            <div style={{ ...s.rankThumb, background: cs.bg }}>
-                <span style={{ fontSize:24 }}>{emoji}</span>
-            </div>
-            )}
-            <div style={{ flex:1 }}>
-            <div style={s.rankTitle}>{event.title}</div>
-            <div style={s.rankMeta}>
-                <span>📅 {event.date}{event.startTime ? ` ${event.startTime}` : ""}</span>
-                <span>📍 {event.location}</span>
-            </div>
-            </div>
-            <div style={s.rankParticipants}>{event.participants?.length ?? 0}人</div>
-        </div>
-        );
-    })}
-    </div>
+        {currentRanking.length === 0 ? (
+          <p style={{ padding:"16px 14px", color:"#5A7370", fontSize:14 }}>まだデータがありません</p>
+        ) : (
+          currentRanking.map((item, i) => (
+            <RankItem
+              key={item.event.id}
+              event={item.event}
+              rank={i}
+              count={rankTab === "view" ? item.viewCount : rankTab === "like" ? item.likeCount : item.joinCount}
+              label={rankLabel}
+              onSelect={handleSelect}
+            />
+          ))
+        )}
+      </div>
     </div>
   );
 }
 
-const THEME = "#88203a";
 const s = {
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
   sectionTitle: { fontSize:15, fontWeight:700 },
@@ -228,7 +322,6 @@ const s = {
   cardImg: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, objectFit:"cover", display:"block" },
   cardThumb: { width:"100%", height: window.innerWidth > 768 ? 180 : 120, display:"flex", alignItems:"center", justifyContent:"center" },
   cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
-  cardTag: { display:"inline-block", fontSize:10, fontWeight:700, padding:"2px 6px", borderRadius:4, width:"fit-content" },
   cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B", overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" },
   cardDate: { fontFamily:"monospace", fontSize:11, color:THEME, fontWeight:700 },
   cardFooter: { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:2 },
@@ -243,6 +336,9 @@ const s = {
   surveyTitle: { fontSize:14, fontWeight:900, lineHeight:1.4 },
   surveyDeadline: { display:"inline-flex", alignItems:"center", gap:4, background:"#C8A84B", color:"#0D1B2A", fontFamily:"monospace", fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:999, marginTop:8 },
   rankingHeader: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 14px" },
+  rankTabs: { display:"flex", gap:8, padding:"0 14px 12px" },
+  rankTab: { padding:"6px 14px", borderRadius:999, border:`1.5px solid #D0DDD9`, background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
+  rankTabActive: { background:THEME, color:"white", border:`1.5px solid ${THEME}` },
   rankingList: { padding:"0 14px 16px", display:"flex", flexDirection:"column", gap:8 },
   rankItem: { background:"white", borderRadius:10, padding:"12px 14px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 5px rgba(0,0,0,0.06)", cursor:"pointer" },
   rankNum: { fontFamily:"monospace", fontSize:18, fontWeight:700, width:28, textAlign:"center", flexShrink:0 },
@@ -252,8 +348,9 @@ const s = {
   rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8 },
   rankParticipants: { fontSize:11, fontWeight:700, color:THEME },
 };
+
 const s2 = {
   loginPrompt: { display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", gap:16, minHeight:"60vh" },
   loginPromptText: { fontSize:15, color:"#5A7370", fontWeight:600 },
-  loginPromptBtn: { padding:"12px 32px", background:"#88203a", color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
+  loginPromptBtn: { padding:"12px 32px", background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
 };
