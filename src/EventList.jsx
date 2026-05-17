@@ -3,6 +3,7 @@ import { db } from "./firebase";
 import { collection, getDocs, orderBy, query, getDoc, doc } from "firebase/firestore";
 import EventDetail from "./EventDetail";
 import { useNavigate } from 'react-router-dom';
+import logo from "./assets/logo.png";
 
 const GENRE_STYLES = {
   "#起業・ビジネス": { bg:"#E3F2FD", color:"#1565C0" },
@@ -307,8 +308,10 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
-
+  if (loading) return (
+  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#F4F6F5"}}>
+  </div>
+);
   if (selected && !user) return (
     <div style={s2.loginPrompt}>
         <p style={s2.loginPromptText}>イベントの詳細を見るにはログインが必要です</p>

@@ -14,6 +14,7 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useParams } from 'react-router-dom';
 import EventDetail from "./EventDetail";
 import UserProfile from "./UserProfile";
+import Search from "./Search";
 
 function EventPageWrapper({ user }) {
   const { eventId } = useParams();
@@ -38,7 +39,10 @@ function EventPageWrapper({ user }) {
     fetch();
   }, [eventId]);
 
-  if (loading || !authChecked) return <p style={{ padding:24 }}>読み込み中...</p>;
+  if (loading || !authChecked) return (
+  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#F4F6F5"  }}>
+  </div>
+);
   if (!event) return <p style={{ padding:24 }}>イベントが見つかりません</p>;
 
   if (!user) return (
@@ -169,12 +173,12 @@ export default function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, [tab]);
-
-  if (loading) return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", color:"#111", fontSize:16 }}>
-      読み込み中...
-    </div>
-  );
+    if (loading) return (
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#88203a" }}>
+        <img src={logo} alt="SYNC" style={{ height:60, objectFit:"contain", animation:"pulse 1.5s ease-in-out infinite" }} />
+        <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
+      </div>
+    );
 
   if (showLogin) return (
     <Login onBack={() => {
@@ -188,7 +192,7 @@ export default function App() {
   );
 
   return (
-    <div style={{ background:"#F4F6F5", minHeight:"100vh" }}>
+    <div style={{ background:"#F4F6F5", minHeight:"100vh", display:"flex", flexDirection:"column" }}>
 
       {/* ── Header ── */}
       <header style={s.header}>
@@ -200,7 +204,7 @@ export default function App() {
             onClick={() => navigate('/')}
           />
           <div style={s.headerIcons}>
-            <button style={s.iconBtn}>
+            <button style={s.iconBtn} onClick={() => navigate('/search')}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
               <span>さがす</span>
             </button>
@@ -265,6 +269,7 @@ export default function App() {
             )
           } />
           <Route path="/users/:userId" element={<UserProfileWrapper />} />
+          <Route path="/search" element={<Search />} />
         </Routes>
 
       {/* ── FAB ── */}
@@ -279,6 +284,7 @@ export default function App() {
           ＋ イベントを作る
         </button>
       {/* ── Footer ── */}
+      <div style={{ flex:1 }} />
       {tab !== "post" && (
         <footer style={s.footer}>
           <img src={logo} alt="SYNC" style={s.footerLogo} />
@@ -386,7 +392,7 @@ menuUserName: { color:"white", fontSize:14, fontWeight:700 },
 menuUserEmail: { color:"rgba(255,255,255,0.7)", fontSize:11, marginTop:2 },
 menuItemLeft: { display:"flex", alignItems:"center", gap:10 },
 menuChevron: { color:"#B0BEC5", fontSize:18 },
-footer: { background:"#1A1A1A", padding:"32px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12, marginTop:24 },
+footer: { background:"#1A1A1A", padding:"32px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12, marginTop:0 },
 footerLogo: { height:36, objectFit:"contain", opacity:0.9 },
 footerDesc: { fontSize:12, color:"rgba(255,255,255,0.5)", textAlign:"center" },
 footerLinks: { display:"flex", alignItems:"center", gap:8 },
