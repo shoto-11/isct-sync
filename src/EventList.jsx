@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, orderBy, query, getDoc, doc } from "firebase/firestore";
 import EventDetail from "./EventDetail";
 import { useNavigate } from 'react-router-dom';
 import logo from "./assets/logo.png";
 import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
-
+import { useEffect, useState, useRef } from "react";
 
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
@@ -174,6 +173,119 @@ function Section({ title, badge, events, onSelect }) {
     </>
   );
 }
+function Carousel({ events, onSelect }) {
+  const [index, setIndex] = useState(0);
+  const [startX, setStartX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+  const wrapperRef = useRef(null);
+  const items = events.slice(0, 5);
+  const total = items.length;
+
+  // ループ用に前後にアイテムを追加
+  const extendedItems = [items[total - 1], ...items, items[0]];
+  const [extIndex, setExtIndex] = useState(1);
+  const [transitioning, setTransitioning] = useState(true);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      goNext();
+    }, 3000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const goNext = () => {
+    setTransitioning(true);
+    setExtIndex(i => i + 1);
+  };
+
+  const goPrev = () => {
+    setTransitioning(true);
+    setExtIndex(i => i - 1);
+  };
+
+  useEffect(() => {
+    setIndex((extIndex - 1 + total) % total);
+    if (extIndex === 0) {
+      setTimeout(() => {
+        setTransitioning(false);
+        setExtIndex(total);
+      }, 400);
+    } else if (extIndex === total + 1) {
+      setTimeout(() => {
+        setTransitioning(false);
+        setExtIndex(1);
+      }, 400);
+    }
+  }, [extIndex]);
+
+  const slideWidth = wrapperRef.current ? wrapperRef.current.offsetWidth * 0.75 : 0;
+  const offset = wrapperRef.current ? (wrapperRef.current.offsetWidth - slideWidth) / 2 - extIndex * slideWidth : 0;
+
+  return (
+    <div ref={wrapperRef} style={{ position:"relative", overflow:"hidden", width:"100%", maxWidth:1200, margin:"0 auto", paddingBottom:40, userSelect:"none" }}>
+      <div
+        style={{ display:"flex", transform:`translateX(${offset}px)`, transition: transitioning ? "transform 0.4s ease" : "none", willChange:"transform" }}
+        onMouseDown={e => { setDragging(false); setStartX(e.pageX); }}
+        onMouseMove={e => { if (Math.abs(e.pageX - startX) > 5) setDragging(true); }}
+        onMouseUp={e => {
+          const diff = e.pageX - startX;
+          if (Math.abs(diff) > 50) diff < 0 ? goNext() : goPrev();
+        }}
+        onTouchStart={e => setStartX(e.touches[0].pageX)}
+        onTouchEnd={e => {
+          const diff = e.changedTouches[0].pageX - startX;
+          if (Math.abs(diff) > 50) diff < 0 ? goNext() : goPrev();
+        }}
+      >
+        {extendedItems.map((event, i) => (
+          <div
+            key={`${event.id}-${i}`}
+            style={{
+              width: slideWidth || "75%",
+              flexShrink:0,
+              padding:"0 8px",
+              borderRadius:12,
+              overflow:"hidden",
+              position:"relative",
+              opacity: i === extIndex ? (hoveredIndex === i ? 0.7 : 1) : 0.6,
+              transform: i === extIndex ? "scale(1)" : "scale(0.92)",
+              transition:"all 0.4s ease",
+              cursor:"pointer",
+            }}
+            onClick={() => { if (!dragging) { if (i === extIndex) onSelect(event); else i < extIndex ? goPrev() : goNext(); } }}
+            onMouseEnter={() => setHoveredIndex(i)}
+            onMouseLeave={() => setHoveredIndex(null)}
+          >
+            {event.imageUrl ? (
+              <img src={event.imageUrl} alt={event.title} style={{ width:"100%", aspectRatio:"16/9", objectFit:"cover", display:"block", borderRadius:12, pointerEvents:"none" }} />
+            ) : (
+              <div style={{ width:"100%", aspectRatio:"16/9", background: GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5", display:"flex", alignItems:"center", justifyContent:"center", fontSize:60, borderRadius:12 }}>
+                {GENRE_EMOJI[event.tags?.genre] || "📌"}
+              </div>
+            )}
+            {i === extIndex && (
+              <div style={{ position:"absolute", bottom:0, left:8, right:8, padding:"40px 16px 16px", background:"linear-gradient(transparent, rgba(0,0,0,0.75))", borderRadius:"0 0 12px 12px" }}>
+                {event.tags?.genre && <span style={{ background:"#88203a", color:"white", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999 }}>{event.tags.genre}</span>}
+                <h2 style={{ color:"white", fontSize:18, fontWeight:900, margin:"8px 0 4px", textShadow:"0 2px 4px rgba(0,0,0,0.3)" }}>{event.title}</h2>
+                <p style={{ color:"rgba(255,255,255,0.85)", fontSize:12 }}>📅 {event.date} 📍 {event.location}</p>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <button style={{ position:"absolute", top:"45%", left:12, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width:40, height:40, fontSize:24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10 }} onClick={goPrev}>‹</button>
+      <button style={{ position:"absolute", top:"45%", right:12, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width:40, height:40, fontSize:24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10 }} onClick={goNext}>›</button>
+
+      <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6 }}>
+        {items.map((_, i) => (
+          <div key={i} style={{ height:4, width: i === index ? 32 : 16, borderRadius:999, background: i === index ? "#88203a" : "rgba(0,0,0,0.2)", cursor:"pointer", transition:"all 0.3s" }} onClick={() => { setTransitioning(true); setExtIndex(i + 1); }} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function EventList({ user, onLoginRequired, pendingEvent, onPendingEventClear }) {
   const [events, setEvents] = useState([]);
@@ -187,6 +299,9 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   const [joinRanking, setJoinRanking] = useState([]);
   const [rankTab, setRankTab] = useState("view");
   const navigate = useNavigate();
+  const [carouselIndex, setCarouselIndex] = useState(0);
+const [isDraggingCarousel, setIsDraggingCarousel] = useState(false);
+const [carouselStartX, setCarouselStartX] = useState(0);
 
   useEffect(() => {
     const fetch = async () => {
@@ -289,6 +404,14 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
+    // 自動スライド
+    useEffect(() => {
+    if (events.length === 0) return;
+    const timer = setInterval(() => {
+    setCarouselIndex(i => (i + 1) % Math.min(events.length, 5));
+    }, 3000);
+    return () => clearInterval(timer);
+    }, [events.length]);
 
   if (loading) return (
   <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#F4F6F5"}}>
@@ -305,6 +428,10 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   const rankLabel = rankTab === "view" ? "閲覧" : rankTab === "like" ? "いいね" : "参加予定";
   
 return (
+    <div>
+{/* ── カルーセル ── */}
+{events.length > 0 && <Carousel events={events} onSelect={handleSelect} />}
+
   <div style={{ maxWidth:1200, margin:"0 auto", padding: window.innerWidth > 768 ? "0 24px" : "0", overflow:"hidden", width:"100%", boxSizing:"border-box" }}>
       {/* 募集中のイベント */}
       <Section title="📅 募集中のイベント" events={events} onSelect={handleSelect} />
@@ -372,6 +499,7 @@ return (
           ))
         )}
       </div>
+    </div>
     </div>
   );
 }
