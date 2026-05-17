@@ -2,24 +2,8 @@ import { useState, useEffect } from "react";
 import { db, auth } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { GENRE_STYLES, GENRE_EMOJI } from "./constants";
 
-const GENRE_STYLES = {
-  "#起業・ビジネス": { bg:"#E3F2FD" },
-  "#キャリア・就活": { bg:"#E8F5E9" },
-  "#文化・芸術":     { bg:"#FFF3E0" },
-  "#スポーツ・交流": { bg:"#F3E5F5" },
-  "#スキルアップ":   { bg:"#E0F2F1" },
-  "#研究・産学連携": { bg:"#FFF8E7" },
-};
-
-const GENRE_EMOJI = {
-  "#起業・ビジネス": "💼",
-  "#キャリア・就活": "🎓",
-  "#文化・芸術":     "🎨",
-  "#スポーツ・交流": "⚽",
-  "#スキルアップ":   "📚",
-  "#研究・産学連携": "🔬",
-};
 
 export default function UserProfile({ userId, onBack, onEventSelect }) {
   const [profile, setProfile] = useState(null);

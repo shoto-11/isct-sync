@@ -1,24 +1,7 @@
 import { useState } from "react";
 import { db, auth } from "./firebase";
 import { doc, setDoc } from "firebase/firestore";
-
-const GAKUIN = {
-  "理学院": ["数学系", "物理学系", "化学系", "地球惑星科学系"],
-  "工学院": ["機械系", "システム制御系", "電気電子系", "情報通信系", "経営工学系"],
-  "物質理工学院": ["材料系", "応用化学系"],
-  "情報理工学院": ["数理・計算科学系", "情報工学系"],
-  "生命理工学院": ["生命理工学系"],
-  "環境・社会理工学院": ["建築学系", "土木・環境工学系", "融合理工学系"],
-};
-
-const GAKUNEN = [
-  "学部1年", "学部2年", "学部3年", "学部4年",
-  "修士1年", "修士2年",
-  "博士1年", "博士2年", "博士3年",
-  "教員",
-];
-
-const GENDER = ["男", "女", "回答しない"];
+import { GAKUIN, GAKUNEN, GENDER } from "./constants";
 
 export default function ProfileSetup({ onComplete }) {
   const [gakuin, setGakuin] = useState("");

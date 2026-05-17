@@ -1,32 +1,8 @@
+import { GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from "./constants";
 import { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
-
-const GENRE_EMOJI = {
-  "#起業・ビジネス": "💼",
-  "#キャリア・就活": "🎓",
-  "#文化・芸術":     "🎨",
-  "#スポーツ・交流": "⚽",
-  "#スキルアップ":   "📚",
-  "#研究・産学連携": "🔬",
-};
-
-const GENRE_STYLES = {
-  "#起業・ビジネス": { bg:"#E3F2FD" },
-  "#キャリア・就活": { bg:"#E8F5E9" },
-  "#文化・芸術":     { bg:"#FFF3E0" },
-  "#スポーツ・交流": { bg:"#F3E5F5" },
-  "#スキルアップ":   { bg:"#E0F2F1" },
-  "#研究・産学連携": { bg:"#FFF8E7" },
-};
-
-const GENRE_TAGS = ["#起業・ビジネス", "#キャリア・就活", "#文化・芸術", "#スポーツ・交流", "#スキルアップ", "#研究・産学連携"];
-const TARGET_TAGS = ["#全学対象", "#新入生向け", "#大学1年生向け", "#大学2年生向け", "#大学3年生向け", "#大学4年生向け", "#学部生向け", "#大学院生向け", "#留学生歓迎"];
-const CAMPUS_TAGS = ["#大岡山キャンパス", "#横浜キャンパス", "#外部", "#オンライン"];
-const STYLE_TAGS = ["#事前登録不要", "#参加無料", "#ランチ持込可", "#謝礼あり"];
-const ORGANIZER_TAGS = ["#サークル", "#一般学生", "#大学講師", "#企業"];
 
 export default function EventDetail({ event: initialEvent, onBack }) {
   const [event, setEvent] = useState(initialEvent);

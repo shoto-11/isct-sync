@@ -2,42 +2,7 @@ import { useState, useEffect } from "react";
 import { db, auth, storage } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-
-const GENRE_STYLES = {
-  "#起業・ビジネス": { bg:"#E3F2FD" },
-  "#キャリア・就活": { bg:"#E8F5E9" },
-  "#文化・芸術":     { bg:"#FFF3E0" },
-  "#スポーツ・交流": { bg:"#F3E5F5" },
-  "#スキルアップ":   { bg:"#E0F2F1" },
-  "#研究・産学連携": { bg:"#FFF8E7" },
-};
-
-const GENRE_EMOJI = {
-  "#起業・ビジネス": "💼",
-  "#キャリア・就活": "🎓",
-  "#文化・芸術":     "🎨",
-  "#スポーツ・交流": "⚽",
-  "#スキルアップ":   "📚",
-  "#研究・産学連携": "🔬",
-};
-
-const GAKUIN = {
-  "理学院": ["数学系", "物理学系", "化学系", "地球惑星科学系"],
-  "工学院": ["機械系", "システム制御系", "電気電子系", "情報通信系", "経営工学系"],
-  "物質理工学院": ["材料系", "応用化学系"],
-  "情報理工学院": ["数理・計算科学系", "情報工学系"],
-  "生命理工学院": ["生命理工学系"],
-  "環境・社会理工学院": ["建築学系", "土木・環境工学系", "融合理工学系"],
-};
-
-const GAKUNEN = [
-  "学部1年", "学部2年", "学部3年", "学部4年",
-  "修士1年", "修士2年",
-  "博士1年", "博士2年", "博士3年",
-  "教員",
-];
-
-const GENDER = ["男", "女", "回答しない"];
+import { GENRE_STYLES, GENRE_EMOJI, GAKUIN, GAKUNEN, GENDER } from "./constants";
 
 export default function MyPage({ onEventSelect }) {
   const [profile, setProfile] = useState(null);

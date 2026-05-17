@@ -4,26 +4,8 @@ import { collection, getDocs, orderBy, query, getDoc, doc } from "firebase/fires
 import EventDetail from "./EventDetail";
 import { useNavigate } from 'react-router-dom';
 import logo from "./assets/logo.png";
+import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 
-const GENRE_STYLES = {
-  "#起業・ビジネス": { bg:"#E3F2FD", color:"#1565C0" },
-  "#キャリア・就活": { bg:"#E8F5E9", color:"#2E7D32" },
-  "#文化・芸術":     { bg:"#FFF3E0", color:"#E65100" },
-  "#スポーツ・交流": { bg:"#F3E5F5", color:"#6A1B9A" },
-  "#スキルアップ":   { bg:"#E0F2F1", color:"#00695C" },
-  "#研究・産学連携": { bg:"#FFF8E7", color:"#F57F17" },
-};
-
-const GENRE_EMOJI = {
-  "#起業・ビジネス": "💼",
-  "#キャリア・就活": "🎓",
-  "#文化・芸術":     "🎨",
-  "#スポーツ・交流": "⚽",
-  "#スキルアップ":   "📚",
-  "#研究・産学連携": "🔬",
-};
-
-const THEME = "#88203a";
 
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
