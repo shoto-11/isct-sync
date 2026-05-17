@@ -9,3 +9,8 @@ body {
 
 button { font-family: inherit; }
 input, select, textarea { font-family: inherit; }
+
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
