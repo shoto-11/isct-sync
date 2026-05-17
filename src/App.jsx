@@ -120,17 +120,6 @@ export default function App() {
             </button>
           </div>
         </div>
-        <div style={s.navTabs}>
-          {["home","search","mypage"].map((t, i) => (
-            <button
-              key={t}
-              style={{ ...s.navTab, ...(tab===t ? s.navTabActive : {}) }}
-              onClick={() => setTab(t)}
-            >
-              {["イベント","さがす","マイページ"][i]}
-            </button>
-          ))}
-        </div>
       </header>
 
       {/* ── Notice ── */}
@@ -187,6 +176,21 @@ export default function App() {
         <button data-fab style={s.fab} onClick={() => setTab("post")}>
           ＋ イベントを作る
         </button>
+      )}
+      {/* ── Footer ── */}
+      {tab !== "post" && (
+        <footer style={s.footer}>
+          <img src={logo} alt="SYNC" style={s.footerLogo} />
+          <p style={s.footerDesc}>東京科学大学専用イベント募集プラットフォーム</p>
+          <div style={s.footerLinks}>
+            <button style={s.footerLink} onClick={() => setTab("home")}>ホーム</button>
+            <span style={s.footerDivider}>|</span>
+            <button style={s.footerLink} onClick={() => setTab("mypage")}>マイページ</button>
+            <span style={s.footerDivider}>|</span>
+            <button style={s.footerLink} onClick={() => setShowContact(true)}>お問い合わせ</button>
+          </div>
+          <p style={s.footerCopy}>© 2026 ISCT Sync. All rights reserved.</p>
+        </footer>
       )}
 
       {/* ── メニュー オーバーレイ ── */}
@@ -283,4 +287,11 @@ menuUserName: { color:"white", fontSize:14, fontWeight:700 },
 menuUserEmail: { color:"rgba(255,255,255,0.7)", fontSize:11, marginTop:2 },
 menuItemLeft: { display:"flex", alignItems:"center", gap:10 },
 menuChevron: { color:"#B0BEC5", fontSize:18 },
+footer: { background:"#1A1A1A", padding:"32px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12, marginTop:24 },
+footerLogo: { height:36, objectFit:"contain", opacity:0.9 },
+footerDesc: { fontSize:12, color:"rgba(255,255,255,0.5)", textAlign:"center" },
+footerLinks: { display:"flex", alignItems:"center", gap:8 },
+footerLink: { background:"none", border:"none", color:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:600, cursor:"pointer" },
+footerDivider: { color:"rgba(255,255,255,0.3)", fontSize:12 },
+footerCopy: { fontSize:11, color:"rgba(255,255,255,0.3)", marginTop:8 },
 };

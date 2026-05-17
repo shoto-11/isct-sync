@@ -241,7 +241,7 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   const rankLabel = rankTab === "view" ? "閲覧" : rankTab === "like" ? "いいね" : "参加予定";
 
   return (
-    <div>
+    <div style={{ maxWidth:1200, margin:"0 auto", padding:"0 24px" }}>
       {/* 募集中のイベント */}
       <Section title="📅 募集中のイベント" events={events} onSelect={handleSelect} />
 
