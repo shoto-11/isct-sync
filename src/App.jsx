@@ -201,7 +201,7 @@ export default function App() {
             src={logo}
             alt="SYNC"
             style={{ ...s.logoImg, cursor:"pointer" }}
-            onClick={() => navigate('/')}
+            onClick={() => { navigate('/'); window.location.reload(); }}
           />
           <div style={s.headerIcons}>
             <button style={s.iconBtn} onClick={() => navigate('/search')}>
