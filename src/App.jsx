@@ -16,6 +16,7 @@ import EventDetail from "./EventDetail";
 import UserProfile from "./UserProfile";
 import Search from "./Search";
 import { BG_COLOR } from "./constants";
+import AdminPanel from "./AdminPanel";
 
 function EventPageWrapper({ user }) {
   const { eventId } = useParams();
@@ -125,6 +126,7 @@ export default function App() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [menuProfile, setMenuProfile] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // メールリンクからのログイン処理
   useEffect(() => {
@@ -153,6 +155,12 @@ export default function App() {
         setShowLogin(false);
         const userDoc = await getDoc(doc(db, "users", u.uid));
         if (userDoc.exists()) setMenuProfile(userDoc.data());
+        // 管理者チェック
+          const configSnap = await getDoc(doc(db, "adminSettings", "config"));
+          if (configSnap.exists()) {
+            const adminUids = configSnap.data().adminUids || [];
+            setIsAdmin(adminUids.includes(u.uid));
+          }
         if (wasLoggedOut && done && !pendingEvent) {
           if (sessionStorage.getItem("pendingPost")) {
             sessionStorage.removeItem("pendingPost");
@@ -275,6 +283,7 @@ export default function App() {
           } />
           <Route path="/users/:userId" element={<UserProfileWrapper />} />
           <Route path="/search" element={<Search />} />
+          <Route path="/admin" element={<AdminPanel user={user} />} />
         </Routes>
 
       {/* ── FAB ── */}
@@ -355,6 +364,13 @@ export default function App() {
             ) : (
               <button style={s.menuItem} onClick={() => { setShowLogin(true); setMenuOpen(false); }}>
                 <span style={s.menuItemLeft}>🔑 ログイン</span>
+                <span style={s.menuChevron}>›</span>
+              </button>
+            )}
+            <div style={s.menuDivider} />
+            {user && isAdmin && (
+              <button style={s.menuItem} onClick={() => { navigate('/admin'); setMenuOpen(false); }}>
+                <span style={s.menuItemLeft}>⚙️ 管理者パネル</span>
                 <span style={s.menuChevron}>›</span>
               </button>
             )}
