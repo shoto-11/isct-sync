@@ -91,7 +91,7 @@ export default function Login({ onBack }) {
             {error && <p style={s.error}>{error}</p>}
 
             <div style={s.note}>
-              🔒 @m.isct.ac.jp の学籍アカウントのみ利用できます
+              @m.isct.ac.jp の学籍アカウントのみ利用できます
             </div>
 
             <button style={s.btn} onClick={handleSendLink} disabled={loading}>
