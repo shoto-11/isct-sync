@@ -3,6 +3,28 @@ import { db, auth, storage } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { GENRE_STYLES, GENRE_EMOJI, GAKUIN, GAKUNEN, GENDER } from "./constants";
+import FollowList from "./FollowList";
+
+function FollowButton({ count, label, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      style={{ ...fs.followItem, opacity: hovered ? 0.7 : 1, transition:"opacity 0.18s", cursor:"pointer" }}
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <span style={fs.followNum}>{count}</span>
+      <span style={fs.followLabel}>{label}</span>
+    </div>
+  );
+}
+
+const fs = {
+  followItem: { display:"flex", flexDirection:"column", alignItems:"center", gap:2 },
+  followNum: { fontSize:18, fontWeight:900, color:"#111" },
+  followLabel: { fontSize:11, color:"#5A7370" },
+};
 
 export default function MyPage({ onEventSelect }) {
   const [profile, setProfile] = useState(null);
@@ -23,6 +45,7 @@ export default function MyPage({ onEventSelect }) {
 const [joinedEvents, setJoinedEvents] = useState([]);
 const [followCount, setFollowCount] = useState(0);
 const [followerCount, setFollowerCount] = useState(0);
+const [showFollowList, setShowFollowList] = useState(null); // "follows" | "followers" | null
 
 // 履歴用state
   const [history, setHistory] = useState([]);
@@ -102,6 +125,13 @@ const [followerCount, setFollowerCount] = useState(0);
   };
 
   if (loading) return <p style={{ padding:24, color:"#5A7370" }}>読み込み中...</p>;
+  if (showFollowList) return (
+  <FollowList
+    userId={uid}
+    type={showFollowList}
+    onBack={() => setShowFollowList(null)}
+  />
+);
 
   return (
     <div style={s.outer}>
@@ -131,18 +161,11 @@ const [followerCount, setFollowerCount] = useState(0);
           </div>
 
           <p style={s.email}>{auth.currentUser?.email}</p>
-
-          <div style={s.followRow}>
-            <div style={s.followItem}>
-                <span style={s.followNum}>{followCount}</span>
-                <span style={s.followLabel}>フォロー</span>
-            </div>
-            <div style={s.followDivider} />
-            <div style={s.followItem}>
-                <span style={s.followNum}>{followerCount}</span>
-                <span style={s.followLabel}>フォロワー</span>
-            </div>
-            </div>
+            <div style={s.followRow}>
+                <FollowButton count={followCount} label="フォロー" onClick={() => setShowFollowList("follows")} />
+                <div style={s.followDivider} />
+                <FollowButton count={followerCount} label="フォロワー" onClick={() => setShowFollowList("followers")} />
+                </div>
         </div>
 
         {/* ── プロフィール編集 ── */}
