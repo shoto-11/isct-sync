@@ -56,6 +56,8 @@ export default function MyPage({ onEventSelect }) {
   const [editGender, setEditGender] = useState("");
   const [likedEvents, setLikedEvents] = useState([]);
 const [joinedEvents, setJoinedEvents] = useState([]);
+const [followCount, setFollowCount] = useState(0);
+const [followerCount, setFollowerCount] = useState(0);
 
 // 履歴用state
   const [history, setHistory] = useState([]);
@@ -69,6 +71,8 @@ const [joinedEvents, setJoinedEvents] = useState([]);
     if (snap.exists()) {
       const data = snap.data();
       setProfile(data);
+      setFollowCount((data.follows || []).length);
+        setFollowerCount((data.followers || []).length);
       setAvatarUrl(data.avatarUrl || null);
       setEditName(data.displayName || "");
       setEditGakuin(data.gakuin || "");
@@ -165,15 +169,15 @@ const [joinedEvents, setJoinedEvents] = useState([]);
 
           <div style={s.followRow}>
             <div style={s.followItem}>
-              <span style={s.followNum}>0</span>
-              <span style={s.followLabel}>フォロー</span>
+                <span style={s.followNum}>{followCount}</span>
+                <span style={s.followLabel}>フォロー</span>
             </div>
             <div style={s.followDivider} />
             <div style={s.followItem}>
-              <span style={s.followNum}>0</span>
-              <span style={s.followLabel}>フォロワー</span>
+                <span style={s.followNum}>{followerCount}</span>
+                <span style={s.followLabel}>フォロワー</span>
             </div>
-          </div>
+            </div>
         </div>
 
         {/* ── プロフィール編集 ── */}

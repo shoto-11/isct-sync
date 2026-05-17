@@ -21,47 +21,73 @@ export default function Login({ onBack }) {
     return ALLOWED_DOMAINS.includes(domain);
   };
 
-  const handleSendLink = async () => {
+    const handleSendLink = async () => {
     setError("");
     if (!email.includes("@")) {
-      setError("メールアドレスを入力してください");
-      return;
+        setError("メールアドレスを入力してください");
+        return;
     }
-    if (!checkDomain(email)) {
-      setError("@m.isct.ac.jp のメールアドレスのみ使用できます");
-      return;
+    
+    const domain = email.split("@")[1];
+    const isAllowedDomain = ALLOWED_DOMAINS.includes(domain);
+    
+    // 許可ドメインでない場合は許可リストを確認
+    if (!isAllowedDomain) {
+        const { db } = await import("./firebase");
+        const { doc, getDoc } = await import("firebase/firestore");
+        const allowedSnap = await getDoc(doc(db, "allowedEmails", email));
+        if (!allowedSnap.exists()) {
+        setError("このメールアドレスは使用できません");
+        return;
+        }
     }
+
     setLoading(true);
     try {
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-      window.localStorage.setItem("emailForSignIn", email);
-      setStep("sent");
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        window.localStorage.setItem("emailForSignIn", email);
+        setStep("sent");
     } catch (err) {
-      setError("メールの送信に失敗しました: " + err.message);
-    }
-    setLoading(false);
-  };
-    const handleGoogleLogin = async () => {
-    setError("");
-    setLoading(true);
-    try {
-        const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
-        const provider = new GoogleAuthProvider();
-        provider.setCustomParameters({ prompt: "select_account" });
-        const result = await signInWithPopup(auth, provider);
-        const email = result.user.email;
-        const domain = email.split("@")[1];
-        if (!ALLOWED_DOMAINS.includes(domain)) {
-        await auth.signOut();
-        setError(`@m.isct.ac.jp のアカウントでログインしてください（${email} は使用できません）`);
-        }
-    } catch (err) {
-        if (err.code !== "auth/popup-closed-by-user") {
-        setError("ログインに失敗しました: " + err.message);
-        }
+        setError("メールの送信に失敗しました: " + err.message);
     }
     setLoading(false);
     };
+    const handleGoogleLogin = async () => {
+  setError("");
+  setLoading(true);
+  try {
+    const { GoogleAuthProvider, signInWithPopup } = await import("firebase/auth");
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+    const result = await signInWithPopup(auth, provider);
+    const email = result.user.email;
+    const domain = email.split("@")[1];
+
+    // ドメインチェック
+    if (ALLOWED_DOMAINS.includes(domain)) {
+      // OK
+      return;
+    }
+
+    // 許可リストチェック
+    const { db } = await import("./firebase");
+    const { doc, getDoc } = await import("firebase/firestore");
+    const allowedSnap = await getDoc(doc(db, "allowedEmails", email));
+    if (allowedSnap.exists()) {
+      // 許可リストにある
+      return;
+    }
+
+    // どちらでもない
+    await auth.signOut();
+    setError(`このアカウント（${email}）はご利用いただけません`);
+  } catch (err) {
+    if (err.code !== "auth/popup-closed-by-user") {
+      setError("ログインに失敗しました: " + err.message);
+    }
+  }
+  setLoading(false);
+};
   return (
     <div style={s.container}>
       <div style={s.card}>

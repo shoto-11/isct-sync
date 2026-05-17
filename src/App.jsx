@@ -216,13 +216,6 @@ export default function App() {
               </div>
             )
           } />
-          <Route path="/users/:userId" element={
-            <UserProfile
-              userId={useParams().userId}
-              onBack={() => navigate(-1)}
-              onEventSelect={(event) => navigate(`/events/${event.id}`)}
-            />
-          } />
           <Route path="/users/:userId" element={<UserProfileWrapper />} />
         </Routes>
 
