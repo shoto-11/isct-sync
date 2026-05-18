@@ -504,10 +504,10 @@ return (
 {carouselEvents.length > 0 && <Carousel events={carouselEvents} onSelect={handleSelect} />}
 
   <div style={{ maxWidth:1200, margin:"0 auto", padding: window.innerWidth > 768 ? "0 24px" : "0", overflow:"hidden", width:"100%", boxSizing:"border-box" }}>
-      <Section title="募集中のイベント" icon={<Calendar size={20} color="#88203a" />} events={events} onSelect={handleSelect} />
-        <Section title="サークルのイベント" icon={<Users size={20} color="#88203a" />} events={circleEvents} onSelect={handleSelect} />
+    {user && <Section title="あなたへのおすすめ" icon={<Target size={20} color="#88203a" />} events={recommendedEvents} onSelect={handleSelect} />}
+      <Section title="新着イベント" icon={<Calendar size={20} color="#88203a" />} events={events} onSelect={handleSelect} />
+        <Section title="サークルイベント" icon={<Users size={20} color="#88203a" />} events={circleEvents} onSelect={handleSelect} />
         <Section title="今日が締め切り" icon={<Clock size={20} color="#88203a" />} events={todayDeadlineEvents} onSelect={handleSelect} />
-        {user && <Section title="あなたへのおすすめ" icon={<Target size={20} color="#88203a" />} events={recommendedEvents} onSelect={handleSelect} />}
         <Section title="今日参加できるイベント" icon={<Zap size={20} color="#88203a" />} events={todayEvents} onSelect={handleSelect} />
         <Section title="今週の人気イベント" icon={<TrendingUp size={20} color="#88203a" />} events={popularWeekEvents} onSelect={handleSelect} />
 
