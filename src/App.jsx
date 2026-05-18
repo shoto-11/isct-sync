@@ -285,6 +285,7 @@ export default function App() {
           <Route path="/users/:userId" element={<UserProfileWrapper />} />
           <Route path="/search" element={<Search />} />
           <Route path="/admin" element={<AdminPanel user={user} />} />
+          <Route path="/admin/:tab" element={<AdminPanel user={user} />} />
         </Routes>
 
       {/* ── FAB ── */}
