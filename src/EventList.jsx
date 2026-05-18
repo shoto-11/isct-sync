@@ -410,32 +410,73 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
         setJoinRanking([...statsData].sort((a, b) => b.joinCount - a.joinCount).slice(0, 5));
 
       // おすすめ
-      if (user) {
-        const userSnap = await getDoc(doc(db, "users", user.uid));
-        if (userSnap.exists()) {
-          const userData = userSnap.data();
-          setRecommendedEvents(list.filter(e =>
-            e.tags?.targets?.includes(`#${userData.gakunen}向け`) ||
-            e.tags?.targets?.includes("#全学対象") ||
-            e.tags?.targets?.includes("#学部生向け")
-          ));
-        }
-      }
+        if (user) {
+            const userSnap = await getDoc(doc(db, "users", user.uid));
+            if (userSnap.exists()) {
+                const userData = userSnap.data();
+                const recommended = updatedList
+                .filter(e =>
+                    e.tags?.targets?.includes(`#${userData.gakunen}向け`) ||
+                    e.tags?.targets?.includes("#全学対象") ||
+                    e.tags?.targets?.includes("#学部生向け") ||
+                    (e.targetGakuin?.length === 0 || !e.targetGakuin) ||
+                    e.targetGakuin?.includes(userData.gakuin) ||
+                    e.targetGakukei?.includes(userData.gakukei)
+                )
+                .sort((a, b) => {
+                    // マッチスコア計算
+                    const matchScore = (event) => {
+                        let score = 0;
+                        
+                        // マッチした分だけ加点
+                        if (event.targetGakuin?.includes(userData.gakuin)) score += 10;
+                        if (event.targetGakukei?.includes(userData.gakukei)) score += 20;
+                        if (event.tags?.targets?.includes(`#${userData.gakunen}向け`)) score += 15;
+                        if (event.tags?.targets?.includes("#全学対象")) score += 5;
+                        if (event.tags?.targets?.includes("#学部生向け") && userData.gakunen?.includes("学部")) score += 8;
+
+                        // タグが多いほど減点（絞り込みが甘いペナルティ）
+                        const gakuinCount = event.targetGakuin?.length || 0;
+                        const gakukeiCount = event.targetGakukei?.length || 0;
+                        const targetCount = event.tags?.targets?.length || 0;
+                        score -= gakuinCount * 2;
+                        score -= gakukeiCount * 1;
+                        score -= targetCount * 1;
+                        // 全学対象・学部生向けは広すぎるので追加減点
+                        if (event.tags?.targets?.includes("#全学対象")) score -= 5;
+                        if (event.tags?.targets?.includes("#学部生向け")) score -= 3;
+
+                        return score;
+                        };
+                    const aMatch = matchScore(a);
+                    const bMatch = matchScore(b);
+                    if (bMatch !== aMatch) return bMatch - aMatch;
+                    // 同じマッチスコアなら人気順
+                    const aData = statsData.find(s => s.event.id === a.id);
+                    const bData = statsData.find(s => s.event.id === b.id);
+                    const aScore = (aData?.viewCount || 0) * 1 + (aData?.likeCount || 0) * 5 + (aData?.joinCount || 0) * 10;
+                    const bScore = (bData?.viewCount || 0) * 1 + (bData?.likeCount || 0) * 5 + (bData?.joinCount || 0) * 10;
+                    return bScore - aScore;
+                });
+                setRecommendedEvents(recommended);
+            }
+            }
 
       // 今日参加できるイベント
         const todayStr = now.toISOString().split("T")[0];
         setTodayEvents(updatedList.filter(event => event.date === todayStr));
 
-        // 今週の人気イベント（閲覧数順）
-        const popularThisWeek = [...updatedList]
-        .sort((a, b) => {
-            const aViews = statsData.find(s => s.event.id === a.id)?.viewCount || 0;
-            const bViews = statsData.find(s => s.event.id === b.id)?.viewCount || 0;
-            return bViews - aViews;
-        })
-        .slice(0, 10);
-        setPopularWeekEvents(popularThisWeek);
-
+        // 今週の人気イベント（総合スコア）
+            const popularThisWeek = [...updatedList]
+            .sort((a, b) => {
+                const aData = statsData.find(s => s.event.id === a.id);
+                const bData = statsData.find(s => s.event.id === b.id);
+                const aScore = (aData?.viewCount || 0) * 1 + (aData?.likeCount || 0) * 5 + (aData?.joinCount || 0) * 10;
+                const bScore = (bData?.viewCount || 0) * 1 + (bData?.likeCount || 0) * 5 + (bData?.joinCount || 0) * 10;
+                return bScore - aScore;
+            })
+            .slice(0, 10);
+            setPopularWeekEvents(popularThisWeek);
       setLoading(false);
     };
     fetch();

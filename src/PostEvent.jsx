@@ -4,6 +4,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, addDoc, serverTimestamp, getDoc, doc } from "firebase/firestore";
 import { GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from "./constants";
 import { BG_COLOR } from "./constants";
+import { GAKUIN } from "./constants";
 
 export default function PostEvent({ onPosted }) {
   const [title, setTitle] = useState("");
@@ -26,6 +27,9 @@ export default function PostEvent({ onPosted }) {
     const [styleTag, setStyleTag] = useState("");
     const [organizerTag, setOrganizerTag] = useState("");
     const [contact, setContact] = useState("");
+    const [targetGakuin, setTargetGakuin] = useState([]);
+const [targetGakukei, setTargetGakukei] = useState([]);
+    
 
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -93,6 +97,8 @@ export default function PostEvent({ onPosted }) {
         createdAt: serverTimestamp(),
         organizerName: displayName,
         contact,
+        targetGakuin,
+        targetGakukei,      
         
       });
       onPosted();
@@ -239,6 +245,39 @@ export default function PostEvent({ onPosted }) {
             ))}
         </div>
         </div>
+        {/* 対象学院 */}
+<div style={s.section}>
+  <label style={s.label}>対象学院（任意・複数選択可）</label>
+  <div style={s.optionGrid}>
+    {Object.keys(GAKUIN).map(g => (
+      <button
+        key={g}
+        style={{ ...s.tagBtn, ...(targetGakuin.includes(g) ? s.tagBtnActive : {}) }}
+        onClick={() => setTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
+      >
+        {g}
+      </button>
+    ))}
+  </div>
+</div>
+
+        {/* 対象学系 */}
+        {targetGakuin.length > 0 && (
+        <div style={s.section}>
+            <label style={s.label}>対象学系（任意・複数選択可）</label>
+            <div style={s.optionGrid}>
+            {targetGakuin.flatMap(g => GAKUIN[g]).map(k => (
+                <button
+                key={k}
+                style={{ ...s.tagBtn, ...(targetGakukei.includes(k) ? s.tagBtnActive : {}) }}
+                onClick={() => setTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
+                >
+                {k}
+                </button>
+            ))}
+            </div>
+        </div>
+        )}
 
         {/* ③ キャンパス（一つ選択） */}
         <div style={s.section}>
