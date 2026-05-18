@@ -6,7 +6,7 @@ import logo from "./assets/logo.png";
 import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { useEffect, useState, useRef } from "react";
 import { BG_COLOR } from "./constants";
-import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck, MapPin } from "lucide-react";
+import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck, MapPin, Zap, TrendingUp } from "lucide-react";
 
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
@@ -343,6 +343,8 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
 const [isDraggingCarousel, setIsDraggingCarousel] = useState(false);
 const [carouselStartX, setCarouselStartX] = useState(0);
 const [carouselEvents, setCarouselEvents] = useState([]);
+const [todayEvents, setTodayEvents] = useState([]);
+const [popularWeekEvents, setPopularWeekEvents] = useState([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -368,6 +370,7 @@ const [carouselEvents, setCarouselEvents] = useState([]);
         return event;
         }));
         setEvents(updatedList);
+        
         // カルーセル設定を取得
             const adminSnap = await getDoc(doc(db, "adminSettings", "display"));
             if (adminSnap.exists()) {
@@ -418,6 +421,20 @@ const [carouselEvents, setCarouselEvents] = useState([]);
           ));
         }
       }
+
+      // 今日参加できるイベント
+        const todayStr = now.toISOString().split("T")[0];
+        setTodayEvents(updatedList.filter(event => event.date === todayStr));
+
+        // 今週の人気イベント（閲覧数順）
+        const popularThisWeek = [...updatedList]
+        .sort((a, b) => {
+            const aViews = statsData.find(s => s.event.id === a.id)?.viewCount || 0;
+            const bViews = statsData.find(s => s.event.id === b.id)?.viewCount || 0;
+            return bViews - aViews;
+        })
+        .slice(0, 10);
+        setPopularWeekEvents(popularThisWeek);
 
       setLoading(false);
     };
@@ -491,6 +508,8 @@ return (
         <Section title="サークルのイベント" icon={<Users size={20} color="#88203a" />} events={circleEvents} onSelect={handleSelect} />
         <Section title="今日が締め切り" icon={<Clock size={20} color="#88203a" />} events={todayDeadlineEvents} onSelect={handleSelect} />
         {user && <Section title="あなたへのおすすめ" icon={<Target size={20} color="#88203a" />} events={recommendedEvents} onSelect={handleSelect} />}
+        <Section title="今日参加できるイベント" icon={<Zap size={20} color="#88203a" />} events={todayEvents} onSelect={handleSelect} />
+        <Section title="今週の人気イベント" icon={<TrendingUp size={20} color="#88203a" />} events={popularWeekEvents} onSelect={handleSelect} />
 
       {/* CTA */}
       <div style={s.ctaBanner}>
