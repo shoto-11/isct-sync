@@ -193,12 +193,29 @@ function Carousel({ events, onSelect }) {
   const [dragging, setDragging] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const wrapperRef = useRef(null);
+  const [, forceUpdate] = useState(0);
+    useEffect(() => {
+    forceUpdate(n => n + 1);
+    }, []);
+
   const timerRef = useRef(null);
   const items = events.slice(0, 5);
   const total = items.length;
   const extendedItems = [items[total - 1], ...items, items[0]];
   const [extIndex, setExtIndex] = useState(1);
   const [transitioning, setTransitioning] = useState(true);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+  resetTimer();
+  // 1フレーム後にreadyにする
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      setReady(true);
+    });
+  });
+  return () => clearInterval(timerRef.current);
+}, []);
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -237,12 +254,12 @@ function Carousel({ events, onSelect }) {
     }
   }, [extIndex]);
 
-  const slideWidth = wrapperRef.current ? wrapperRef.current.offsetWidth * (window.innerWidth > 768 ? 0.75 : 0.85) : 0;
+  const slideWidth = wrapperRef.current ? wrapperRef.current.offsetWidth * (window.innerWidth > 768 ? 0.55 : 0.75) : 0;
   const offset = wrapperRef.current ? (wrapperRef.current.offsetWidth - slideWidth) / 2 - extIndex * slideWidth : 0;
 
   return (
-    <div ref={wrapperRef} style={{ position:"relative", overflow:"hidden", width:"100%", maxWidth:1200, margin:"0 auto", paddingBottom:40, userSelect:"none" }}>
-      <div
+    <div ref={wrapperRef} style={{ position:"relative", overflow:"hidden", width:"100%", paddingBottom:40, userSelect:"none", opacity: ready ? 1 : 0, transition:"opacity 0.3s ease" }}>
+              <div
         style={{ display:"flex", transform:`translateX(${offset}px)`, transition: transitioning ? "transform 0.4s ease" : "none", willChange:"transform" }}
         onMouseDown={e => { setDragging(false); setStartX(e.pageX); }}
         onMouseMove={e => { if (Math.abs(e.pageX - startX) > 5) setDragging(true); }}
