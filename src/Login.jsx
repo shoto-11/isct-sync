@@ -2,6 +2,7 @@ import { useState } from "react";
 import { auth } from "./firebase";
 import { sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
 import logoRed from "./assets/logo-red.png";
+import { Mail } from "lucide-react";
 
 const ALLOWED_DOMAINS = ["m.isct.ac.jp"];
 
@@ -141,7 +142,9 @@ export default function Login({ onBack }) {
           </>
         ) : (
           <>
-            <div style={s.sentIcon}>📧</div>
+            <div style={{ ...s.sentIcon, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <Mail size={48} color="#88203a" />
+            </div>
             <h2 style={s.sentTitle}>メールを確認してください</h2>
             <p style={s.sentText}>
               <strong>{email}</strong> にログイン用リンクを送信しました。メール内のリンクをクリックしてログインしてください。
@@ -172,7 +175,6 @@ const s = {
   note: { background:"#F9EAED", borderRadius:8, padding:"10px 14px", fontSize:12, color:THEME, lineHeight:1.8, textAlign:"center", width:"100%" },
   btn: { width:"100%", padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
   error: { color:"#C62828", fontSize:12, alignSelf:"flex-start" },
-  sentIcon: { fontSize:48 },
   sentTitle: { fontSize:18, fontWeight:900, color:"#111", textAlign:"center" },
   sentText: { fontSize:14, color:"#5A7370", lineHeight:1.7, textAlign:"center" },
   backToEmailBtn: { background:"none", border:`1px solid ${THEME}`, color:THEME, borderRadius:8, padding:"10px 20px", fontSize:13, fontWeight:700, cursor:"pointer" },

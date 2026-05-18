@@ -6,7 +6,7 @@ import logo from "./assets/logo.png";
 import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { useEffect, useState, useRef } from "react";
 import { BG_COLOR } from "./constants";
-import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck } from "lucide-react";
+import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck, MapPin } from "lucide-react";
 
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
@@ -75,8 +75,8 @@ function RankItem({ event, rank, count, label, onSelect }) {
       <div style={{ flex:1 }}>
         <div style={s.rankTitle}>{event.title}</div>
         <div style={s.rankMeta}>
-          <span>📅 {event.date}</span>
-          <span>📍 {event.location}</span>
+        <span style={{ display:"flex", alignItems:"center", gap:4 }}><Calendar size={11} color="#5A7370" /> {event.date}</span>
+        <span style={{ display:"flex", alignItems:"center", gap:4 }}><MapPin size={11} color="#5A7370" /> {event.location}</span>
         </div>
       </div>
       <div style={s.rankParticipants}>{count} {label}</div>

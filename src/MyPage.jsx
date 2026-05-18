@@ -343,7 +343,7 @@ const [showFollowList, setShowFollowList] = useState(null); // "follows" | "foll
                         )}
                         <div style={s.eventInfo}>
                             <div style={s.eventTitle}>{event.title}</div>
-                            <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                            <div style={s.eventMeta}><Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}</div>
                         </div>
                         </div>
                     );
@@ -369,7 +369,7 @@ const [showFollowList, setShowFollowList] = useState(null); // "follows" | "foll
                         )}
                         <div style={s.eventInfo}>
                             <div style={s.eventTitle}>{event.title}</div>
-                            <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                            <div style={s.eventMeta}><Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}</div>
                         </div>
                         </div>
                     );
@@ -394,7 +394,7 @@ const [showFollowList, setShowFollowList] = useState(null); // "follows" | "foll
                         )}
                         <div style={s.eventInfo}>
                             <div style={s.eventTitle}>{event.title}</div>
-                            <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                            <div style={s.eventMeta}><Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}</div>
                         </div>
                         </div>
                     );

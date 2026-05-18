@@ -2,15 +2,16 @@ import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { doc, getDoc, updateDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { Settings, Calendar, Users, Clock, Target, Star, User } from "lucide-react";
 
 const THEME = "#88203a";
 
 const DEFAULT_SECTIONS = [
-  { id:"events", label:"📅 募集中のイベント", visible:true },
-  { id:"circle", label:"🏫 サークル募集", visible:true },
-  { id:"today", label:"⏰ 今日が締め切り", visible:true },
-  { id:"recommended", label:"🎯 あなたへのおすすめ", visible:true },
-  { id:"ranking", label:"⭐ 週間ランキング", visible:true },
+  { id:"events", label:"募集中のイベント", visible:true },
+  { id:"circle", label:"サークル募集", visible:true },
+  { id:"today", label:"今日が締め切り", visible:true },
+  { id:"recommended", label:"あなたへのおすすめ", visible:true },
+  { id:"ranking", label:"週間ランキング", visible:true },
 ];
 
 export default function AdminPanel({ user }) {
@@ -102,7 +103,9 @@ export default function AdminPanel({ user }) {
     <div style={{ background:"#F4F6F5", minHeight:"100vh" }}>
       {/* ヘッダー */}
       <div style={{ background:THEME, padding:"16px 24px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <h1 style={{ color:"white", fontSize:18, fontWeight:900 }}>⚙️ 管理者パネル</h1>
+        <h1 style={{ color:"white", fontSize:18, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
+        <Settings size={20} /> 管理者パネル
+        </h1>
         <button style={{ background:"none", border:"1px solid white", color:"white", borderRadius:8, padding:"6px 14px", cursor:"pointer", fontSize:13 }} onClick={() => navigate('/')}>← サイトに戻る</button>
       </div>
 
@@ -194,9 +197,8 @@ export default function AdminPanel({ user }) {
                 ) : (
                   <div style={{ width:60, height:34, background:"#F4F6F5", borderRadius:6, flexShrink:0 }} />
                 )}
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:14, fontWeight:700 }}>{event.title}</div>
-                  <div style={{ fontSize:11, color:"#5A7370" }}>📅 {event.date} 👤 {event.organizerName}</div>
+                <div style={{ fontSize:11, color:"#5A7370", display:"flex", alignItems:"center", gap:8 }}>
+                <Calendar size={11} /> {event.date} <User size={11} /> {event.organizerName}
                 </div>
                 <button
                   style={{ padding:"6px 16px", borderRadius:999, border:"1.5px solid #E53935", background:"white", color:"#E53935", fontSize:12, fontWeight:700, cursor:"pointer" }}

@@ -4,6 +4,7 @@ import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion, 
 import { useNavigate } from "react-router-dom";
 import { GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { BG_COLOR } from "./constants";
+import { User, Building2, Calendar, MapPin } from "lucide-react";
 
 export default function UserProfile({ userId, onBack, onEventSelect }) {
   const [profile, setProfile] = useState(null);
@@ -65,7 +66,9 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
             {profile.avatarUrl ? (
             <img src={profile.avatarUrl} alt="avatar" style={s.avatar} />
             ) : (
-            <div style={s.avatarPlaceholder}>👤</div>
+            <div style={s.avatarPlaceholder}>
+            <User size={32} color="#88203a" />
+            </div>
             )}
 
             <div style={s.profileInfo}>
@@ -73,7 +76,9 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
             <p style={s.subInfo}>{profile.gakuin} / {profile.gakukei}</p>
             <p style={s.subInfo}>{profile.gakunen}</p>
             {profile.organization && (
-                <p style={s.orgInfo}>🏢 {profile.organization}</p>
+                <p style={{ ...s.orgInfo, display:"flex", alignItems:"center", gap:4 }}>
+                    <Building2 size={13} /> {profile.organization}
+                </p>
             )}
             </div>
 
@@ -102,8 +107,9 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
 
         {/* 募集中のイベント */}
         <div style={s.sectionHeading}>
-            <span style={s.sectionTitle}>📅 募集中のイベント</span>
-            <span style={s.sectionBadge}>全{myEvents.length}件</span>
+        <Calendar size={18} color="#88203a" />
+        <span style={s.sectionTitle}>募集中のイベント</span>
+        <span style={s.sectionBadge}>全{myEvents.length}件</span>
         </div>
 
         {myEvents.length === 0 ? (
@@ -124,7 +130,9 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
                     )}
                     <div style={s.eventInfo}>
                     <div style={s.eventTitle}>{event.title}</div>
-                    <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                    <div style={{ ...s.eventMeta, display:"flex", alignItems:"center", gap:6 }}>
+                    <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
+                    </div>
                     {event.tags?.genre && (
                         <span style={s.eventTag}>{event.tags.genre}</span>
                     )}

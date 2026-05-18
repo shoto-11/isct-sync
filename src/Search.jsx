@@ -4,6 +4,8 @@ import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from "./constants";
 import { BG_COLOR } from "./constants";
+import { Calendar, MapPin } from "lucide-react";
+
 export default function Search() {
   const [keyword, setKeyword] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
@@ -140,7 +142,9 @@ export default function Search() {
                       )}
                       <div style={s.resultInfo}>
                         <div style={s.resultTitle}>{event.title}</div>
-                        <div style={s.resultMeta}>📅 {event.date} 📍 {event.location}</div>
+                        <div style={{ ...s.resultMeta, display:"flex", alignItems:"center", gap:6 }}>
+                        <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
+                        </div>
                         <div style={s.resultTags}>
                           {event.tags?.genre && <span style={{ ...s.resultTag, background:cs.bg, color:cs.color }}>{event.tags.genre}</span>}
                           {event.tags?.campus && <span style={s.resultTagGray}>{event.tags.campus}</span>}

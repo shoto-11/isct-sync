@@ -3,6 +3,7 @@ import { db } from "./firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { BG_COLOR } from "./constants";
+import { User } from "lucide-react";
 
 const THEME = "#88203a";
 const s = {
@@ -39,7 +40,9 @@ function UserItem({ user, onClick }) {
       {user.avatarUrl ? (
         <img src={user.avatarUrl} alt="avatar" style={s.avatar} />
       ) : (
-        <div style={s.avatarPlaceholder}>👤</div>
+        <div style={s.avatarPlaceholder}>
+            <User size={20} color="#88203a" />
+        </div>
       )}
       <div style={s.info}>
         <div style={{ ...s.name, textDecoration: hovered ? "underline" : "none" }}>{user.displayName}</div>
