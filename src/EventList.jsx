@@ -180,29 +180,33 @@ function Carousel({ events, onSelect }) {
   const [dragging, setDragging] = useState(false);
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const wrapperRef = useRef(null);
+  const timerRef = useRef(null);
   const items = events.slice(0, 5);
   const total = items.length;
-
-  // ループ用に前後にアイテムを追加
   const extendedItems = [items[total - 1], ...items, items[0]];
   const [extIndex, setExtIndex] = useState(1);
   const [transitioning, setTransitioning] = useState(true);
 
+  const resetTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => goNext(), 3300);
+  };
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      goNext();
-    }, 3000);
-    return () => clearInterval(timer);
+    resetTimer();
+    return () => clearInterval(timerRef.current);
   }, []);
 
   const goNext = () => {
     setTransitioning(true);
     setExtIndex(i => i + 1);
+    resetTimer();
   };
 
   const goPrev = () => {
     setTransitioning(true);
     setExtIndex(i => i - 1);
+    resetTimer();
   };
 
   useEffect(() => {
@@ -220,7 +224,7 @@ function Carousel({ events, onSelect }) {
     }
   }, [extIndex]);
 
-  const slideWidth = wrapperRef.current ? wrapperRef.current.offsetWidth * 0.75 : 0;
+  const slideWidth = wrapperRef.current ? wrapperRef.current.offsetWidth * (window.innerWidth > 768 ? 0.75 : 0.85) : 0;
   const offset = wrapperRef.current ? (wrapperRef.current.offsetWidth - slideWidth) / 2 - extIndex * slideWidth : 0;
 
   return (
@@ -231,27 +235,25 @@ function Carousel({ events, onSelect }) {
         onMouseMove={e => { if (Math.abs(e.pageX - startX) > 5) setDragging(true); }}
         onMouseUp={e => {
           const diff = e.pageX - startX;
-          if (Math.abs(diff) > 50) diff < 0 ? goNext() : goPrev();
+          if (Math.abs(diff) > 50) { diff < 0 ? goNext() : goPrev(); }
         }}
-        onTouchStart={e => setStartX(e.touches[0].pageX)}
+        onTouchStart={e => { setStartX(e.touches[0].pageX); }}
         onTouchEnd={e => {
           const diff = e.changedTouches[0].pageX - startX;
-          if (Math.abs(diff) > 50) diff < 0 ? goNext() : goPrev();
+          if (Math.abs(diff) > 50) { diff < 0 ? goNext() : goPrev(); }
         }}
       >
         {extendedItems.map((event, i) => (
           <div
             key={`${event.id}-${i}`}
             style={{
-              width: slideWidth || "75%",
+              width: slideWidth || (window.innerWidth > 768 ? "75%" : "85%"),
               flexShrink:0,
               padding:"0 8px",
-              borderRadius:12,
               overflow:"hidden",
               position:"relative",
-              opacity: i === extIndex ? (hoveredIndex === i ? 0.7 : 1) : 0.6,
-              transform: i === extIndex ? "scale(1)" : "scale(0.92)",
-              transition:"all 0.4s ease",
+              opacity: i === extIndex ? (hoveredIndex === i ? 0.8 : 1) : 1,
+              transition:"opacity 0.2s ease",
               cursor:"pointer",
             }}
             onClick={() => { if (!dragging) { if (i === extIndex) onSelect(event); else i < extIndex ? goPrev() : goNext(); } }}
@@ -265,23 +267,23 @@ function Carousel({ events, onSelect }) {
                 {GENRE_EMOJI[event.tags?.genre] || "📌"}
               </div>
             )}
-            {i === extIndex && (
+            {/* PR部分で文字を表示させる
               <div style={{ position:"absolute", bottom:0, left:8, right:8, padding:"40px 16px 16px", background:"linear-gradient(transparent, rgba(0,0,0,0.75))", borderRadius:"0 0 12px 12px" }}>
                 {event.tags?.genre && <span style={{ background:"#88203a", color:"white", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999 }}>{event.tags.genre}</span>}
-                <h2 style={{ color:"white", fontSize:18, fontWeight:900, margin:"8px 0 4px", textShadow:"0 2px 4px rgba(0,0,0,0.3)" }}>{event.title}</h2>
+                <h2 style={{ color:"white", fontSize: window.innerWidth > 768 ? 20 : 16, fontWeight:900, margin:"8px 0 4px", textShadow:"0 2px 4px rgba(0,0,0,0.3)" }}>{event.title}</h2>
                 <p style={{ color:"rgba(255,255,255,0.85)", fontSize:12 }}>📅 {event.date} 📍 {event.location}</p>
               </div>
-            )}
+            */}
           </div>
         ))}
       </div>
 
-      <button style={{ position:"absolute", top:"45%", left:12, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width:40, height:40, fontSize:24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10 }} onClick={goPrev}>‹</button>
-      <button style={{ position:"absolute", top:"45%", right:12, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width:40, height:40, fontSize:24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10 }} onClick={goNext}>›</button>
+      <button style={{ position:"absolute", top:"85%", left:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width:40, height:40, fontSize:24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10 }} onClick={goPrev}>‹</button>
+      <button style={{ position:"absolute", top:"85%", right:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width:40, height:40, fontSize:24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10 }} onClick={goNext}>›</button>
 
       <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6 }}>
         {items.map((_, i) => (
-          <div key={i} style={{ height:4, width: i === index ? 32 : 16, borderRadius:999, background: i === index ? "#88203a" : "rgba(0,0,0,0.2)", cursor:"pointer", transition:"all 0.3s" }} onClick={() => { setTransitioning(true); setExtIndex(i + 1); }} />
+          <div key={i} style={{ height:4, width: i === index ? 32 : 16, borderRadius:999, background: i === index ? "#88203a" : "rgba(0,0,0,0.2)", cursor:"pointer", transition:"all 0.3s" }} onClick={() => { setTransitioning(true); setExtIndex(i + 1); resetTimer(); }} />
         ))}
       </div>
     </div>
