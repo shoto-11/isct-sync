@@ -83,7 +83,7 @@ function RankItem({ event, rank, count, label, onSelect }) {
     </div>
   );
 }
-function Section({ title, badge, events, onSelect, icon }) {
+function Section({ title, badge, events, onSelect, icon, maxItems = 20 }) {
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -91,6 +91,7 @@ function Section({ title, badge, events, onSelect, icon }) {
   const [scrollLeft, setScrollLeft] = useState(0);
   const [hovered, setHovered] = useState(false);
   const ref = { current: null };
+  const displayEvents = events.slice(0, maxItems);
 
   useEffect(() => {
   const el = ref.current;
@@ -170,8 +171,8 @@ function Section({ title, badge, events, onSelect, icon }) {
           onMouseLeave={handleMouseUp}
         >
           <div style={s.cardsGrid}>
-            {events.map(event => (
-              <EventCard key={event.id} event={event} onSelect={dragged ? () => {} : onSelect} />
+            {displayEvents.map(event => (
+            <EventCard key={event.id} event={event} onSelect={dragged ? () => {} : onSelect} />
             ))}
           </div>
         </div>
@@ -475,7 +476,7 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
                 const bScore = (bData?.viewCount || 0) * 1 + (bData?.likeCount || 0) * 5 + (bData?.joinCount || 0) * 10;
                 return bScore - aScore;
             })
-            .slice(0, 10);
+            .slice(0, 20);
             setPopularWeekEvents(popularThisWeek);
       setLoading(false);
     };

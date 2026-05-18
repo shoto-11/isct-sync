@@ -5,6 +5,7 @@ import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc } fr
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { BG_COLOR } from "./constants";
 import { MapPin, Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip } from "lucide-react";
+import { GAKUIN } from "./constants";
 
 export default function EventDetail({ event: initialEvent, onBack }) {
   const [event, setEvent] = useState(initialEvent);
@@ -34,6 +35,8 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     const [likeCount, setLikeCount] = useState(0);
     const [joinCount, setJoinCount] = useState(0);
     const [organizer, setOrganizer] = useState(null);
+    const [editTargetGakuin, setEditTargetGakuin] = useState(event.targetGakuin || []);
+const [editTargetGakukei, setEditTargetGakukei] = useState(event.targetGakukei || []);
 
   const isOwner = auth.currentUser?.uid === event.createdBy;
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5" };
@@ -124,6 +127,8 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           style: editStyle,
           organizer: editOrganizer,
         },
+        targetGakuin: editTargetGakuin,
+        targetGakukei: editTargetGakukei,
       };
       await updateDoc(doc(db, "events", event.id), updated);
       setEvent(prev => ({ ...prev, ...updated }));
@@ -268,6 +273,39 @@ const handleJoin = async () => {
             ))}
           </div>
         </div>
+        {/* 対象学院 */}
+        <div style={s.editSection}>
+        <label style={s.editLabel}>対象学院（任意・複数選択可）</label>
+        <div style={s.optionGrid}>
+            {Object.keys(GAKUIN).map(g => (
+            <button
+                key={g}
+                style={{ ...s.tagBtn, ...(editTargetGakuin.includes(g) ? s.tagBtnActive : {}) }}
+                onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
+            >
+                {g}
+            </button>
+            ))}
+        </div>
+        </div>
+
+        {/* 対象学系 */}
+        {editTargetGakuin.length > 0 && (
+        <div style={s.editSection}>
+            <label style={s.editLabel}>対象学系（任意・複数選択可）</label>
+            <div style={s.optionGrid}>
+            {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
+                <button
+                key={k}
+                style={{ ...s.tagBtn, ...(editTargetGakukei.includes(k) ? s.tagBtnActive : {}) }}
+                onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
+                >
+                {k}
+                </button>
+            ))}
+            </div>
+        </div>
+        )}
 
         {/* キャンパス */}
         <div style={s.editSection}>
