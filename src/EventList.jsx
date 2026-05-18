@@ -254,12 +254,12 @@ function Carousel({ events, onSelect }) {
     }
   }, [extIndex]);
 
-  const slideWidth = wrapperRef.current ? wrapperRef.current.offsetWidth * (window.innerWidth > 768 ? 0.55 : 0.75) : 0;
+  const slideWidth = wrapperRef.current ? wrapperRef.current.offsetWidth * (window.innerWidth > 768 ? 0.55 : 0.88) : 0;
   const offset = wrapperRef.current ? (wrapperRef.current.offsetWidth - slideWidth) / 2 - extIndex * slideWidth : 0;
 
   return (
-    <div ref={wrapperRef} style={{ position:"relative", overflow:"hidden", width:"100%", paddingBottom:40, userSelect:"none", opacity: ready ? 1 : 0, transition:"opacity 0.3s ease" }}>
-              <div
+    <div ref={wrapperRef} style={{ position:"relative", overflow:"hidden", width:"100%", paddingBottom:24, userSelect:"none", opacity: ready ? 1 : 0, transition:"opacity 0.3s ease" }}>
+                  <div
         style={{ display:"flex", transform:`translateX(${offset}px)`, transition: transitioning ? "transform 0.4s ease" : "none", willChange:"transform" }}
         onMouseDown={e => { setDragging(false); setStartX(e.pageX); }}
         onMouseMove={e => { if (Math.abs(e.pageX - startX) > 5) setDragging(true); }}
@@ -308,10 +308,15 @@ function Carousel({ events, onSelect }) {
         ))}
       </div>
 
-      <button style={{ position:"absolute", top:"85%", left:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width:40, height:40, fontSize:24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10 }} onClick={goPrev}>‹</button>
-      <button style={{ position:"absolute", top:"85%", right:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width:40, height:40, fontSize:24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10 }} onClick={goNext}>›</button>
+      <button style={{ position:"absolute", top:"85%", left:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width: window.innerWidth > 768 ? 52 : 40, height: window.innerWidth > 768 ? 52 : 40, fontSize: window.innerWidth > 768 ? 32 : 24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={goPrev}>
+  <svg width={window.innerWidth > 768 ? 24 : 18} height={window.innerWidth > 768 ? 24 : 18} viewBox="0 0 24 24" fill="none" stroke="#88203a" strokeWidth="3"><polyline points="15 18 9 12 15 6"/></svg>
+</button>
 
-      <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6 }}>
+    <button style={{ position:"absolute", top:"85%", right:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width: window.innerWidth > 768 ? 52 : 40, height: window.innerWidth > 768 ? 52 : 40, fontSize: window.innerWidth > 768 ? 32 : 24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={goNext}>
+  <svg width={window.innerWidth > 768 ? 24 : 18} height={window.innerWidth > 768 ? 24 : 18} viewBox="0 0 24 24" fill="none" stroke="#88203a" strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
+</button>
+    
+        <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6 }}>
         {items.map((_, i) => (
           <div key={i} style={{ height:4, width: i === index ? 32 : 16, borderRadius:999, background: i === index ? "#88203a" : "rgba(0,0,0,0.2)", cursor:"pointer", transition:"all 0.3s" }} onClick={() => { setTransitioning(true); setExtIndex(i + 1); resetTimer(); }} />
         ))}
