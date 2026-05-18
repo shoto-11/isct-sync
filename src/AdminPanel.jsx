@@ -197,7 +197,7 @@ const [editingUser, setEditingUser] = useState(null);
         {/* カルーセル */}
         {activeTab === "carousel" && (
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            <h2 style={{ fontSize:16, fontWeight:700 }}>PR広告に表示するイベント（最大5件）</h2>
+            <h2 style={{ fontSize:16, fontWeight:700 }}>PR広告に表示するイベント（最大10件）</h2>
             
             {/* 検索欄 */}
             <div style={{ display:"flex", gap:8 }}>
@@ -228,7 +228,7 @@ const [editingUser, setEditingUser] = useState(null);
                     <button
                         style={{ padding:"6px 16px", borderRadius:999, border:`1.5px solid ${carouselEventIds.includes(event.id) ? THEME : "#D0DDD9"}`, background: carouselEventIds.includes(event.id) ? THEME : "white", color: carouselEventIds.includes(event.id) ? "white" : "#5A7370", fontSize:12, fontWeight:700, cursor:"pointer" }}
                         onClick={() => toggleCarousel(event.id)}
-                        disabled={!carouselEventIds.includes(event.id) && carouselEventIds.length >= 5}
+                        disabled={!carouselEventIds.includes(event.id) && carouselEventIds.length >= 11}
                     >
                         {carouselEventIds.includes(event.id) ? "選択中" : "選択"}
                     </button>

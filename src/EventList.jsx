@@ -201,7 +201,7 @@ function Carousel({ events, onSelect }) {
     }, []);
 
   const timerRef = useRef(null);
-  const items = events.slice(0, 5);
+  const items = events.slice(0, 10);
   const total = items.length;
   const extendedItems = [items[total - 1], ...items, items[0]];
   const [extIndex, setExtIndex] = useState(1);
