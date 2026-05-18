@@ -82,21 +82,21 @@ function RankItem({ event, rank, count, label, onSelect }) {
     </div>
   );
 }
-
 function Section({ title, badge, events, onSelect }) {
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
-  const [dragged, setDragged] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const ref = { current: null };
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    setShowRight(el.scrollWidth > el.clientWidth + 10);
-  });
+  const el = ref.current;
+  if (!el) return;
+  setShowLeft(el.scrollLeft > 10);
+  setShowRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+});
 
   if (events.length === 0) return null;
 
@@ -113,30 +113,30 @@ function Section({ title, badge, events, onSelect }) {
   };
 
   const handleMouseDown = (e) => {
-  const el = ref.current;
-  if (!el) return;
-  setIsDragging(true);
-  setDragged(false);
-  setStartX(e.pageX - el.offsetLeft);
-  setScrollLeft(el.scrollLeft);
-  el.style.cursor = "grabbing";
-};
+    const el = ref.current;
+    if (!el) return;
+    setIsDragging(true);
+    setStartX(e.pageX - el.offsetLeft);
+    setScrollLeft(el.scrollLeft);
+    el.style.cursor = "grabbing";
+  };
 
   const handleMouseMove = (e) => {
-  if (!isDragging) return;
-  const el = ref.current;
-  if (!el) return;
-  e.preventDefault();
-  const x = e.pageX - el.offsetLeft;
-  const walk = (x - startX) * 1.5;
-  if (Math.abs(walk) > 5) setDragged(true);
-  el.scrollLeft = scrollLeft - walk;
-};
+    if (!isDragging) return;
+    const el = ref.current;
+    if (!el) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    const walk = (x - startX) * 1.5;
+    el.scrollLeft = scrollLeft - walk;
+  };
 
   const handleMouseUp = () => {
     setIsDragging(false);
     if (ref.current) ref.current.style.cursor = "grab";
   };
+
+  const [dragged, setDragged] = useState(false);
 
   return (
     <>
@@ -144,18 +144,26 @@ function Section({ title, badge, events, onSelect }) {
         <span style={s.sectionTitle}>{title}</span>
         <span style={s.sectionBadge}>{badge || `全${events.length}件`}</span>
       </div>
-      <div style={{ position:"relative" }}>
-        {showLeft && (
-          <button style={{ ...s.scrollArrow, left:0 }} onClick={() => scroll("left")}>‹</button>
-        )}
-        {showLeft && <div style={{ ...s.fade, left:0, background:"linear-gradient(to right, white, transparent)" }} />}
+      <div
+        style={{ position:"relative" }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        {/* 左矢印 */}
+        <button style={{
+          ...s.scrollArrow, left:0,
+          opacity: hovered && showLeft ? 1 : 0,
+          pointerEvents: hovered && showLeft ? "auto" : "none",
+          transition: "opacity 0.4s ease",
+        }} onClick={() => scroll("left")}>‹</button>
+        {showLeft && <div style={{ ...s.fade, left:0, background:"linear-gradient(to right, white, transparent)", opacity: hovered ? 1 : 0, transition: "opacity 0.4s ease" }} />}
 
         <div
           ref={el => ref.current = el}
           style={{ ...s.cardsScrollWrapper, cursor:"grab", userSelect:"none" }}
           onScroll={handleScroll}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
+          onMouseDown={(e) => { setDragged(false); handleMouseDown(e); }}
+          onMouseMove={(e) => { if (Math.abs(e.pageX - startX) > 5) setDragged(true); handleMouseMove(e); }}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
         >
@@ -166,14 +174,19 @@ function Section({ title, badge, events, onSelect }) {
           </div>
         </div>
 
-        {showRight && <div style={{ ...s.fade, right:0, background:"linear-gradient(to left, white, transparent)" }} />}
-        {showRight && (
-          <button style={{ ...s.scrollArrow, right:0 }} onClick={() => scroll("right")}>›</button>
-        )}
+        {/* 右矢印 */}
+        <div style={{ ...s.fade, right:0, background:"linear-gradient(to left, white, transparent)", opacity: hovered && showRight ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents:"none" }} />
+        <button style={{
+          ...s.scrollArrow, right:0,
+          opacity: hovered && showRight ? 1 : 0,
+          pointerEvents: hovered && showRight ? "auto" : "none",
+          transition: "opacity 0.4s ease",
+        }} onClick={() => scroll("right")}>›</button>
       </div>
     </>
   );
 }
+
 function Carousel({ events, onSelect }) {
   const [index, setIndex] = useState(0);
   const [startX, setStartX] = useState(0);
