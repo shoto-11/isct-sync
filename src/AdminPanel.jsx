@@ -35,7 +35,7 @@ useEffect(() => {
       const settingsSnap = await getDoc(doc(db, "adminSettings", "display"));
       if (settingsSnap.exists()) {
         const data = settingsSnap.data();
-        setNotice(data.notice || "");
+        setNotice(data.notice || { items: [{ text:"", link:"" }] });
         const savedCarousel = localStorage.getItem("carouselEventIds");
         if (savedCarousel) {
           setCarouselEventIds(JSON.parse(savedCarousel));
@@ -52,13 +52,13 @@ useEffect(() => {
     };
     fetchData();
   }, [user]);
-  
+
 const handleSave = async () => {
   setSaving(true);
   try {
     await updateDoc(doc(db, "adminSettings", "display"), {
-      notice,
-      carouselEventIds,
+    notice,
+    carouselEventIds,
     });
   } catch {
     const { setDoc } = await import("firebase/firestore");
@@ -143,17 +143,51 @@ const handleSave = async () => {
 
         {/* お知らせ */}
         {activeTab === "notice" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            <h2 style={{ fontSize:16, fontWeight:700 }}>お知らせ文言</h2>
-            <textarea
-              style={{ width:"100%", padding:"12px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical" }}
-              rows={4}
-              value={notice}
-              onChange={e => setNotice(e.target.value)}
-              placeholder="お知らせの文言を入力してください"
-            />
-            <p style={{ fontSize:12, color:"#5A7370" }}>現在：{notice || "未設定"}</p>
-          </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            <h2 style={{ fontSize:16, fontWeight:700 }}>お知らせ（最大5件）</h2>
+            {(notice.items || [{ text:"", link:"" }]).map((item, i) => (
+            <div key={i} style={{ background:"white", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <span style={{ fontSize:13, fontWeight:700, color:"#5A7370" }}>お知らせ {i + 1}</span>
+                {(notice.items || []).length > 1 && (
+                    <button style={{ background:"none", border:"none", color:"#E53935", fontSize:12, fontWeight:700, cursor:"pointer" }} onClick={() => {
+                    const newItems = [...(notice.items || [])];
+                    newItems.splice(i, 1);
+                    setNotice({ ...notice, items: newItems });
+                    }}>削除</button>
+                )}
+                </div>
+                <input
+                style={{ padding:"10px 14px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit" }}
+                placeholder="お知らせの文章を入力"
+                value={item.text || ""}
+                onChange={e => {
+                    const newItems = [...(notice.items || [])];
+                    newItems[i] = { ...newItems[i], text: e.target.value };
+                    setNotice({ ...notice, items: newItems });
+                }}
+                />
+                <input
+                style={{ padding:"10px 14px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit" }}
+                placeholder="リンク（任意）例：https://..."
+                value={item.link || ""}
+                onChange={e => {
+                    const newItems = [...(notice.items || [])];
+                    newItems[i] = { ...newItems[i], link: e.target.value };
+                    setNotice({ ...notice, items: newItems });
+                }}
+                />
+            </div>
+            ))}
+            {(notice.items || []).length < 5 && (
+            <button style={{ padding:"12px", background:"white", border:"1.5px dashed #D0DDD9", borderRadius:8, fontSize:14, fontWeight:700, cursor:"pointer", color:"#5A7370" }} onClick={() => {
+                const newItems = [...(notice.items || []), { text:"", link:"" }];
+                setNotice({ ...notice, items: newItems });
+            }}>
+                ＋ お知らせを追加
+            </button>
+            )}
+        </div>
         )}
         {/* カルーセル */}
         {activeTab === "carousel" && (

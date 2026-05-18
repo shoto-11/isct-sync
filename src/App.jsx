@@ -128,6 +128,8 @@ export default function App() {
   const [showContact, setShowContact] = useState(false);
   const [menuProfile, setMenuProfile] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [noticeItems, setNoticeItems] = useState([]);
+const [noticeIndex, setNoticeIndex] = useState(0);
 
   // メールリンクからのログイン処理
   useEffect(() => {
@@ -187,6 +189,27 @@ export default function App() {
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, [tab]);
+
+  useEffect(() => {
+      const fetchNotice = async () => {
+        const snap = await getDoc(doc(db, "adminSettings", "display"));
+        if (snap.exists()) {
+          const items = snap.data().notice?.items || [];
+          const filtered = items.filter(i => i.text);
+          setNoticeItems(filtered.length > 0 ? filtered : [{ text:"【新着】イベントを投稿して仲間を集めよう！", link:"" }]);
+        }
+      };
+      fetchNotice();
+    }, []);
+
+    useEffect(() => {
+      if (noticeItems.length <= 1) return;
+      const timer = setInterval(() => {
+        setNoticeIndex(i => (i + 1) % noticeItems.length);
+      }, 4000);
+      return () => clearInterval(timer);
+    }, [noticeItems]);
+
     if (loading) return (
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", minHeight:"100vh", background:"#88203a" }}>
         <img src={logo} alt="SYNC" style={{ height:60, objectFit:"contain", animation:"pulse 1.5s ease-in-out infinite" }} />
@@ -233,15 +256,32 @@ export default function App() {
           </div>
         </div>
       </header>
-
       {/* ── Notice ── */}
-      <div style={s.noticeBar}>
-        <div style={s.noticeIcon}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007A6E" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div style={{ ...s.noticeBar, overflow:"hidden", height:48, cursor: noticeItems[noticeIndex]?.link ? "pointer" : "default" }} onClick={() => noticeItems[noticeIndex]?.link && window.open(noticeItems[noticeIndex].link, "_blank")}>
+          <div style={{ maxWidth:1200, margin:"0 auto", width:"100%", display:"flex", alignItems:"center", height:"100%" }}>
+            <div style={s.noticeIcon}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007A6E" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div style={{ flex:1, overflow:"hidden", position:"relative", height:"100%", display:"flex", alignItems:"center" }}>
+              {noticeItems.map((item, i) => (
+                <div key={i} style={{
+                  position:"absolute",
+                  width:"100%",
+                  opacity: i === noticeIndex ? 1 : 0,
+                  transform: i === noticeIndex ? "translateY(0)" : i < noticeIndex ? "translateY(-100%)" : "translateY(100%)",
+                  transition:"all 0.5s ease",
+                  fontSize:13,
+                  fontWeight:600,
+                  color:"#1A2E2B",
+                  whiteSpace:"nowrap",
+                  overflow:"hidden",
+                  textOverflow:"ellipsis",
+                }}>{item.text}</div>
+              ))}
+            </div>
+            <div style={{ color:"#B0BEC5", fontSize:16, flexShrink:0 }}>›</div>
+          </div>
         </div>
-        <div style={s.noticeText}>【新着】イベントを投稿して仲間を集めよう！</div>
-        <div style={{ color:"#B0BEC5", fontSize:16 }}>›</div>
-      </div>
       {/* ── お問い合わせ ── */}
         {showContact && (
           <div style={{ position:"fixed", inset:0, zIndex:300, background:"#F4F6F5", overflowY:"auto" }}>
@@ -393,7 +433,7 @@ const s = {
   navTabs: { display:"flex", borderTop:"1px solid rgba(255,255,255,0.1)", padding:"0 40px", maxWidth:1200, margin:"0 auto" },
   navTab: { flex:1, textAlign:"center", padding:"10px 0", color:"rgba(255,255,255,0.6)", fontSize:13, fontWeight:500, cursor:"pointer", background:"none", border:"none", borderBottom:"2px solid transparent" },
   navTabActive: { color:"white", borderBottom:"2px solid #F5A623" },
-  noticeBar: { background:"white", borderLeft:`4px solid ${THEME}`, margin:"12px 14px", borderRadius:6, padding:"10px 14px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 1px 4px rgba(0,0,0,0.07)" },
+  noticeBar: { background:"white", borderLeft:`4px solid ${THEME}`, margin: window.innerWidth > 768 ? "12px 100px" : "12px 14px", borderRadius:6, padding:"10px 14px", display:"flex", alignItems:"center", gap:10, boxShadow:"0 1px 4px rgba(0,0,0,0.07)", overflow:"hidden", height:48 },
   noticeIcon: { background:"#F9EAED", borderRadius:"50%", width:32, height:32, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
   noticeText: { fontSize:12.5, color:"#5A7370", flex:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" },
   fab: { position:"fixed", bottom:24, right:18, background:THEME, color:"white", border:"none", borderRadius:999, padding:"12px 20px", fontSize:14, fontWeight:900, cursor:"pointer", boxShadow:`0 4px 18px rgba(136,32,58,0.45)`, zIndex:99 },
