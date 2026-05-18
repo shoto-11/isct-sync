@@ -17,6 +17,7 @@ import UserProfile from "./UserProfile";
 import Search from "./Search";
 import { BG_COLOR } from "./constants";
 import AdminPanel from "./AdminPanel";
+import { Search as SearchIcon, User, Menu, Home, PenLine, Mail, LogOut, LogIn, Settings, ChevronRight } from "lucide-react";
 
 function EventPageWrapper({ user }) {
   const { eventId } = useParams();
@@ -218,15 +219,15 @@ export default function App() {
           />
           <div style={s.headerIcons}>
             <button style={s.iconBtn} onClick={() => navigate('/search')}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              <SearchIcon size={20} />
               <span>さがす</span>
             </button>
             <button style={s.iconBtn} onClick={() => navigate('/mypage')}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <User size={20} />
               <span>マイページ</span>
             </button>
             <button style={s.iconBtn} onClick={() => setMenuOpen(true)}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <Menu size={20} />
               <span>メニュー</span>
             </button>
           </div>
@@ -327,7 +328,7 @@ export default function App() {
               {menuProfile?.avatarUrl ? (
                 <img src={menuProfile.avatarUrl} alt="avatar" style={{ width:48, height:48, borderRadius:"50%", objectFit:"cover" }} />
               ) : (
-                <span style={{ fontSize:24 }}>👤</span>
+                <User size={24} color="white" />
               )}
             </div>
             <div>
@@ -339,39 +340,39 @@ export default function App() {
           {/* メニュー項目 */}
           <div style={s.menuItems}>
             <button style={s.menuItem} onClick={() => { navigate('/'); setMenuOpen(false); }}>
-              <span style={s.menuItemLeft}>🏠 ホーム</span>
-              <span style={s.menuChevron}>›</span>
+              <span style={s.menuItemLeft}><Home size={18} />&nbsp; ホーム</span>
+              <ChevronRight size={16} color="#B0BEC5" />
             </button>
             <button style={s.menuItem} onClick={() => { navigate('/mypage'); setMenuOpen(false); }}>
-              <span style={s.menuItemLeft}>👤 マイページ</span>
-              <span style={s.menuChevron}>›</span>
+              <span style={s.menuItemLeft}><User size={18} />&nbsp; マイページ</span>
+              <ChevronRight size={16} color="#B0BEC5" />
             </button>
             <button style={s.menuItem} onClick={() => { navigate('/post'); setMenuOpen(false); }}>
-              <span style={s.menuItemLeft}>✏️ イベントを作る</span>
-              <span style={s.menuChevron}>›</span>
+              <span style={s.menuItemLeft}><PenLine size={18} />&nbsp; イベントを作る</span>
+              <ChevronRight size={16} color="#B0BEC5" />
             </button>
             <div style={s.menuDivider} />
             <button style={s.menuItem} onClick={() => { setShowContact(true); setMenuOpen(false); }}>
-              <span style={s.menuItemLeft}>✉️ お問い合わせ</span>
-              <span style={s.menuChevron}>›</span>
+              <span style={s.menuItemLeft}><Mail size={18} />&nbsp; お問い合わせ</span>
+              <ChevronRight size={16} color="#B0BEC5" />
             </button>
             <div style={s.menuDivider} />
             {user ? (
               <button style={{ ...s.menuItem, color:"#C62828" }} onClick={() => { signOut(auth); setMenuOpen(false); }}>
-                <span style={s.menuItemLeft}>🚪 ログアウト</span>
-                <span style={s.menuChevron}>›</span>
+                <span style={{ ...s.menuItemLeft, color:"#C62828" }}><LogOut size={18} />&nbsp; ログアウト</span>
+                <ChevronRight size={16} color="#B0BEC5" />
               </button>
             ) : (
               <button style={s.menuItem} onClick={() => { setShowLogin(true); setMenuOpen(false); }}>
-                <span style={s.menuItemLeft}>🔑 ログイン</span>
-                <span style={s.menuChevron}>›</span>
+                <span style={s.menuItemLeft}><LogIn size={18} />&nbsp; ログイン</span>
+                <ChevronRight size={16} color="#B0BEC5" />
               </button>
             )}
             <div style={s.menuDivider} />
             {user && isAdmin && (
               <button style={s.menuItem} onClick={() => { navigate('/admin'); setMenuOpen(false); }}>
-                <span style={s.menuItemLeft}>⚙️ 管理者パネル</span>
-                <span style={s.menuChevron}>›</span>
+                <span style={s.menuItemLeft}><Settings size={18} />&nbsp; 管理者パネル</span>
+                <ChevronRight size={16} color="#B0BEC5" />
               </button>
             )}
           </div>
@@ -411,7 +412,7 @@ menuIcon: { fontSize:18, width:24, textAlign:"center" },
 menuAvatar: { fontSize:32, width:48, height:48, background:"rgba(255,255,255,0.2)", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },
 menuUserName: { color:"white", fontSize:14, fontWeight:700 },
 menuUserEmail: { color:"rgba(255,255,255,0.7)", fontSize:11, marginTop:2 },
-menuItemLeft: { display:"flex", alignItems:"center", gap:10 },
+menuItemLeft: { display:"flex", alignItems:"center", gap:8 },
 menuChevron: { color:"#B0BEC5", fontSize:18 },
 footer: { background:"#1A1A1A", padding:"32px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12, marginTop:0 },
 footerLogo: { height:36, objectFit:"contain", opacity:0.9 },

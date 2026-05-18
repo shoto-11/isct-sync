@@ -4,6 +4,7 @@ import { db, storage, auth } from "./firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { BG_COLOR } from "./constants";
+import { MapPin, Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip } from "lucide-react";
 
 export default function EventDetail({ event: initialEvent, onBack }) {
   const [event, setEvent] = useState(initialEvent);
@@ -343,7 +344,7 @@ const handleJoin = async () => {
 
         <div style={s.infoBox}>
           <div style={s.infoRow}>
-            <span style={s.infoIcon}>📅</span>
+            <span style={s.infoIcon}><Calendar size={20} color="#88203a" /></span>
             <div>
               <div style={s.infoLabel}>イベント日時</div>
               <div style={s.infoValue}>{event.date}{event.startTime && ` ${event.startTime}`}{event.endTime && ` 〜 ${event.endTime}`}</div>
@@ -351,7 +352,7 @@ const handleJoin = async () => {
           </div>
           <div style={s.infoDivider} />
           <div style={s.infoRow}>
-            <span style={s.infoIcon}>📍</span>
+            <span style={s.infoIcon}><MapPin size={20} color="#88203a" /></span>
             <div>
               <div style={s.infoLabel}>場所</div>
               <div style={s.infoValue}>{event.location}</div>
@@ -361,7 +362,7 @@ const handleJoin = async () => {
             <>
               <div style={s.infoDivider} />
               <div style={s.infoRow}>
-                <span style={s.infoIcon}>⏰</span>
+                <span style={s.infoIcon}><Clock size={20} color="#88203a" /></span>
                 <div>
                   <div style={s.infoLabel}>申し込み締切</div>
                   <div style={s.infoValue}>{event.deadline}{event.deadlineTime && ` ${event.deadlineTime}`}</div>
@@ -373,7 +374,7 @@ const handleJoin = async () => {
             <>
               <div style={s.infoDivider} />
               <div style={s.infoRow}>
-                <span style={s.infoIcon}>👥</span>
+                <span style={s.infoIcon}><Users size={20} color="#88203a" /></span>
                 <div>
                   <div style={s.infoLabel}>残り枠</div>
                   <div style={s.infoValue}>{remaining} / {event.capacity} 人</div>
@@ -405,7 +406,9 @@ const handleJoin = async () => {
             <h2 style={s.sectionTitle}>添付資料</h2>
             <div style={s.attachList}>
               {event.attachments.map((a, i) => (
-                <a key={i} href={a.url} target="_blank" rel="noreferrer" style={s.attachItem}>📄 {a.name}</a>
+                <a key={i} href={a.url} target="_blank" rel="noreferrer" style={s.attachItem}>
+                <Paperclip size={14} style={{ marginRight:4 }} /> {a.name}
+                </a>
               ))}
             </div>
           </div>
@@ -432,13 +435,15 @@ const handleJoin = async () => {
                 {organizer.avatarUrl ? (
                     <img src={organizer.avatarUrl} alt="avatar" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover" }} />
                 ) : (
-                    <div style={{ width:44, height:44, borderRadius:"50%", background:"#F9EAED", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>👤</div>
+                    <div style={{ width:44, height:44, borderRadius:"50%", background:"#F9EAED", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <User size={20} color="#88203a" />
+                    </div>
                 )}
                 <div>
                     <div style={{ fontSize:15, fontWeight:700, color:"#111" }}>{organizer.displayName}</div>
                     <div style={{ fontSize:12, color:"#5A7370" }}>{organizer.gakuin} {organizer.gakukei}</div>
                 </div>
-                <span style={{ marginLeft:"auto", color:"#B0BEC5", fontSize:18 }}>›</span>
+                <ChevronRight size={18} color="#B0BEC5" style={{ marginLeft:"auto" }} />
                 </div>
             </div>
             )}
@@ -449,13 +454,13 @@ const handleJoin = async () => {
             style={{ ...s.actionBtn, ...(liked ? s.actionBtnActive : {}) }}
             onClick={handleLike}
             >
-            {liked ? "❤️" : "🤍"} いいね {likeCount > 0 && likeCount}
+            {liked ? <Heart size={16} fill="#E53935" color="#E53935" /> : <Heart size={16} />} いいね {likeCount > 0 && likeCount}
             </button>
             <button
             style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
             onClick={handleJoin}
             >
-            {joining ? "✅" : "📅"} 参加予定 {joinCount > 0 && joinCount}
+            {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} 参加予定 {joinCount > 0 && joinCount}
             </button>
         </div>
         )}

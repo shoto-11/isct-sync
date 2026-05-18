@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { GENRE_STYLES, GENRE_EMOJI, GAKUIN, GAKUNEN, GENDER } from "./constants";
 import FollowList from "./FollowList";
 import { BG_COLOR } from "./constants";
+import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, Calendar, MapPin } from "lucide-react";
 
 function FollowButton({ count, label, onClick }) {
   const [hovered, setHovered] = useState(false);
@@ -145,11 +146,13 @@ const [showFollowList, setShowFollowList] = useState(null); // "follows" | "foll
               <img src={avatarUrl} alt="avatar" style={s.avatar} />
             ) : (
               <div style={s.avatarPlaceholder}>
-                <span style={{ fontSize:36 }}>👤</span>
+                <div style={s.avatarPlaceholder}>
+                <User size={36} color="#88203a" />
+                </div>
               </div>
             )}
             <button style={s.avatarEditBtn} onClick={() => document.getElementById("avatarInput").click()}>
-              {uploading ? "..." : "📷"}
+              {uploading ? "..." : <Camera size={14} />}
             </button>
             <input id="avatarInput" type="file" accept="image/*" style={{ display:"none" }} onChange={handleAvatarChange} />
           </div>
@@ -157,7 +160,7 @@ const [showFollowList, setShowFollowList] = useState(null); // "follows" | "foll
           <div style={s.nameRow}>
             <h2 style={s.name}>{profile?.displayName}</h2>
             <button style={s.editBtn} onClick={() => setEditMode(!editMode)}>
-              {editMode ? "✕ 閉じる" : "✏️ 編集"}
+              {editMode ? "✕ 閉じる" : <><Pencil size={14} /> 編集</>}
             </button>
           </div>
 
@@ -256,22 +259,22 @@ const [showFollowList, setShowFollowList] = useState(null); // "follows" | "foll
         {!editMode && (
           <div style={s.infoBox}>
             <div style={s.infoRow}>
-              <span style={s.infoLabel}>🏫 学院</span>
+              <span style={s.infoLabel}><Building2 size={14} /> 学院</span>
               <span style={s.infoValue}>{profile?.gakuin}</span>
             </div>
             <div style={s.infoDivider} />
             <div style={s.infoRow}>
-              <span style={s.infoLabel}>📚 学系</span>
+              <span style={s.infoLabel}><BookOpen size={14} /> 学系</span>
               <span style={s.infoValue}>{profile?.gakukei}</span>
             </div>
             <div style={s.infoDivider} />
             <div style={s.infoRow}>
-              <span style={s.infoLabel}>🎓 学年</span>
+              <span style={s.infoLabel}><GraduationCap size={14} /> 学年</span>
               <span style={s.infoValue}>{profile?.gakunen}</span>
             </div>
             <div style={s.infoDivider} />
             <div style={s.infoRow}>
-              <span style={s.infoLabel}>👤 性別</span>
+              <span style={s.infoLabel}><User size={14} /> 性別</span>
               <span style={s.infoValue}>{profile?.gender}</span>
             </div>
           </div>
@@ -315,7 +318,7 @@ const [showFollowList, setShowFollowList] = useState(null); // "follows" | "foll
                     )}
                     <div style={s.eventInfo}>
                         <div style={s.eventTitle}>{event.title}</div>
-                        <div style={s.eventMeta}>📅 {event.date} 📍 {event.location}</div>
+                        <div style={s.eventMeta}><Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}</div>
                     </div>
                     </div>
                 );

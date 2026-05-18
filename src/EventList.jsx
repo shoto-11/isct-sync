@@ -6,6 +6,7 @@ import logo from "./assets/logo.png";
 import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { useEffect, useState, useRef } from "react";
 import { BG_COLOR } from "./constants";
+import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck } from "lucide-react";
 
 function EventCard({ event, onSelect }) {
   const [hovered, setHovered] = useState(false);
@@ -82,7 +83,7 @@ function RankItem({ event, rank, count, label, onSelect }) {
     </div>
   );
 }
-function Section({ title, badge, events, onSelect }) {
+function Section({ title, badge, events, onSelect, icon }) {
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -141,9 +142,10 @@ function Section({ title, badge, events, onSelect }) {
   return (
     <>
       <div style={s.sectionHeading}>
+        {icon && icon}
         <span style={s.sectionTitle}>{title}</span>
         <span style={s.sectionBadge}>{badge || `全${events.length}件`}</span>
-      </div>
+        </div>
       <div
         style={{ position:"relative" }}
         onMouseEnter={() => setHovered(true)}
@@ -471,17 +473,10 @@ return (
 {events.length > 0 && <Carousel events={events} onSelect={handleSelect} />}
 
   <div style={{ maxWidth:1200, margin:"0 auto", padding: window.innerWidth > 768 ? "0 24px" : "0", overflow:"hidden", width:"100%", boxSizing:"border-box" }}>
-      {/* 募集中のイベント */}
-      <Section title="📅 募集中のイベント" events={events} onSelect={handleSelect} />
-
-      {/* サークル募集 */}
-      <Section title="🏫 サークル募集" events={circleEvents} onSelect={handleSelect} />
-
-      {/* 今日が締め切り */}
-      <Section title="⏰ 今日が締め切り" events={todayDeadlineEvents} onSelect={handleSelect} />
-
-      {/* あなたへのおすすめ */}
-      {user && <Section title="🎯 あなたへのおすすめ" events={recommendedEvents} onSelect={handleSelect} />}
+      <Section title="募集中のイベント" icon={<Calendar size={20} color="#88203a" />} events={events} onSelect={handleSelect} />
+        <Section title="サークル募集" icon={<Users size={20} color="#88203a" />} events={circleEvents} onSelect={handleSelect} />
+        <Section title="今日が締め切り" icon={<Clock size={20} color="#88203a" />} events={todayDeadlineEvents} onSelect={handleSelect} />
+        {user && <Section title="あなたへのおすすめ" icon={<Target size={20} color="#88203a" />} events={recommendedEvents} onSelect={handleSelect} />}
 
       {/* CTA */}
       <div style={s.ctaBanner}>
@@ -501,24 +496,26 @@ return (
 
       {/* ランキング */}
       <div style={s.rankingHeader}>
-        <span style={{ fontSize:15, fontWeight:700 }}>⭐ 週間ランキング</span>
-      </div>
+        <span style={{ fontSize:15, fontWeight:700, display:"flex", alignItems:"center", gap:6 }}>
+            <Star size={18} color="#88203a" fill="#88203a" /> 週間ランキング
+        </span>
+        </div>
 
       {/* ランキングタブ */}
       <div style={s.rankTabs}>
         {[
-          { id:"view", label:"👁 閲覧数" },
-          { id:"like", label:"❤️ いいね" },
-          { id:"join", label:"📅 参加予定" },
-        ].map(t => (
-          <button
-            key={t.id}
-            style={{ ...s.rankTab, ...(rankTab === t.id ? s.rankTabActive : {}) }}
-            onClick={() => setRankTab(t.id)}
-          >
-            {t.label}
-          </button>
-        ))}
+            { id:"view", label:"閲覧数", icon:<Eye size={14} /> },
+            { id:"like", label:"いいね", icon:<Heart size={14} /> },
+            { id:"join", label:"参加予定", icon:<CalendarCheck size={14} /> },
+            ].map(t => (
+            <button
+                key={t.id}
+                style={{ ...s.rankTab, ...(rankTab === t.id ? s.rankTabActive : {}), display:"flex", alignItems:"center", gap:4 }}
+                onClick={() => setRankTab(t.id)}
+            >
+                {t.icon}{t.label}
+            </button>
+            ))}
       </div>
 
       <div style={s.rankingList}>
