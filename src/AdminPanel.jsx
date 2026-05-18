@@ -197,8 +197,11 @@ export default function AdminPanel({ user }) {
                 ) : (
                   <div style={{ width:60, height:34, background:"#F4F6F5", borderRadius:6, flexShrink:0 }} />
                 )}
+                <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:700 }}>{event.title}</div>
                 <div style={{ fontSize:11, color:"#5A7370", display:"flex", alignItems:"center", gap:8 }}>
-                <Calendar size={11} /> {event.date} <User size={11} /> {event.organizerName}
+                    <Calendar size={11} /> {event.date} <User size={11} /> {event.organizerName}
+                </div>
                 </div>
                 <button
                   style={{ padding:"6px 16px", borderRadius:999, border:"1.5px solid #E53935", background:"white", color:"#E53935", fontSize:12, fontWeight:700, cursor:"pointer" }}
