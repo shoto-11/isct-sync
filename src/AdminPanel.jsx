@@ -24,6 +24,7 @@ export default function AdminPanel({ user }) {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("sections");
   const navigate = useNavigate();
+  const [carouselSearch, setCarouselSearch] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -48,7 +49,6 @@ export default function AdminPanel({ user }) {
       // イベント一覧
       const eventsSnap = await getDocs(collection(db, "events"));
       setEvents(eventsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-
       setLoading(false);
     };
     fetchData();
@@ -161,29 +161,44 @@ export default function AdminPanel({ user }) {
             <p style={{ fontSize:12, color:"#5A7370" }}>現在：{notice || "未設定"}</p>
           </div>
         )}
-
         {/* カルーセル */}
         {activeTab === "carousel" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             <h2 style={{ fontSize:16, fontWeight:700 }}>カルーセルに表示するイベント（最大5件）</h2>
-            {events.map(event => (
-              <div key={event.id} style={{ background:"white", borderRadius:12, padding:"12px 16px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
+            
+            {/* 検索欄 */}
+            <div style={{ display:"flex", gap:8 }}>
+            <input
+                style={{ flex:1, padding:"10px 14px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit" }}
+                placeholder="イベント名で検索..."
+                value={carouselSearch || ""}
+                onChange={e => setCarouselSearch(e.target.value)}
+            />
+            </div>
+
+            {events
+            .filter(event => !carouselSearch || 
+                event.title?.includes(carouselSearch) || 
+                event.organizerName?.includes(carouselSearch)
+                )
+            .map(event => (
+                <div key={event.id} style={{ background:"white", borderRadius:12, padding:"12px 16px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
                 {event.imageUrl ? (
-                  <img src={event.imageUrl} alt={event.title} style={{ width:60, height:34, objectFit:"cover", borderRadius:6, flexShrink:0 }} />
+                    <img src={event.imageUrl} alt={event.title} style={{ width:60, height:34, objectFit:"cover", borderRadius:6, flexShrink:0 }} />
                 ) : (
-                  <div style={{ width:60, height:34, background:"#F4F6F5", borderRadius:6, flexShrink:0 }} />
+                    <div style={{ width:60, height:34, background:"#F4F6F5", borderRadius:6, flexShrink:0 }} />
                 )}
                 <span style={{ flex:1, fontSize:14, fontWeight:600 }}>{event.title}</span>
                 <button
-                  style={{ padding:"6px 16px", borderRadius:999, border:`1.5px solid ${carouselEventIds.includes(event.id) ? THEME : "#D0DDD9"}`, background: carouselEventIds.includes(event.id) ? THEME : "white", color: carouselEventIds.includes(event.id) ? "white" : "#5A7370", fontSize:12, fontWeight:700, cursor:"pointer" }}
-                  onClick={() => toggleCarousel(event.id)}
-                  disabled={!carouselEventIds.includes(event.id) && carouselEventIds.length >= 5}
+                    style={{ padding:"6px 16px", borderRadius:999, border:`1.5px solid ${carouselEventIds.includes(event.id) ? THEME : "#D0DDD9"}`, background: carouselEventIds.includes(event.id) ? THEME : "white", color: carouselEventIds.includes(event.id) ? "white" : "#5A7370", fontSize:12, fontWeight:700, cursor:"pointer" }}
+                    onClick={() => toggleCarousel(event.id)}
+                    disabled={!carouselEventIds.includes(event.id) && carouselEventIds.length >= 5}
                 >
-                  {carouselEventIds.includes(event.id) ? "選択中" : "選択"}
+                    {carouselEventIds.includes(event.id) ? "選択中" : "選択"}
                 </button>
-              </div>
+                </div>
             ))}
-          </div>
+        </div>
         )}
 
         {/* イベント管理 */}

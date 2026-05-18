@@ -342,6 +342,7 @@ export default function EventList({ user, onLoginRequired, pendingEvent, onPendi
   const [carouselIndex, setCarouselIndex] = useState(0);
 const [isDraggingCarousel, setIsDraggingCarousel] = useState(false);
 const [carouselStartX, setCarouselStartX] = useState(0);
+const [carouselEvents, setCarouselEvents] = useState([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -367,6 +368,19 @@ const [carouselStartX, setCarouselStartX] = useState(0);
         return event;
         }));
         setEvents(updatedList);
+        // カルーセル設定を取得
+            const adminSnap = await getDoc(doc(db, "adminSettings", "display"));
+            if (adminSnap.exists()) {
+            const carouselIds = adminSnap.data().carouselEventIds || [];
+            if (carouselIds.length > 0) {
+                const carouselEvs = updatedList.filter(e => carouselIds.includes(e.id));
+                setCarouselEvents(carouselEvs);
+            } else {
+                setCarouselEvents(updatedList);
+            }
+            } else {
+            setCarouselEvents(updatedList);
+            }
 
       // サークル募集
       setCircleEvents(list.filter(e => e.tags?.organizer === "#サークル"));
@@ -470,7 +484,7 @@ const [carouselStartX, setCarouselStartX] = useState(0);
 return (
     <div>
 {/* ── カルーセル ── */}
-{events.length > 0 && <Carousel events={events} onSelect={handleSelect} />}
+{carouselEvents.length > 0 && <Carousel events={carouselEvents} onSelect={handleSelect} />}
 
   <div style={{ maxWidth:1200, margin:"0 auto", padding: window.innerWidth > 768 ? "0 24px" : "0", overflow:"hidden", width:"100%", boxSizing:"border-box" }}>
       <Section title="募集中のイベント" icon={<Calendar size={20} color="#88203a" />} events={events} onSelect={handleSelect} />
