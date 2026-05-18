@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import Login from "./Login";
 import EventList from "./EventList";
 import PostEvent from "./PostEvent";
@@ -18,6 +18,7 @@ import Search from "./Search";
 import { BG_COLOR } from "./constants";
 import AdminPanel from "./AdminPanel";
 import { Search as SearchIcon, User, Menu, Home, PenLine, Mail, LogOut, LogIn, Settings, ChevronRight } from "lucide-react";
+import GroupAuth from "./GroupAuth";
 
 function EventPageWrapper({ user }) {
   const { eventId } = useParams();
@@ -130,6 +131,8 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [noticeItems, setNoticeItems] = useState([]);
 const [noticeIndex, setNoticeIndex] = useState(0);
+const [showGroupAuth, setShowGroupAuth] = useState(false);
+const [userGroups, setUserGroups] = useState([]);
 
   // メールリンクからのログイン処理
   useEffect(() => {
@@ -157,7 +160,19 @@ const [noticeIndex, setNoticeIndex] = useState(0);
         setProfileDone(done);
         setShowLogin(false);
         const userDoc = await getDoc(doc(db, "users", u.uid));
-        if (userDoc.exists()) setMenuProfile(userDoc.data());
+        if (userDoc.exists()) {
+          setMenuProfile(userDoc.data());
+          // グループ情報取得
+          const groupIds = userDoc.data().groups || [];
+          if (groupIds.length > 0) {
+            const groupSnaps = await Promise.all(groupIds.map(id => getDoc(doc(db, "groups", id))));
+            setUserGroups(groupSnaps.filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() })));
+          }
+          // 初回ログイン時のグループ確認
+          if (!userDoc.data().groupAuthDone) {
+            setShowGroupAuth(true);
+          }
+        }
         // 管理者チェック
           const configSnap = await getDoc(doc(db, "adminSettings", "config"));
           if (configSnap.exists()) {
@@ -227,6 +242,20 @@ const [noticeIndex, setNoticeIndex] = useState(0);
   if (user && !profileDone) return (
     <ProfileSetup onComplete={() => setProfileDone(true)} />
   );
+  if (showGroupAuth) return (
+  <GroupAuth
+    currentUser={user}
+    onComplete={async (group) => {
+      await updateDoc(doc(db, "users", user.uid), { groupAuthDone: true });
+      setUserGroups(prev => [...prev.filter(g => g.id !== group.id), group]);
+      setShowGroupAuth(false);
+    }}
+    onSkip={async () => {
+      await updateDoc(doc(db, "users", user.uid), { groupAuthDone: true });
+      setShowGroupAuth(false);
+    }}
+  />
+);
 
   return (
     <div style={{ background:BG_COLOR, minHeight:"100vh", display:"flex", flexDirection:"column" }}>
@@ -326,6 +355,16 @@ const [noticeIndex, setNoticeIndex] = useState(0);
           <Route path="/search" element={<Search />} />
           <Route path="/admin" element={<AdminPanel user={user} />} />
           <Route path="/admin/:tab" element={<AdminPanel user={user} />} />
+          <Route path="/post" element={
+            user ? (
+              <PostEvent userGroups={userGroups} onPosted={() => { navigate('/'); }} />
+            ) : (
+              <div style={s.loginPrompt}>
+                <p style={s.loginPromptText}>イベントを投稿するにはログインが必要です</p>
+                <button style={s.loginPromptBtn} onClick={() => setShowLogin(true)}>ログイン</button>
+              </div>
+            )
+          } />
         </Routes>
 
       {/* ── FAB ── */}

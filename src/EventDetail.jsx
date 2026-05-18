@@ -37,6 +37,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     const [organizer, setOrganizer] = useState(null);
     const [editTargetGakuin, setEditTargetGakuin] = useState(event.targetGakuin || []);
 const [editTargetGakukei, setEditTargetGakukei] = useState(event.targetGakukei || []);
+const [editContact, setEditContact] = useState(event.contact || "");
 
   const isOwner = auth.currentUser?.uid === event.createdBy;
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5" };
@@ -129,6 +130,7 @@ const [editTargetGakukei, setEditTargetGakukei] = useState(event.targetGakukei |
         },
         targetGakuin: editTargetGakuin,
         targetGakukei: editTargetGakukei,
+        contact: editContact,
       };
       await updateDoc(doc(db, "events", event.id), updated);
       setEvent(prev => ({ ...prev, ...updated }));
@@ -347,6 +349,16 @@ const handleJoin = async () => {
           <input style={s.input} type="url" value={editApplyLink} onChange={e => setEditApplyLink(e.target.value)} />
         </div>
 
+        <div style={s.editSection}>
+        <label style={s.editLabel}>お問い合わせ先（任意）</label>
+        <input
+            style={s.input}
+            placeholder="例：example@m.isct.ac.jp / @Twitter"
+            value={editContact}
+            onChange={e => setEditContact(e.target.value)}
+        />
+        </div>
+
         <button style={s.saveBtn} onClick={handleSave} disabled={saving}>
           {saving ? "保存中..." : "保存する"}
         </button>
@@ -485,6 +497,15 @@ const handleJoin = async () => {
                 </div>
             </div>
             )}
+
+        {/* お問い合わせ */}
+        {event.contact && (
+            <div style={s.section}>
+                <h2 style={s.sectionTitle}>お問い合わせ先</h2>
+                <p style={s.detailText}>{event.contact}</p>
+            </div>
+            )}
+            
         {/* いいね・参加予定ボタン */}
         {auth.currentUser && (
         <div style={s.actionRow}>

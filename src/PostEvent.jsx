@@ -6,7 +6,7 @@ import { GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from
 import { BG_COLOR } from "./constants";
 import { GAKUIN } from "./constants";
 
-export default function PostEvent({ onPosted }) {
+export default function PostEvent({ onPosted, userGroups = [] }) {
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
   const [date, setDate] = useState("");
@@ -29,6 +29,8 @@ export default function PostEvent({ onPosted }) {
     const [contact, setContact] = useState("");
     const [targetGakuin, setTargetGakuin] = useState([]);
 const [targetGakukei, setTargetGakukei] = useState([]);
+const [organizerType, setOrganizerType] = useState(userGroups.length > 0 ? "group" : "personal");
+const [selectedGroupId, setSelectedGroupId] = useState(userGroups.length > 0 ? userGroups[0].id : null);
     
 
   const handleImage = (e) => {
@@ -56,6 +58,10 @@ const [targetGakukei, setTargetGakukei] = useState([]);
     // Firestoreから表示名を取得
         const userSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
         const displayName = userSnap.exists() ? userSnap.data().displayName : auth.currentUser.email;
+        const selectedGroup = userGroups.find(g => g.id === selectedGroupId);
+        const organizerName = organizerType === "group" && selectedGroup ? selectedGroup.displayName : displayName;
+        const organizerAvatar = organizerType === "group" && selectedGroup ? selectedGroup.avatarUrl : "";
+        const organizerUid = organizerType === "group" && selectedGroup ? selectedGroup.id : auth.currentUser.uid;
     try {
       let imageUrl = null;
       if (image) {
@@ -71,8 +77,7 @@ const [targetGakukei, setTargetGakukei] = useState([]);
         const url = await getDownloadURL(storageRef);
         attachmentUrls.push({ name: file.name, url });
       }
-
-      await addDoc(collection(db, "events"), {
+        await addDoc(collection(db, "events"), {
         title,
         detail,
         date,
@@ -93,14 +98,15 @@ const [targetGakukei, setTargetGakukei] = useState([]);
         applyLabel: applyLabel || "参加を申し込む",
         applyLink,
         participants: [],
-        createdBy: auth.currentUser.uid,
+        createdBy: organizerUid,
+        createdByPersonal: auth.currentUser.uid,
         createdAt: serverTimestamp(),
-        organizerName: displayName,
+        organizerName,
+        organizerAvatar,
         contact,
         targetGakuin,
-        targetGakukei,      
-        
-      });
+        targetGakukei,
+        });
       onPosted();
     } catch (err) {
       alert("投稿に失敗しました: " + err.message);
@@ -114,6 +120,29 @@ const [targetGakukei, setTargetGakukei] = useState([]);
             ← 戻る
         </button>
       <h2 style={s.heading}>✏️ イベントを作る</h2>
+      {/* 募集者選択 */}
+        {userGroups.length > 0 && (
+        <div style={s.section}>
+            <label style={s.label}>募集者</label>
+            <div style={s.optionGrid}>
+            <button
+                style={{ ...s.tagBtn, ...(organizerType === "personal" ? s.tagBtnActive : {}) }}
+                onClick={() => setOrganizerType("personal")}
+            >
+                個人として募集
+            </button>
+            {userGroups.map(group => (
+                <button
+                key={group.id}
+                style={{ ...s.tagBtn, ...(organizerType === "group" && selectedGroupId === group.id ? s.tagBtnActive : {}) }}
+                onClick={() => { setOrganizerType("group"); setSelectedGroupId(group.id); }}
+                >
+                {group.displayName}
+                </button>
+            ))}
+            </div>
+        </div>
+        )}
 
       {/* イベント画像（任意） */}
       <div style={s.section}>
