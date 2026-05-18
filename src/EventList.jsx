@@ -543,7 +543,7 @@ return (
 }
 const s = {
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
-  sectionTitle: { fontSize:18, fontWeight:900, color:"#1A2E2B" },
+  sectionTitle: { fontSize:24, fontWeight:700, color:"#1A2E2B" },
   sectionBadge: { background:"#F9EAED", color:THEME, fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },
   cardsScrollWrapper: { overflowX:"auto", WebkitOverflowScrolling:"touch", scrollbarWidth:"none", padding:"0 14px 16px" },
   cardsGrid: { display:"flex", flexDirection:"row", gap:12, width:"max-content" },
