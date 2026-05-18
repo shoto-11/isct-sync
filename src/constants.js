@@ -1,6 +1,7 @@
 export const THEME = "#88203a";
 
 export const GENRE_STYLES = {
+"#新歓・歓迎イベント": { bg:"#FCE4EC", color:"#C2185B" },
   "#起業・ビジネス": { bg:"#E3F2FD", color:"#1565C0" },
   "#キャリア・就活": { bg:"#E8F5E9", color:"#2E7D32" },
   "#文化・芸術":     { bg:"#FFF3E0", color:"#E65100" },
@@ -10,6 +11,7 @@ export const GENRE_STYLES = {
 };
 
 export const GENRE_EMOJI = {
+ "#新歓・歓迎イベント": "🌸",
   "#起業・ビジネス": "💼",
   "#キャリア・就活": "🎓",
   "#文化・芸術":     "🎨",
@@ -18,7 +20,7 @@ export const GENRE_EMOJI = {
   "#研究・産学連携": "🔬",
 };
 
-export const GENRE_TAGS = ["#起業・ビジネス", "#キャリア・就活", "#文化・芸術", "#スポーツ・交流", "#スキルアップ", "#研究・産学連携"];
+export const GENRE_TAGS = ["#新歓・歓迎イベント", "#起業・ビジネス", "#キャリア・就活", "#文化・芸術", "#スポーツ・交流", "#スキルアップ", "#研究・産学連携"];
 export const TARGET_TAGS = ["#全学対象", "#新入生向け", "#大学1年生向け", "#大学2年生向け", "#大学3年生向け", "#大学4年生向け", "#学部生向け", "#大学院生向け", "#留学生歓迎"];
 export const CAMPUS_TAGS = ["#大岡山キャンパス", "#横浜キャンパス", "#外部", "#オンライン"];
 export const STYLE_TAGS = ["#事前登録不要", "#参加無料", "#ランチ持込可", "#謝礼あり"];
