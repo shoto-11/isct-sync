@@ -1,100 +1,72 @@
 import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { doc, getDoc, updateDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
-import { useNavigate } from "react-router-dom";
-import { Settings, Calendar, Users, Clock, Target, Star, User } from "lucide-react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { Settings, Calendar, User } from "lucide-react";
 
 const THEME = "#88203a";
 
-const DEFAULT_SECTIONS = [
-  { id:"events", label:"募集中のイベント", visible:true },
-  { id:"circle", label:"サークル募集", visible:true },
-  { id:"today", label:"今日が締め切り", visible:true },
-  { id:"recommended", label:"あなたへのおすすめ", visible:true },
-  { id:"ranking", label:"週間ランキング", visible:true },
-];
-
 export default function AdminPanel({ user }) {
-    const { tab } = useParams();
-    
+  const { tab } = useParams();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [notice, setNotice] = useState("");
-  const [sections, setSections] = useState(DEFAULT_SECTIONS);
   const [events, setEvents] = useState([]);
   const [carouselEventIds, setCarouselEventIds] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState(tab || "sections");
+  const [activeTab, setActiveTab] = useState(tab || "notice");
   const navigate = useNavigate();
   const [carouselSearch, setCarouselSearch] = useState("");
   const [eventSearch, setEventSearch] = useState("");
   const [users, setUsers] = useState([]);
-const [selectedUser, setSelectedUser] = useState(null);
-const [userSearch, setUserSearch] = useState("");
-const [editingUser, setEditingUser] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userSearch, setUserSearch] = useState("");
+  const [editingUser, setEditingUser] = useState(null);
 
-  useEffect(() => {
+useEffect(() => {
     const fetchData = async () => {
       if (!user) { setLoading(false); return; }
-
-      // 管理者チェック
       const configSnap = await getDoc(doc(db, "adminSettings", "config"));
       if (!configSnap.exists()) { setLoading(false); return; }
       const adminUids = configSnap.data().adminUids || [];
       if (!adminUids.includes(user.uid)) { setLoading(false); return; }
       setIsAdmin(true);
 
-      // 設定読み込み
-      // 設定読み込み
-        const settingsSnap = await getDoc(doc(db, "adminSettings", "display"));
-        if (settingsSnap.exists()) {
+      const settingsSnap = await getDoc(doc(db, "adminSettings", "display"));
+      if (settingsSnap.exists()) {
         const data = settingsSnap.data();
         setNotice(data.notice || "");
-        const savedSections = localStorage.getItem("adminSections");
-        if (savedSections) {
-            setSections(JSON.parse(savedSections));
-        } else {
-            setSections(data.sections || DEFAULT_SECTIONS);
-        }
         const savedCarousel = localStorage.getItem("carouselEventIds");
         if (savedCarousel) {
-            setCarouselEventIds(JSON.parse(savedCarousel));
+          setCarouselEventIds(JSON.parse(savedCarousel));
         } else {
-            setCarouselEventIds(data.carouselEventIds || []);
+          setCarouselEventIds(data.carouselEventIds || []);
         }
-        }
+      }
 
-      // イベント一覧
       const eventsSnap = await getDocs(collection(db, "events"));
       setEvents(eventsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
       const usersSnap = await getDocs(collection(db, "users"));
-        setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
     };
     fetchData();
   }, [user]);
-    // PR広告の選択状態を復元
-    useEffect(() => {
-    const savedCarousel = localStorage.getItem("carouselEventIds");
-    if (savedCarousel) setCarouselEventIds(JSON.parse(savedCarousel));
-    const savedSections = localStorage.getItem("adminSections");
-    if (savedSections) setSections(JSON.parse(savedSections));
-    }, []);
-
-  const handleSave = async () => {
-    setSaving(true);
+  
+const handleSave = async () => {
+  setSaving(true);
+  try {
     await updateDoc(doc(db, "adminSettings", "display"), {
       notice,
-      sections,
       carouselEventIds,
-    }).catch(async () => {
-      const { setDoc } = await import("firebase/firestore");
-      await setDoc(doc(db, "adminSettings", "display"), { notice, sections, carouselEventIds });
     });
-    setSaving(false);
-    alert("保存しました！");
-  };
+  } catch {
+    const { setDoc } = await import("firebase/firestore");
+    await setDoc(doc(db, "adminSettings", "display"), { notice, carouselEventIds });
+  }
+  setSaving(false);
+  alert("保存しました！");
+};
 
   const handleDeleteEvent = async (eventId, title) => {
     if (!window.confirm(`「${title}」を削除しますか？`)) return;
@@ -126,6 +98,18 @@ const [editingUser, setEditingUser] = useState(null);
         return next;
     });
     };
+    const moveCarousel = (eventId, dir) => {
+        setCarouselEventIds(prev => {
+            const index = prev.indexOf(eventId);
+            if (index === -1) return prev;
+            const next = [...prev];
+            const target = index + dir;
+            if (target < 0 || target >= next.length) return prev;
+            [next[index], next[target]] = [next[target], next[index]];
+            localStorage.setItem("carouselEventIds", JSON.stringify(next));
+            return next;
+        });
+        };
 
   if (loading) return <p style={{ padding:24 }}>読み込み中...</p>;
   if (!user) return <p style={{ padding:24 }}>ログインが必要です</p>;
@@ -143,42 +127,19 @@ const [editingUser, setEditingUser] = useState(null);
 
       {/* タブ */}
       <div style={{ display:"flex", background:"white", borderBottom:"1px solid #E0E8E7" }}>
-        {[
-            { id:"sections", label:"セクション管理" },
-            { id:"notice", label:"お知らせ" },
-            { id:"carousel", label:"PR広告" },
-            { id:"events", label:"イベント管理" },
-            { id:"users", label:"登録者一覧" },
-            ].map(t => (
-            <button key={t.id} style={{ padding:"12px 20px", border:"none", background:"none", fontSize:13, fontWeight:600, color: activeTab === t.id ? THEME : "#5A7370", borderBottom: activeTab === t.id ? `2px solid ${THEME}` : "2px solid transparent", cursor:"pointer" }} onClick={() => { setActiveTab(t.id); navigate(`/admin/${t.id}`); }}>
-                {t.label}
-            </button>
-            ))}
-      </div>
+  {[
+    { id:"notice", label:"お知らせ" },
+    { id:"carousel", label:"PR広告" },
+    { id:"events", label:"イベント管理" },
+    { id:"users", label:"登録者一覧" },
+  ].map(t => (
+    <button key={t.id} style={{ padding:"12px 20px", border:"none", background:"none", fontSize:13, fontWeight:600, color: activeTab === t.id ? THEME : "#5A7370", borderBottom: activeTab === t.id ? `2px solid ${THEME}` : "2px solid transparent", cursor:"pointer" }} onClick={() => { setActiveTab(t.id); navigate(`/admin/${t.id}`); }}>
+      {t.label}
+    </button>
+  ))}
+</div>
 
       <div style={{ maxWidth:800, margin:"0 auto", padding:"24px 16px" }}>
-
-        {/* セクション管理 */}
-        {activeTab === "sections" && (
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            <h2 style={{ fontSize:16, fontWeight:700 }}>表示するセクションと順番</h2>
-            {sections.map((section, i) => (
-              <div key={section.id} style={{ background:"white", borderRadius:12, padding:"14px 16px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" }}>
-                <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
-                  <button style={{ background:"none", border:"1px solid #D0DDD9", borderRadius:4, width:28, height:28, cursor:"pointer", fontSize:14 }} onClick={() => moveSection(i, -1)}>↑</button>
-                  <button style={{ background:"none", border:"1px solid #D0DDD9", borderRadius:4, width:28, height:28, cursor:"pointer", fontSize:14 }} onClick={() => moveSection(i, 1)}>↓</button>
-                </div>
-                <span style={{ flex:1, fontSize:15, fontWeight:600 }}>{section.label}</span>
-                <button
-                  style={{ padding:"6px 16px", borderRadius:999, border:`1.5px solid ${section.visible ? THEME : "#D0DDD9"}`, background: section.visible ? THEME : "white", color: section.visible ? "white" : "#5A7370", fontSize:12, fontWeight:700, cursor:"pointer" }}
-                  onClick={() => toggleSection(i)}
-                >
-                  {section.visible ? "表示中" : "非表示"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* お知らせ */}
         {activeTab === "notice" && (
@@ -197,8 +158,43 @@ const [editingUser, setEditingUser] = useState(null);
         {/* カルーセル */}
         {activeTab === "carousel" && (
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            <h2 style={{ fontSize:16, fontWeight:700 }}>PR広告に表示するイベント（最大10件）</h2>
             
+            <h2 style={{ fontSize:16, fontWeight:700 }}>PR広告に表示するイベント（最大10件）</h2>
+            {/* 選択済みイベントの順番管理 */}
+                {carouselEventIds.length > 0 && (
+                <div style={{ background:"white", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", marginBottom:8 }}>
+                    <h3 style={{ fontSize:14, fontWeight:700, marginBottom:12, color:"#5A7370" }}>選択中（表示順）</h3>
+                    {carouselEventIds.map((id, i) => {
+                    const event = events.find(e => e.id === id);
+                    if (!event) return null;
+                    return (
+                        <div key={id} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:"1px solid #F0F0F0" }}>
+                        <span style={{ fontSize:13, fontWeight:700, color:THEME, width:24 }}>{i + 1}</span>
+                        {event.imageUrl ? (
+                            <img src={event.imageUrl} alt={event.title} style={{ width:48, height:27, objectFit:"cover", borderRadius:4, flexShrink:0 }} />
+                        ) : (
+                            <div style={{ width:48, height:27, background:"#F4F6F5", borderRadius:4, flexShrink:0 }} />
+                        )}
+                        <span style={{ flex:1, fontSize:13, fontWeight:600 }}>{event.title}</span>
+                        <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                            <button style={{ background:"none", border:"1px solid #D0DDD9", borderRadius:4, width:24, height:24, cursor:"pointer", fontSize:12 }} onClick={() => moveCarousel(id, -1)}>↑</button>
+                            <button style={{ background:"none", border:"1px solid #D0DDD9", borderRadius:4, width:24, height:24, cursor:"pointer", fontSize:12 }} onClick={() => moveCarousel(id, 1)}>↓</button>
+                        </div>
+                        <button style={{ padding:"4px 10px", borderRadius:999, border:"1.5px solid #E53935", background:"white", color:"#E53935", fontSize:11, fontWeight:700, cursor:"pointer" }} onClick={() => toggleCarousel(id)}>
+                            削除
+                        </button>
+                        </div>
+                    );
+                    })}
+                </div>
+                )}
+                <button
+                style={{ width:"100%", padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" }}
+                onClick={handleSave}
+                disabled={saving}
+                >
+                {saving ? "保存中..." : "設定を保存する"}
+                </button>
             {/* 検索欄 */}
             <div style={{ display:"flex", gap:8 }}>
             <input
@@ -274,7 +270,7 @@ const [editingUser, setEditingUser] = useState(null);
         )}
 
         {/* 保存ボタン */}
-        {activeTab !== "events" && activeTab !== "users" && (
+        {activeTab !== "events" && activeTab !== "users" && activeTab !== "carousel" && (
   <button style={{ marginTop:24, width:"100%", padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" }} onClick={handleSave} disabled={saving}>
     {saving ? "保存中..." : "設定を保存する"}
   </button>
