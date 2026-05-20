@@ -168,9 +168,21 @@ const [userGroups, setUserGroups] = useState([]);
             const groupSnaps = await Promise.all(groupIds.map(id => getDoc(doc(db, "groups", id))));
             setUserGroups(groupSnaps.filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() })));
           }
-          // 初回ログイン時のグループ確認
-          if (!userDoc.data().groupAuthDone) {
-            setShowGroupAuth(true);
+          
+          if (userDoc.exists()) {
+            setMenuProfile(userDoc.data());
+            const groupIds = userDoc.data().groups || [];
+            if (groupIds.length > 0) {
+              const groupSnaps = await Promise.all(groupIds.map(id => getDoc(doc(db, "groups", id))));
+              setUserGroups(groupSnaps.filter(s => s.exists()).map(s => ({ id: s.id, ...s.data() })));
+            }
+            // 既存ユーザーでgroupAuthDoneがない場合のみ
+            if (userDoc.data().groupAuthDone === false || userDoc.data().groupAuthDone === undefined) {
+              // ProfileSetupが完了している場合のみ表示
+              if (userDoc.data().displayName) {
+                setShowGroupAuth(true);
+              }
+            }
           }
         }
         // 管理者チェック
@@ -240,8 +252,26 @@ const [userGroups, setUserGroups] = useState([]);
   );
 
   if (user && !profileDone) return (
-    <ProfileSetup onComplete={() => setProfileDone(true)} />
-  );
+  <ProfileSetup onComplete={async () => {
+    setProfileDone(true);
+    setShowGroupAuth(true);
+  }} />
+);
+
+if (user && profileDone && showGroupAuth) return (
+  <GroupAuth
+    currentUser={user}
+    onComplete={async (group) => {
+      await updateDoc(doc(db, "users", user.uid), { groupAuthDone: true });
+      setUserGroups(prev => [...prev.filter(g => g.id !== group.id), group]);
+      setShowGroupAuth(false);
+    }}
+    onSkip={async () => {
+      await updateDoc(doc(db, "users", user.uid), { groupAuthDone: true });
+      setShowGroupAuth(false);
+    }}
+  />
+);
   if (showGroupAuth) return (
   <GroupAuth
     currentUser={user}
