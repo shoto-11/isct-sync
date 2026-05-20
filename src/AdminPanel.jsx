@@ -40,9 +40,13 @@ export default function AdminPanel({ user }) {
       const settingsSnap = await getDoc(doc(db, "adminSettings", "display"));
       if (settingsSnap.exists()) {
         const data = settingsSnap.data();
-        setNotice(data.notice || { items: [{ text: "", link: "" }] });
+        // 💡 確実に { items: [...] } の形でStateに格納する
+        setNotice(data.notice && data.notice.items ? data.notice : { items: [{ text: "", link: "" }] });
         const savedCarousel = localStorage.getItem("carouselEventIds");
         setCarouselEventIds(savedCarousel ? JSON.parse(savedCarousel) : (data.carouselEventIds || []));
+      } else {
+        // 💡 ドキュメント自体がまだない場合の初期値
+        setNotice({ items: [{ text: "", link: "" }] });
       }
 
       const eventsSnap = await getDocs(collection(db, "events"));
@@ -60,16 +64,24 @@ export default function AdminPanel({ user }) {
   }, [user]);
 
   const handleSave = async () => {
-    setSaving(true);
-    try {
-      await updateDoc(doc(db, "adminSettings", "display"), { notice, carouselEventIds });
-    } catch {
-      const { setDoc } = await import("firebase/firestore");
-      await setDoc(doc(db, "adminSettings", "display"), { notice, carouselEventIds });
-    }
-    setSaving(false);
-    alert("保存しました！");
-  };
+      setSaving(true);
+      try {
+        // 💡 notice の中身（items）を直接ドキュメントの直下に展開して保存します
+        await updateDoc(doc(db, "adminSettings", "display"), {
+          notice: notice, // または単に notice とだけ書いてもOK
+          carouselEventIds: carouselEventIds
+        });
+      } catch (error) {
+        console.error("updateDoc failed, trying setDoc:", error);
+        const { setDoc } = await import("firebase/firestore");
+        await setDoc(doc(db, "adminSettings", "display"), {
+          notice: notice,
+          carouselEventIds: carouselEventIds
+        });
+      }
+      setSaving(false);
+      alert("保存しました！");
+    };
 
   const handleDeleteEvent = async (eventId, title) => {
     if (!window.confirm(`「${title}」を削除しますか？`)) return;
