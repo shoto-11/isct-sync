@@ -2,7 +2,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
-import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
+import { getFunctions } from "firebase/functions";
 
 export const firebaseConfig = {
   apiKey: "AIzaSyDg7NVoVwDbpt1lZ2AEDogdu3c7dTT_5x4",
@@ -18,10 +18,8 @@ const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-export const functions = getFunctions(app); // ← app初期化後に移動
+// 第2引数に、関数がデプロイされているリージョン名 "us-central1" を指定する
+export const functions = getFunctions(app, "us-central1");
 
-if (location.hostname === "localhost") {
-  connectFunctionsEmulator(functions, "localhost", 5001);
-}
 
 export { app };

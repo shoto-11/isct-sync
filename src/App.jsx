@@ -257,41 +257,6 @@ export default function App() {
   // メールリンク処理中フラグ（onAuthStateChanged との競合防止）
   const processingEmailLink = useRef(false);
 
-  // メールリンク処理（個人ログイン用のみ）
-  useEffect(() => {
-    if (!isSignInWithEmailLink(auth, window.location.href)) return;
-
-    // グループ用リンクかどうかを localStorage と URLパラメータ両方で判定
-    // （別端末で開いた場合は localStorage が空なので URL パラメータで判定）
-    const groupEmail = window.localStorage.getItem("groupEmailForVerify");
-    const groupEmailParam = new URLSearchParams(window.location.search).get("groupEmail");
-    if (groupEmail || groupEmailParam) return; // グループ用は GroupSetup 側で処理
-
-    let email = window.localStorage.getItem("emailForSignIn");
-    if (!email) email = window.prompt("確認のためメールアドレスを入力してください");
-    if (!email) return;
-
-    processingEmailLink.current = true;
-
-    const href = window.location.href;
-    window.history.replaceState({}, "", "/");
-    window.localStorage.removeItem("emailForSignIn");
-
-    signInWithEmailLink(auth, email, href)
-      .then(async (result) => {
-        const snap = await getDoc(doc(db, "users", result.user.uid));
-        const done = snap.exists() && !!snap.data().displayName;
-        processingEmailLink.current = false;
-        navigate(done ? "/" : "/setup", { replace: true });
-      })
-      .catch((err) => {
-        console.error("signInWithEmailLink error:", err);
-        processingEmailLink.current = false;
-        setLoading(false);
-        navigate("/login", { replace: true });
-      });
-  }, []);
-
   // 認証状態監視
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
