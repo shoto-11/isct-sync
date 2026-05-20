@@ -120,7 +120,7 @@ const handleRequestCode = async (e) => {
     <div style={s.container}>
       <div style={s.card}>
         <img src={logoRed} alt="SYNC" style={s.logo} />
-        <h2 style={s.title}>東科大生のためのイベントハブ</h2>
+        <h2 style={s.title}>東京科学大生専用イベントサイト</h2>
         <p style={s.sub}>
           {step === "email" 
             ? "学籍ドメイン（@m.isct.ac.jp）のメールアドレスを入力してログインしてください。"
