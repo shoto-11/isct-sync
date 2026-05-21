@@ -645,10 +645,30 @@ export default function EventDetail({ event: initialEvent, onBack }) {
 
         {/* お問い合わせ */}
         {event.contact && (
-          <div style={s.section}>
+        <div style={s.section}>
             <h2 style={s.sectionTitle}>お問い合わせ先</h2>
+            {/* 💡 入力された文字列が http から始まるURL形式かどうかを先頭判定します */}
+            {event.contact.trim().startsWith("http") ? (
+            <a 
+                href={event.contact.trim()} 
+                target="_blank" 
+                rel="noreferrer" 
+                style={s.contactLink}
+                onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = "underline";
+                e.currentTarget.style.opacity = "0.8";
+                }}
+                onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = "none";
+                e.currentTarget.style.opacity = "1";
+                }}
+            >
+                {event.contact}
+            </a>
+            ) : (
             <p style={s.detailText}>{event.contact}</p>
-          </div>
+            )}
+        </div>
         )}
             
         {/* いいね・参加予定ボタン */}
@@ -729,4 +749,5 @@ const s = {
   cardName: { fontSize: 12, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" },
   cardTypeTag: { fontSize: 10, color: "#7A9591", marginTop: 1, textAlign: "left" },
   organizerBadge: { background: "#F4F6F5", color: "#5A7370", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4 },
+  contactLink: { fontSize:14, color:"#88203a", lineHeight:1.8, wordBreak:"break-all", textDecoration:"none", fontWeight:600, cursor:"pointer", transition:"opacity 0.15s" },
 };
