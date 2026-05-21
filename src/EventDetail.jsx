@@ -45,7 +45,10 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [editContact, setEditContact] = useState(event.contact || "");
 
   // 💡 権限判定に createdByPersonal（個人UID）も考慮するように修正
-  const isOwner = auth.currentUser?.uid === event.createdByPersonal || auth.currentUser?.uid === event.createdBy;
+  const isOwner = 
+  auth.currentUser?.uid === event.createdByPersonal || 
+  auth.currentUser?.uid === event.createdBy ||
+  (event.organizerType === "group" && organizer?.members?.includes(auth.currentUser?.uid));
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5" };
 
   useEffect(() => {
@@ -600,16 +603,23 @@ export default function EventDetail({ event: initialEvent, onBack }) {
             <div
               style={{ display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}
               onClick={() => {
-                if (organizer.type === "group") {
-                  window.location.href = `/groups/${event.organizerId || event.createdBy}`;
+                // 💡 organizer.type または event.organizerType に基づいてルーティングを完全確定させます
+                const type = event.organizerType || organizer?.type || "personal";
+                const id = event.organizerId || event.createdBy;
+
+                if (type === "group") {
+                    // 👥 サークルの場合はサークルのプロフィール画面へ遷移
+                    window.location.href = `/groups/${id}`;
                 } else {
-                  if (auth.currentUser?.uid === event.createdByPersonal || auth.currentUser?.uid === event.createdBy) {
+                    // 👤 個人の場合：それが自分ならマイページへ、他人ならユーザープロフィール画面へ遷移
+                    const personalUid = event.createdByPersonal || event.createdBy;
+                    if (auth.currentUser?.uid === personalUid) {
                     window.location.href = '/mypage';
-                  } else {
-                    window.location.href = `/users/${event.createdByPersonal || event.createdBy}`;
-                  }
+                    } else {
+                    window.location.href = `/users/${personalUid}`;
+                    }
                 }
-              }}
+                }}
             >
               {organizer.avatarUrl ? (
                 <img src={organizer.avatarUrl} alt="avatar" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover" }} />
