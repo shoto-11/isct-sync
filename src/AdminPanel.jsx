@@ -64,6 +64,10 @@ export default function AdminPanel({ user }) {
   const [groupSearch, setGroupSearch] = useState("");
   const [selectedGroup, setSelectedGroup] = useState(null);
 
+  const [editOrganizerId, setEditOrganizerId] = useState("");
+  const [editIsGroup, setEditIsGroup] = useState(false);
+  const [orgSearchQuery, setOrgSearchQuery] = useState("");
+
   useEffect(() => {
     const fetchData = async () => {
       if (!user) { setLoading(false); return; }
@@ -121,6 +125,10 @@ export default function AdminPanel({ user }) {
     setEditOrganizerName(event.organizerName || "");
     setEditPreview(event.imageUrl || null);
     setEditImageFile(null);
+
+    setEditOrganizerId(event.organizerId || event.createdBy || "");
+    setEditIsGroup(event.organizerType === "group" || event.isGroup === true);
+    setOrgSearchQuery("");
   };
 
   const handleAdminImageChange = (e) => {
@@ -186,6 +194,14 @@ export default function AdminPanel({ user }) {
         },
         targetGakuin: editTargetGakuin,
         targetGakukei: editTargetGakukei,
+        organizerId: editOrganizerId,
+        organizerType: editIsGroup ? "group" : "personal",
+        createdBy: editOrganizerId, // 互換性維持
+        isGroup: editIsGroup,
+        // ※ アバター画像も選択された対象から動的に同期します
+        organizerAvatar: editIsGroup 
+          ? (groups.find(g => g.id === editOrganizerId)?.avatarUrl || "")
+          : (users.find(u => u.id === editOrganizerId)?.avatarUrl || "")
       };
 
       await updateDoc(doc(db, "events", selectedEvent.id), updatedFields);
@@ -480,9 +496,98 @@ export default function AdminPanel({ user }) {
                     <input style={adS.input} value={editLocation} onChange={e => setEditLocation(e.target.value)} />
                   </div>
 
+                  {/* 💡 【新規追加】管理者用：募集者（主催者）の完全変更グリッド */}
+                  {/* 💡 募集者（主催者）の完全変更グリッド（検索欄付き） */}
                   <div style={adS.fieldRow}>
-                    <label style={adS.formLabel}>表示用の募集者名</label>
-                    <input style={adS.input} value={editOrganizerName} onChange={e => setEditOrganizerName(e.target.value)} placeholder="例：テニスサークルSYNC" />
+                    <label style={adS.formLabel}>募集者（主催者）の変更 <span style={adS.required}>必須</span></label>
+                    
+                    {/* 💡 【新規追加】名前・メールアドレスでのリアルタイム検索インポート */}
+                    <input 
+                      style={{ ...adS.input, marginTop: 2, marginBottom: 8, padding: "8px 12px", fontSize: 13 }}
+                      placeholder="募集者の名前、またはメールアドレスで絞り込み..." 
+                      value={orgSearchQuery} 
+                      onChange={(e) => setOrgSearchQuery(e.target.value)} 
+                    />
+
+                    <div style={{ maxHeight: "160px", overflowY: "auto", border: "1px solid #D0DDD9", borderRadius: 8, padding: 8, background: "#FAFDFC" }}>
+                      <div style={adS.cardGrid}>
+                        
+                        {/* ── 個人（全ユーザー）：名前 or メールで検索フィルター ── */}
+                        {users
+                          .filter(u => {
+                            const query = orgSearchQuery.toLowerCase().trim();
+                            if (!query) return true;
+                            return (
+                              (u.displayName && u.displayName.toLowerCase().includes(query)) ||
+                              (u.email && u.email.toLowerCase().includes(query))
+                            );
+                          })
+                          .map((u) => {
+                            const isSelected = !editIsGroup && editOrganizerId === u.id;
+                            return (
+                              <div
+                                key={u.id}
+                                style={{
+                                  ...adS.organizerCard,
+                                  borderColor: isSelected ? "#88203a" : "#D0DDD9",
+                                  background: isSelected ? "#FFF5F7" : "white",
+                                }}
+                                onClick={() => {
+                                  setEditOrganizerId(u.id);
+                                  setEditIsGroup(false);
+                                  setEditOrganizerName(u.displayName || "名前なし");
+                                }}
+                              >
+                                <div style={adS.cardAvatarWrap}>
+                                  {u.avatarUrl ? <img src={u.avatarUrl} style={adS.cardAvatar} alt="" /> : <User size={14} color="#9AADA8" />}
+                                </div>
+                                <div style={adS.cardInfo}>
+                                  <div style={adS.cardName}>{u.displayName || "名前なし"}</div>
+                                  <div style={{ fontSize: 9, color: "#8A9F9B", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{u.email}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                        {/* ── グループ（全サークル）：サークル名 or メールで検索フィルター ── */}
+                        {groups
+                          .filter(g => {
+                            const query = orgSearchQuery.toLowerCase().trim();
+                            if (!query) return true;
+                            return (
+                              (g.displayName && g.displayName.toLowerCase().includes(query)) ||
+                              (g.email && g.email.toLowerCase().includes(query))
+                            );
+                          })
+                          .map((g) => {
+                            const isSelected = editIsGroup && editOrganizerId === g.id;
+                            return (
+                              <div
+                                key={g.id}
+                                style={{
+                                  ...adS.organizerCard,
+                                  borderColor: isSelected ? "#88203a" : "#D0DDD9",
+                                  background: isSelected ? "#FFF5F7" : "white",
+                                }}
+                                onClick={() => {
+                                  setEditOrganizerId(g.id);
+                                  setEditIsGroup(true);
+                                  setEditOrganizerName(g.displayName || "サークル名なし");
+                                }}
+                              >
+                                <div style={adS.cardAvatarWrap}>
+                                  {g.avatarUrl ? <img src={g.avatarUrl} style={adS.cardAvatar} alt="" /> : <Users size={14} color="#9AADA8" />}
+                                </div>
+                                <div style={adS.cardInfo}>
+                                  <div style={adS.cardName}>{g.displayName || "サークル名なし"}</div>
+                                  <div style={{ fontSize: 9, color: "#8A9F9B", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{g.email}</div>
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                      </div>
+                    </div>
                   </div>
 
                   {/* ① ジャンル選択ボタントグル */}
@@ -800,4 +905,10 @@ const adS = {
   optionGrid: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 },
   tagBtn: { padding: "5px 10px", borderRadius: 999, border: "1.5px solid #D0DDD9", background: "white", fontSize: 11, fontWeight: 600, color: "#5A7370", cursor: "pointer", transition: "all 0.15s" },
   tagBtnActive: { background: "#88203a", color: "white", border: "1.5px solid #88203a" },
+  cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 6 },
+  organizerCard: { display: "flex", alignItems: "center", gap: 6, padding: "6px", borderRadius: 6, border: "2px solid #D0DDD9", cursor: "pointer", transition: "all 0.15s" },
+  cardAvatarWrap: { width: 24, height: 24, borderRadius: "50%", background: "#E0E8E7", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
+  cardAvatar: { width: "100%", height: "100%", objectFit: "cover" },
+  cardInfo: { minWidth: 0, flex: 1 },
+  cardName: { fontSize: 11, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" },
 };
