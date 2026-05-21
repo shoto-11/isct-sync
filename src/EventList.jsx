@@ -372,19 +372,26 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
         }));
         setEvents(updatedList);
         
-        // カルーセル設定を取得
-            const adminSnap = await getDoc(doc(db, "adminSettings", "display"));
-            if (adminSnap.exists()) {
-            const carouselIds = adminSnap.data().carouselEventIds || [];
-            if (carouselIds.length > 0) {
-                const carouselEvs = updatedList.filter(e => carouselIds.includes(e.id));
-                setCarouselEvents(carouselEvs);
-            } else {
-                setCarouselEvents(updatedList);
-            }
-            } else {
+        // ── カルーセル設定を取得 ──
+        const adminSnap = await getDoc(doc(db, "adminSettings", "display"));
+        if (adminSnap.exists()) {
+          const carouselIds = adminSnap.data().carouselEventIds || [];
+          if (carouselIds.length > 0) {
+            // 1. まず、管理者画面で選択されたIDを持つイベントだけを抽出
+            const carouselEvs = updatedList.filter(e => carouselIds.includes(e.id));
+            
+            // 2. 💡 管理者画面の「carouselIds」に保存されているインデックス（順番）通りにソートする
+            const sortedCarouselEvs = carouselEvs.sort((a, b) => {
+              return carouselIds.indexOf(a.id) - carouselIds.indexOf(b.id);
+            });
+            
+            setCarouselEvents(sortedCarouselEvs);
+          } else {
             setCarouselEvents(updatedList);
-            }
+          }
+        } else {
+          setCarouselEvents(updatedList);
+        }
 
       // サークル募集
       setCircleEvents(list.filter(e => e.tags?.organizer === "#サークル"));

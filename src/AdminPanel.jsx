@@ -182,6 +182,8 @@ export default function AdminPanel({ user }) {
         {activeTab === "carousel" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700 }}>PR広告に表示するイベント（最大10件）</h2>
+            
+            {/* 選択中のイベント一覧 */}
             {carouselEventIds.length > 0 && (
               <div style={adS.card}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#5A7370" }}>選択中（表示順）</h3>
@@ -189,8 +191,19 @@ export default function AdminPanel({ user }) {
                   const event = events.find((e) => e.id === id);
                   if (!event) return null;
                   return (
-                    <div key={id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 0", borderBottom: "1px solid #F0F0F0" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, flex: 1 }}>{i + 1}. {event.title}</div>
+                    <div key={id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0", borderBottom: "1px solid #F0F0F0" }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, minWidth: 20 }}>{i + 1}.</div>
+                      
+                      {/* 💡 選択中のリストにも画像（またはダミー枠）を表示 */}
+                      {event.imageUrl ? (
+                        <img src={event.imageUrl} alt="" style={{ width: 50, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
+                      ) : (
+                        <div style={{ width: 50, height: 28, background: "#F4F6F5", borderRadius: 4, flexShrink: 0 }} />
+                      )}
+                      
+                      <div style={{ fontSize: 13, fontWeight: 700, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {event.title}
+                      </div>
                       <button style={{ ...adS.smallBtn, color: i === 0 ? "#ccc" : "#5A7370" }} onClick={() => moveCarousel(id, -1)} disabled={i === 0}>↑</button>
                       <button style={{ ...adS.smallBtn, color: i === carouselEventIds.length - 1 ? "#ccc" : "#5A7370" }} onClick={() => moveCarousel(id, 1)} disabled={i === carouselEventIds.length - 1}>↓</button>
                       <button style={{ ...adS.smallBtn, color: "#E53935" }} onClick={() => toggleCarousel(id)}>✕</button>
@@ -199,6 +212,15 @@ export default function AdminPanel({ user }) {
                 })}
               </div>
             )}
+
+            {/* 💡 選択中の画面のすぐ下に「設定を保存する」ボタンを配置 */}
+            <button style={{ width: "100%", padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 12 }} onClick={handleSave} disabled={saving}>
+              {saving ? "保存中..." : "PR広告の設定を保存する"}
+            </button>
+
+            <div style={{ height: 1, background: "#E0E8E7", margin: "12px 0" }}></div>
+
+            {/* イベント検索・追加エリア */}
             <input style={adS.input} placeholder="イベント名・募集者名で検索..." value={carouselSearch} onChange={(e) => setCarouselSearch(e.target.value)} />
             {events.filter((e) => !carouselSearch || e.title?.includes(carouselSearch) || e.organizerName?.includes(carouselSearch)).map((event) => (
               <div key={event.id} style={adS.listItem}>
@@ -348,8 +370,8 @@ export default function AdminPanel({ user }) {
           </div>
         )}
 
-        {/* 保存ボタン */}
-        {(activeTab === "notice" || activeTab === "carousel") && (
+        {/* 保存ボタン（お知らせタブ用） */}
+        {activeTab === "notice" && (
           <button style={{ marginTop: 24, width: "100%", padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }} onClick={handleSave} disabled={saving}>
             {saving ? "保存中..." : "設定を保存する"}
           </button>
