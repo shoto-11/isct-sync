@@ -197,28 +197,36 @@ function Carousel({ events, onSelect }) {
   const [hoveredIndex, setHoveredIndex] = useState(null);
   const wrapperRef = useRef(null);
   const [, forceUpdate] = useState(0);
-    useEffect(() => {
+
+  useEffect(() => {
     forceUpdate(n => n + 1);
-    }, []);
+  }, []);
 
   const timerRef = useRef(null);
   const items = events.slice(0, 10);
   const total = items.length;
-  const extendedItems = [items[total - 1], ...items, items[0]];
-  const [extIndex, setExtIndex] = useState(1);
+
+  // 💡 解決策：前後に2枚ずつダミーを結合して、広い画面でも絶対に隙間（空白）が見えないようにする
+  const extendedItems = [
+    items[total - 2], items[total - 1], 
+    ...items, 
+    items[0], items[1]
+  ];
+
+  // 💡 ダミーが前に2枚入ったので、初期位置（本物の1枚目）はインデックス「2」からスタート
+  const [extIndex, setExtIndex] = useState(2);
   const [transitioning, setTransitioning] = useState(true);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-  resetTimer();
-  // 1フレーム後にreadyにする
-  requestAnimationFrame(() => {
+    resetTimer();
     requestAnimationFrame(() => {
-      setReady(true);
+      requestAnimationFrame(() => {
+        setReady(true);
+      });
     });
-  });
-  return () => clearInterval(timerRef.current);
-}, []);
+    return () => clearInterval(timerRef.current);
+  }, []);
 
   const resetTimer = () => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -243,26 +251,29 @@ function Carousel({ events, onSelect }) {
   };
 
   useEffect(() => {
-    setIndex((extIndex - 1 + total) % total);
-    if (extIndex === 0) {
+    // 本物のインデックス計算（前に2枚あるので -2 する）
+    setIndex((extIndex - 2 + total) % total);
+
+    // 💡 端に到達した時のワープ処理の判定を調整
+    if (extIndex === 1) {
       setTimeout(() => {
         setTransitioning(false);
-        setExtIndex(total);
+        setExtIndex(total + 1);
       }, 400);
-    } else if (extIndex === total + 1) {
+    } else if (extIndex === total + 2) {
       setTimeout(() => {
         setTransitioning(false);
-        setExtIndex(1);
+        setExtIndex(2);
       }, 400);
     }
-  }, [extIndex]);
+  }, [extIndex, total]);
 
   const slideWidth = wrapperRef.current ? wrapperRef.current.offsetWidth * (window.innerWidth > 768 ? 0.55 : 0.88) : 0;
   const offset = wrapperRef.current ? (wrapperRef.current.offsetWidth - slideWidth) / 2 - extIndex * slideWidth : 0;
 
   return (
     <div ref={wrapperRef} style={{ position:"relative", overflow:"hidden", width:"100%", paddingBottom:24, userSelect:"none", opacity: ready ? 1 : 0, transition:"opacity 0.3s ease" }}>
-                  <div
+      <div
         style={{ display:"flex", transform:`translateX(${offset}px)`, transition: transitioning ? "transform 0.4s ease" : "none", willChange:"transform" }}
         onMouseDown={e => { setDragging(false); setStartX(e.pageX); }}
         onMouseMove={e => { if (Math.abs(e.pageX - startX) > 5) setDragging(true); }}
@@ -300,28 +311,21 @@ function Carousel({ events, onSelect }) {
                 {GENRE_EMOJI[event.tags?.genre] || "📌"}
               </div>
             )}
-            {/* PR部分で文字を表示させる
-              <div style={{ position:"absolute", bottom:0, left:8, right:8, padding:"40px 16px 16px", background:"linear-gradient(transparent, rgba(0,0,0,0.75))", borderRadius:"0 0 12px 12px" }}>
-                {event.tags?.genre && <span style={{ background:"#88203a", color:"white", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999 }}>{event.tags.genre}</span>}
-                <h2 style={{ color:"white", fontSize: window.innerWidth > 768 ? 20 : 16, fontWeight:900, margin:"8px 0 4px", textShadow:"0 2px 4px rgba(0,0,0,0.3)" }}>{event.title}</h2>
-                <p style={{ color:"rgba(255,255,255,0.85)", fontSize:12 }}>📅 {event.date} 📍 {event.location}</p>
-              </div>
-            */}
           </div>
         ))}
       </div>
 
       <button style={{ position:"absolute", top:"85%", left:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width: window.innerWidth > 768 ? 52 : 40, height: window.innerWidth > 768 ? 52 : 40, fontSize: window.innerWidth > 768 ? 32 : 24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={goPrev}>
-  <svg width={window.innerWidth > 768 ? 24 : 18} height={window.innerWidth > 768 ? 24 : 18} viewBox="0 0 24 24" fill="none" stroke="#88203a" strokeWidth="3"><polyline points="15 18 9 12 15 6"/></svg>
-</button>
+        <svg width={window.innerWidth > 768 ? 24 : 18} height={window.innerWidth > 768 ? 24 : 18} viewBox="0 0 24 24" fill="none" stroke="#88203a" strokeWidth="3"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
 
-    <button style={{ position:"absolute", top:"85%", right:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width: window.innerWidth > 768 ? 52 : 40, height: window.innerWidth > 768 ? 52 : 40, fontSize: window.innerWidth > 768 ? 32 : 24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={goNext}>
-  <svg width={window.innerWidth > 768 ? 24 : 18} height={window.innerWidth > 768 ? 24 : 18} viewBox="0 0 24 24" fill="none" stroke="#88203a" strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
-</button>
+      <button style={{ position:"absolute", top:"85%", right:4, transform:"translateY(-50%)", background:"rgba(255,255,255,0.9)", border:"none", borderRadius:"50%", width: window.innerWidth > 768 ? 52 : 40, height: window.innerWidth > 768 ? 52 : 40, fontSize: window.innerWidth > 768 ? 32 : 24, cursor:"pointer", color:"#88203a", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", zIndex:10, display:"flex", alignItems:"center", justifyContent:"center" }} onClick={goNext}>
+        <svg width={window.innerWidth > 768 ? 24 : 18} height={window.innerWidth > 768 ? 24 : 18} viewBox="0 0 24 24" fill="none" stroke="#88203a" strokeWidth="3"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
     
-        <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6 }}>
+      <div style={{ position:"absolute", bottom:8, left:"50%", transform:"translateX(-50%)", display:"flex", gap:6 }}>
         {items.map((_, i) => (
-          <div key={i} style={{ height:4, width: i === index ? 32 : 16, borderRadius:999, background: i === index ? "#88203a" : "rgba(0,0,0,0.2)", cursor:"pointer", transition:"all 0.3s" }} onClick={() => { setTransitioning(true); setExtIndex(i + 1); resetTimer(); }} />
+          <div key={i} style={{ height:4, width: i === index ? 32 : 16, borderRadius999:999, borderRadius:999, background: i === index ? "#88203a" : "rgba(0,0,0,0.2)", cursor:"pointer", transition:"all 0.3s" }} onClick={() => { setTransitioning(true); setExtIndex(i + 2); resetTimer(); }} />
         ))}
       </div>
     </div>
