@@ -9,7 +9,9 @@ import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { GENRE_STYLES, GENRE_EMOJI, THEME, BG_COLOR } from "./constants";
-import { Users, Mail, Calendar, MapPin, ChevronLeft, Info } from "lucide-react";
+import { Users, Calendar, MapPin, ChevronLeft, Info } from "lucide-react";
+import { FaXTwitter, FaInstagram } from "react-icons/fa6";
+import { FaGlobe } from "react-icons/fa";
 
 export default function GroupProfile({ groupId, onBack, onEventSelect }) {
   const [group, setGroup] = useState(null);
@@ -78,11 +80,8 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
     <div style={s.container}>
       {/* ヘッダーナビ */}
       <div style={s.navBar}>
-        <button style={s.navBackBtn} onClick={onBack}>
-          <ChevronLeft size={20} />
-          <span>戻る</span>
-        </button>
-      </div>
+        <button style={s.navBackBtn} onClick={onBack}>← 戻る</button>
+        </div>
 
       <div style={s.mainContent}>
         {/* プロフィールカード */}
@@ -100,6 +99,69 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
                 <span style={s.groupTypeBadge}>{group.groupType || "サークル"}</span>
               </div>
               <h1 style={s.groupName}>{group.displayName}</h1>
+
+              {/* 💡 各ブランドカラーをまとわせた、ホバー時に浮かび上がるボタンUI */}
+              <div style={{ display: "flex", gap: 10, marginTop: 10, marginBottom: 4 }}>
+                {group.twitterUrl && (
+                  <a 
+                    href={group.twitterUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    style={{ ...s.snsBtnBase, background: "#111111" }} // 𝕏ブランドカラー（漆黒）
+                    title="𝕏 (旧Twitter)"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-3px)";
+                      e.currentTarget.style.boxShadow = "0 6px 12px rgba(0,0,0,0.2)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                    }}
+                  >
+                    <FaXTwitter size={15} color="#FFFFFF" />
+                  </a>
+                )}
+                
+                {group.instagramUrl && (
+                  <a 
+                    href={group.instagramUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    style={{ ...s.snsBtnBase, background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)" }} // インスタグラデーション
+                    title="Instagram"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-3px)";
+                      e.currentTarget.style.boxShadow = "0 6px 12px rgba(220,39,67,0.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                    }}
+                  >
+                    <FaInstagram size={15} color="#FFFFFF" />
+                  </a>
+                )}
+                
+                {group.homepageUrl && (
+                  <a 
+                    href={group.homepageUrl} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    style={{ ...s.snsBtnBase, background: "#0066cc" }} // ホームページ（信頼のブルー）
+                    title="ホームページ"
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-3px)";
+                      e.currentTarget.style.boxShadow = "0 6px 12px rgba(0,102,204,0.3)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                    }}
+                  >
+                    <FaGlobe size={15} color="#FFFFFF" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
 
@@ -168,9 +230,6 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
 
 const s = {
   container: { background: BG_COLOR, minHeight: "100vh", paddingBottom: 40 },
-  navBar: { background: "white", padding: "12px 16px", borderBottom: "1px solid #E0E8E7", position: "sticky", top: 0, zIndex: 10 },
-  navBackBtn: { background: "none", border: "none", color: THEME, fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 },
-  mainContent: { maxWidth: 640, margin: "0 auto", padding: "16px" },
   
   profileCard: { background: "white", borderRadius: 16, padding: "20px", boxShadow: "0 2px 12px rgba(0,0,0,0.05)", marginBottom: 24 },
   headerRow: { display: "flex", gap: 16, alignItems: "flex-start", marginBottom: 20 },
@@ -199,5 +258,44 @@ const s = {
   eventTitle: { fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
   eventMeta: { display: "flex", flexDirection: "column", gap: 2, marginBottom: 6 },
   metaItem: { fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 4 },
-  genreTag: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 999, width: "fit-content" }
+  genreTag: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 999, width: "fit-content" },
+  snsBtnBase: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "34px",
+    height: "34px",
+    borderRadius: "50%",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    transition: "all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)", // 滑らかなアニメーションカーブ
+    cursor: "pointer",
+    textDecoration: "none",
+  },
+  // 💡 既存の navBar, navBackBtn, mainContent を以下のように書き換えてください
+  navBar: { 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    padding: "8px 16px", 
+    maxWidth: 640,          // 💡 下の mainContent と横幅の開始位置をピタッと合わせます
+    margin: "0 auto", 
+    width: "100%" 
+  },
+  navBackBtn: { 
+    display: "flex", 
+    alignItems: "center", 
+    gap: 6, 
+    background: "none", 
+    border: "none", 
+    color: THEME, 
+    fontSize: 14, 
+    fontWeight: 700, 
+    cursor: "pointer", 
+    padding: "8px 0" 
+  },
+  mainContent: { 
+    maxWidth: 640, 
+    margin: "0 auto", 
+    padding: "0 16px 16px" // 💡 上の余白を少し詰めて戻るボタンとの距離感を最適化します
+  },
 };
