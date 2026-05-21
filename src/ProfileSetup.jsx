@@ -21,7 +21,7 @@ export default function ProfileSetup({ onComplete }) {
 
   const handleSubmit = async () => {
     setError("");
-    if (!gakuin || !gakukei || !gakunen || !gender || !displayName.trim()) {
+    if (!gakuin || !gakunen || !gender || !displayName.trim()) {
       setError("全ての項目を入力してください");
       return;
     }
@@ -72,11 +72,41 @@ export default function ProfileSetup({ onComplete }) {
         {/* 学系 */}
         {gakuin && (
           <div style={s.section}>
-            <label style={s.label}>学系 <span style={s.req}>必須</span></label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <label style={s.label}>学系 <span style={{ fontSize: 10, color: "#9AADA8", fontWeight: "normal", marginLeft: 4 }}>(任意)</span></label>
+              {gakukei && (
+                <button 
+                  type="button"
+                  style={{ background: "none", border: "none", color: "#C62828", fontSize: 11, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                  onClick={() => setGakukei("")}
+                >
+                  選択をクリア
+                </button>
+              )}
+            </div>
             <div style={s.grid}>
-              {GAKUIN[gakuin].map((k) => (
-                <button key={k} style={{ ...s.chip, ...(gakukei === k ? s.chipActive : {}) }} onClick={() => setGakukei(k)}>{k}</button>
-              ))}
+              {/* 未所属用の明示的なボタン枠 */}
+              <button 
+                type="button" 
+                style={{ ...s.chip, ...(gakukei === "" ? s.chipActive : {}) }}
+                onClick={() => setGakukei("")}
+              >
+                未所属 / その他
+              </button>
+
+              {GAKUIN[gakuin].map((k) => {
+                const isSelected = gakukei === k;
+                return (
+                  <button
+                    type="button"
+                    key={k}
+                    style={{ ...s.chip, ...(isSelected ? s.chipActive : {}) }}
+                    onClick={() => setGakukei(isSelected ? "" : k)}
+                  >
+                    {k}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

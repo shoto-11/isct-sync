@@ -54,7 +54,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
     // あるいはマイページが最初にマウントされた時にトップにスクロール
     window.scrollTo(0, 0);
   }, [selectedGroup]);
-  
+
   useEffect(() => {
     const fetchData = async () => {
       if (!uid) return;
@@ -136,6 +136,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
       currentUserId={uid}
       onBack={() => setSelectedGroup(null)}
       onChanged={() => { setSelectedGroup(null); onGroupsChanged?.(); }}
+      onEventSelect={onEventSelect}
     />
   );
 
@@ -218,12 +219,41 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
             </div>
             {editGakuin && (
               <div style={s.editSection}>
-                <label style={s.editLabel}>学系</label>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <label style={s.editLabel}>学系 <span style={{ fontSize: 10, color: "#9AADA8", fontWeight: "normal", marginLeft: 4 }}>(任意)</span></label>
+                  {editGakukei && (
+                    <button 
+                      type="button"
+                      style={{ background: "none", border: "none", color: "#C62828", fontSize: 11, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                      onClick={() => setEditGakukei("")}
+                    >
+                      選択をクリア
+                    </button>
+                  )}
+                </div>
                 <div style={s.optionGrid}>
-                  {GAKUIN[editGakuin].map((k) => (
-                    <button key={k} style={{ ...s.optionBtn, ...(editGakukei === k ? s.optionBtnActive : {}) }}
-                      onClick={() => setEditGakukei(k)}>{k}</button>
-                  ))}
+                  {/* 未所属用の明示的なボタン枠 */}
+                  <button 
+                    type="button" 
+                    style={{ ...s.optionBtn, ...(editGakukei === "" ? s.optionBtnActive : {}) }}
+                    onClick={() => setEditGakukei("")}
+                  >
+                    未所属 / その他
+                  </button>
+
+                  {GAKUIN[editGakuin].map((k) => {
+                    const isSelected = editGakukei === k;
+                    return (
+                      <button 
+                        type="button"
+                        key={k} 
+                        style={{ ...s.optionBtn, ...(isSelected ? s.optionBtnActive : {}) }}
+                        onClick={() => setEditGakukei(isSelected ? "" : k)} // 💡 すでに選択されていれば未選択へトグル
+                      >
+                        {k}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -316,6 +346,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
         <div style={s.tabs}>
           {[
             { id: "events", label: "募集中" },
+            { id: "expired", label: "募集終了" },
             { id: "liked", label: "いいね" },
             { id: "joined", label: "参加予定" },
             { id: "history", label: "閲覧履歴" },
@@ -327,11 +358,36 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
 
         {/* ── タブコンテンツ ── */}
         <div style={s.tabContent}>
-          {activeTab === "events" && (
-            myEvents.length === 0
-              ? <p style={s.empty}>まだ募集中のイベントはありません</p>
-              : myEvents.map((event) => <EventCard key={event.id} event={event} />)
-          )}
+          {(() => {
+            const now = new Date();
+            // 💡 投稿した全イベント(myEvents)から「募集中(期限内)」を抽出
+            const activeEvents = myEvents.filter(event => {
+              if (!event.deadline) return true;
+              const deadlineStr = event.deadlineTime ? `${event.deadline}T${event.deadlineTime}` : `${event.deadline}T23:59`;
+              return new Date(deadlineStr) >= now;
+            });
+
+            // 💡 「募集終了(期限切れ)」を抽出
+            const expiredEvents = myEvents.filter(event => {
+              if (!event.deadline) return false;
+              const deadlineStr = event.deadlineTime ? `${event.deadline}T${event.deadlineTime}` : `${event.deadline}T23:59`;
+              return new Date(deadlineStr) < now;
+            });
+
+            // 💡 タブIDに応じて出し分けるコンテンツスイッチ
+            if (activeTab === "events") {
+              return activeEvents.length === 0
+                ? <p style={s.empty}>まだ募集中のイベントはありません</p>
+                : activeEvents.map((event) => <EventCard key={event.id} event={event} />);
+            }
+            
+            if (activeTab === "expired") {
+              return expiredEvents.length === 0
+                ? <p style={s.empty}>募集終了したイベントはありません</p>
+                : expiredEvents.map((event) => <EventCard key={event.id} event={event} />);
+            }
+          })()}
+
           {activeTab === "liked" && (
             likedEvents.length === 0
               ? <p style={s.empty}>いいねしたイベントはありません</p>
