@@ -56,29 +56,59 @@ function MainLayout({
           </div>
         </div>
       </header>
-
-      {/* ── Notice Bar ── */}
+{/* ── Notice Bar ── */}
       <div
         style={{ ...s.noticeBar, cursor: noticeItems[noticeIndex]?.link ? "pointer" : "default" }}
         onClick={() => noticeItems[noticeIndex]?.link && window.open(noticeItems[noticeIndex].link, "_blank")}
       >
         <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "flex", alignItems: "center", height: "100%" }}>
-          <div style={s.noticeIcon}>
+          {/* 💡 修正箇所：アイコンの右側に marginRight: 8 を追加して、文字との間隔を開けました */}
+          <div style={{ ...s.noticeIcon, display: "flex", alignItems: "center", marginRight: 10 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007A6E" strokeWidth="2">
               <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
           <div style={{ flex: 1, overflow: "hidden", position: "relative", height: "100%", display: "flex", alignItems: "center" }}>
-            {noticeItems.map((item, i) => (
-              <div key={i} style={{
-                position: "absolute", width: "100%",
-                opacity: i === noticeIndex ? 1 : 0,
-                transform: i === noticeIndex ? "translateY(0)" : i < noticeIndex ? "translateY(-100%)" : "translateY(100%)",
-                transition: "all 0.5s ease",
-                fontSize: 13, fontWeight: 600, color: "#1A2E2B",
-                whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-              }}>{item.text}</div>
-            ))}
+            {noticeItems.map((item, i) => {
+              const total = noticeItems.length;
+              
+              const isCurrent = i === noticeIndex;
+              // 💡 常に下でスタンバイする「次のアイテム」
+              const isNext = i === (noticeIndex + 1) % total;
+              // 💡 💡 上にスライドしながら消えていく「直前のアイテム」
+              const isPrev = i === (noticeIndex - 1 + total) % total;
+
+              // 状態に応じた位置（Y軸）と透明度（Opacity）の決定
+              let translateY = "100%"; // デフォルト（画面下で待機）
+              let opacity = 0;
+              let hasTransition = false;
+
+              if (isCurrent) {
+                translateY = "0";      // 中央に表示
+                opacity = 1;
+                hasTransition = true;  // 下から上がってくるアニメーションを有効に
+              } else if (isPrev) {
+                translateY = "-100%";  // 上にスライドアウト
+                opacity = 0;           // フェードアウト
+                hasTransition = true;  // 上に消えていくアニメーションを有効に
+              } else if (isNext) {
+                translateY = "100%";   // 次のアイテムは下で待機
+                opacity = 0;
+                hasTransition = false; // 画面外の下に戻る時はアニメーションさせずに瞬間移動
+              }
+
+              return (
+                <div key={i} style={{
+                  position: "absolute", width: "100%",
+                  opacity: opacity,
+                  transform: `translateY(${translateY})`,
+                  // 💡 transition に Y軸の動きだけでなく opacity（フェード）も追加
+                  transition: hasTransition ? "transform 1.0s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease" : "none",
+                  fontSize: 13, fontWeight: 600, color: "#1A2E2B",
+                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                }}>{item.text}</div>
+              );
+            })}
           </div>
           <div style={{ color: "#B0BEC5", fontSize: 16, flexShrink: 0 }}>›</div>
         </div>
@@ -120,18 +150,36 @@ function MainLayout({
       {menuOpen && <div style={s.overlay} onClick={() => setMenuOpen(false)} />}
 
       {/* ── Menu Drawer ── */}
-      <div style={{ ...s.menu, transform: menuOpen ? "translateX(0)" : "translateX(100%)" }}>
-        <div style={s.menuUserSection}>
-          <div style={s.menuAvatar}>
-            {menuProfile?.avatarUrl
-              ? <img src={menuProfile.avatarUrl} alt="avatar" style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover" }} />
-              : <User size={24} color="white" />}
+        <div style={{ ...s.menu, transform: menuOpen ? "translateX(0)" : "translateX(100%)" }}>
+          
+          {/* 💡 ユーザー情報エリアのレイアウト調整 */}
+          <div style={{ ...s.menuUserSection, display: "flex", alignItems: "center", gap: 14, padding: "20px 16px" }}>
+            
+            {/* 💡 アバター画像表示部分 */}
+            {menuProfile?.avatarUrl ? (
+              <img 
+                src={menuProfile.avatarUrl} 
+                alt="avatar" 
+                style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover", flexShrink: 0, border: "2px solid rgba(255,255,255,0.4)" }} 
+              />
+            ) : (
+              <div style={s.menuAvatar}>
+                <User size={24} color="white" />
+              </div>
+            )}
+
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ ...s.menuUserName, fontSize: 15, fontWeight: 700, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {menuProfile?.displayName || user?.email || "ログインしていません"}
+              </div>
+              {user && (
+                <div style={{ ...s.menuUserEmail, fontSize: 12, color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2 }}>
+                  {user.email}
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            <div style={s.menuUserName}>{menuProfile?.displayName || user?.email || "ログインしていません"}</div>
-            {user && <div style={s.menuUserEmail}>{user.email}</div>}
-          </div>
-        </div>
+
         <div style={s.menuItems}>
           {[
             { icon: <Home size={18} />, label: "ホーム", to: "/" },
