@@ -6,7 +6,7 @@ import { GENRE_STYLES, GENRE_EMOJI, GAKUIN, GAKUNEN, GENDER } from "./constants"
 import FollowList from "./FollowList";
 import GroupManage from "./GroupManage";
 import { BG_COLOR } from "./constants";
-import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, Calendar, MapPin, Users } from "lucide-react";
+import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, Calendar, MapPin, Users,ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const THEME = "#88203a";
@@ -49,7 +49,12 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
   const [selectedGroup, setSelectedGroup] = useState(null); // GroupManage表示用
 
   const uid = auth.currentUser?.uid;
-
+  useEffect(() => {
+    // selectedGroup が null になった（詳細から戻ってきた）タイミング、
+    // あるいはマイページが最初にマウントされた時にトップにスクロール
+    window.scrollTo(0, 0);
+  }, [selectedGroup]);
+  
   useEffect(() => {
     const fetchData = async () => {
       if (!uid) return;
@@ -151,8 +156,9 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
             <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
           </div>
           {isGroupEvent && (
-            <span style={s.groupBadge}>
-              👥 {userGroups.find((g) => g.id === event.createdBy)?.displayName}
+            <span style={{ ...s.groupBadge, display: "inline-flex", alignItems: "center", gap: 4 }}>
+              <Users size={11} /> 
+              <span>{userGroups.find((g) => g.id === event.createdBy)?.displayName}</span>
             </span>
           )}
         </div>
@@ -281,14 +287,25 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
             <div style={s.groupList}>
               {userGroups.map((group) => (
                 <div key={group.id} style={s.groupItem} onClick={() => setSelectedGroup(group)}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#F9EAED", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>
-                    {group.avatarUrl ? <img src={group.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👥"}
+                  {/* 💡 アイコン画像エリアの絵文字を Users アイコンに置換 */}
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#F4F6F5", border: "1px solid #E0E8E7", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {group.avatarUrl ? (
+                      <img src={group.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Avatar" />
+                    ) : (
+                      <Users size={20} color="#9AADA8" />
+                    )}
                   </div>
+                  
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 700 }}>{group.displayName}</div>
                     <div style={{ fontSize: 11, color: "#5A7370" }}>{group.groupType} · {group.members?.length || 0}人</div>
                   </div>
-                  <span style={{ fontSize: 12, color: THEME, fontWeight: 700 }}>詳細 ›</span>
+                  
+                  {/* 💡 右端の「詳細 ›」の記号を ChevronRight アイコンに置換 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 2, color: THEME, fontSize: 12, fontWeight: 700 }}>
+                    <span>詳細</span>
+                    <ChevronRight size={14} />
+                  </div>
                 </div>
               ))}
             </div>
