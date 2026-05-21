@@ -1,11 +1,9 @@
-import { GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from "./constants";
+import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, BG_COLOR, GAKUIN } from "./constants";
 import { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
-import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { BG_COLOR } from "./constants";
-import { MapPin, Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip } from "lucide-react";
-import { GAKUIN } from "./constants";
+import { MapPin, Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon } from "lucide-react";
 
 export default function EventDetail({ event: initialEvent, onBack }) {
   const [event, setEvent] = useState(initialEvent);
@@ -31,15 +29,23 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [editStyle, setEditStyle] = useState(event.tags?.style || "");
   const [editOrganizer, setEditOrganizer] = useState(event.tags?.organizer || "");
   const [liked, setLiked] = useState(false);
-    const [joining, setJoining] = useState(false);
-    const [likeCount, setLikeCount] = useState(0);
-    const [joinCount, setJoinCount] = useState(0);
-    const [organizer, setOrganizer] = useState(null);
-    const [editTargetGakuin, setEditTargetGakuin] = useState(event.targetGakuin || []);
-const [editTargetGakukei, setEditTargetGakukei] = useState(event.targetGakukei || []);
-const [editContact, setEditContact] = useState(event.contact || "");
+  const [joining, setJoining] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [joinCount, setJoinCount] = useState(0);
 
-  const isOwner = auth.currentUser?.uid === event.createdBy;
+  // 💡 募集者（詳細表示用 ＆ 編集時のカード選択用）
+  const [organizer, setOrganizer] = useState(null);
+  const [editOrganizerType, setEditOrganizerType] = useState(event.organizerType || "personal");
+  const [editOrganizerId, setEditOrganizerId] = useState(event.organizerId || event.createdBy);
+  const [userProfile, setUserProfile] = useState(null);
+  const [userGroups, setUserGroups] = useState([]);
+
+  const [editTargetGakuin, setEditTargetGakuin] = useState(event.targetGakuin || []);
+  const [editTargetGakukei, setEditTargetGakukei] = useState(event.targetGakukei || []);
+  const [editContact, setEditContact] = useState(event.contact || "");
+
+  // 💡 権限判定に createdByPersonal（個人UID）も考慮するように修正
+  const isOwner = auth.currentUser?.uid === event.createdByPersonal || auth.currentUser?.uid === event.createdBy;
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5" };
 
   useEffect(() => {
@@ -47,51 +53,85 @@ const [editContact, setEditContact] = useState(event.contact || "");
     const fab = document.querySelector('[data-fab]');
     if (fab) fab.style.display = 'none';
     return () => { if (fab) fab.style.display = 'flex'; };
-    }, []);
+  }, []);
 
-    useEffect(() => {
+  useEffect(() => {
     const recordView = async () => {
-        if (!auth.currentUser || !event.id) return;
-        const uid = auth.currentUser.uid;
-        const now = new Date();
-        const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-        const viewRef = doc(db, "eventStats", event.id);
-        const snap = await getDoc(viewRef);
-        if (snap.exists()) {
+      if (!auth.currentUser || !event.id) return;
+      const uid = auth.currentUser.uid;
+      const now = new Date();
+      const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+      const viewRef = doc(db, "eventStats", event.id);
+      const snap = await getDoc(viewRef);
+      if (snap.exists()) {
         const data = snap.data();
         setLikeCount((data.likes || []).length);
         setJoinCount((data.joins || []).length);
         setLiked((data.likes || []).some(l => l.uid === uid));
         setJoining((data.joins || []).some(j => j.uid === uid));
-        // 閲覧記録
+        
         const views = (data.views || []).filter(v => new Date(v.date) > weekAgo);
         const alreadyViewed = views.some(v => v.uid === uid);
         if (!alreadyViewed) {
-            await updateDoc(viewRef, {
+          await updateDoc(viewRef, {
             views: arrayUnion({ uid, date: now.toISOString() }),
-            });
+          });
         }
-        } else {
+      } else {
         await setDoc(viewRef, {
-            eventId: event.id,
-            deadline: event.deadline || null,
-            views: [{ uid, date: now.toISOString() }],
-            likes: [],
-            joins: [],
+          eventId: event.id,
+          deadline: event.deadline || null,
+          views: [{ uid, date: now.toISOString() }],
+          likes: [],
+          joins: [],
         });
-        }
+      }
     };
     recordView();
-    }, [event.id]);
+  }, [event.id]);
 
+  // 詳細表示用の募集者データを動的にフェッチ
   useEffect(() => {
     const fetchOrganizer = async () => {
-      if (!event.createdBy) return;
-      const orgSnap = await getDoc(doc(db, "users", event.createdBy));
-      if (orgSnap.exists()) setOrganizer(orgSnap.data());
+      const type = event.organizerType || "personal";
+      const id = event.organizerId || event.createdBy;
+      if (!id) return;
+
+      try {
+        if (type === "group") {
+          const orgSnap = await getDoc(doc(db, "groups", id));
+          if (orgSnap.exists()) setOrganizer({ type: "group", ...orgSnap.data() });
+        } else {
+          const orgSnap = await getDoc(doc(db, "users", id));
+          if (orgSnap.exists()) setOrganizer({ type: "personal", ...orgSnap.data() });
+        }
+      } catch (err) {
+        console.error("主催者の取得に失敗しました:", err);
+      }
     };
     fetchOrganizer();
-  }, [event.createdBy]);
+  }, [event.organizerType, event.organizerId, event.createdBy]);
+
+  // 編集モード開示時に、コンテキストに必要なデータを先回り取得
+  useEffect(() => {
+    if (!editMode || !auth.currentUser) return;
+    
+    const fetchEditContextData = async () => {
+      const uid = auth.currentUser.uid;
+      try {
+        const userSnap = await getDoc(doc(db, "users", uid));
+        if (userSnap.exists()) setUserProfile({ id: userSnap.id, ...userSnap.data() });
+
+        const groupsRef = collection(db, "groups");
+        const q = query(groupsRef, where("members", "array-contains", uid));
+        const querySnapshot = await getDocs(q);
+        setUserGroups(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      } catch (err) {
+        console.error("編集用コンテキストの取得に失敗しました:", err);
+      }
+    };
+    fetchEditContextData();
+  }, [editMode]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -101,6 +141,12 @@ const [editContact, setEditContact] = useState(event.contact || "");
   };
 
   const handleSave = async () => {
+    // 💡 必須バリデーションの条件を作成画面（PostEvent）と完全に統一
+    if (!editTitle.trim() || !editDetail.trim() || !editDate || !editLocation.trim() || !editDeadline || !editGenre || !editTargets.length || !editCampus) {
+      alert("必須項目を全て入力してください");
+      return;
+    }
+
     setSaving(true);
     try {
       let imageUrl = event.imageUrl;
@@ -109,16 +155,26 @@ const [editContact, setEditContact] = useState(event.contact || "");
         await uploadBytes(storageRef, editImage);
         imageUrl = await getDownloadURL(storageRef);
       }
+
+      const currentUid = auth.currentUser.uid;
+      const selectedGroup = userGroups.find(g => g.id === editOrganizerId);
+
+      // 💡 変更された選択カードに基づく情報の更新
+      const finalOrganizerType = editOrganizerType === "group" ? "group" : "personal";
+      const finalOrganizerId = editOrganizerType === "group" && selectedGroup ? selectedGroup.id : currentUid;
+      const organizerName = editOrganizerType === "group" && selectedGroup ? selectedGroup.displayName : (userProfile?.displayName || auth.currentUser.email);
+      const organizerAvatar = editOrganizerType === "group" && selectedGroup ? (selectedGroup.avatarUrl || "") : (userProfile?.avatarUrl || "");
+
       const updated = {
-        title: editTitle,
-        detail: editDetail,
+        title: editTitle.trim(),
+        detail: editDetail.trim(),
         date: editDate,
         startTime: editStartTime,
         endTime: editEndTime,
-        location: editLocation,
+        location: editLocation.trim(),
         deadline: editDeadline,
         deadlineTime: editDeadlineTime,
-        applyLabel: editApplyLabel,
+        applyLabel: editApplyLabel || "参加を申し込む",
         applyLink: editApplyLink,
         imageUrl,
         tags: {
@@ -126,15 +182,22 @@ const [editContact, setEditContact] = useState(event.contact || "");
           targets: editTargets,
           campus: editCampus,
           style: editStyle,
-          organizer: editOrganizer,
+          organizer: editOrganizer, // ⑤の募集者種別タグ
         },
         targetGakuin: editTargetGakuin,
         targetGakukei: editTargetGakukei,
         contact: editContact,
+        organizerType: finalOrganizerType,
+        organizerId: finalOrganizerId,
+        createdBy: finalOrganizerId, // 互換性維持
+        organizerName,
+        organizerAvatar,
       };
+
       await updateDoc(doc(db, "events", event.id), updated);
       setEvent(prev => ({ ...prev, ...updated }));
       setEditMode(false);
+      alert("イベント情報を更新しました！");
     } catch (err) {
       alert("保存に失敗しました: " + err.message);
     }
@@ -142,50 +205,56 @@ const [editContact, setEditContact] = useState(event.contact || "");
   };
   
   const handleLike = async () => {
-  if (!auth.currentUser) return;
-  const uid = auth.currentUser.uid;
-  const viewRef = doc(db, "eventStats", event.id);
-  const snap = await getDoc(viewRef);
-  if (!snap.exists()) return;
-  const data = snap.data();
-  const likes = data.likes || [];
-  
-  if (liked) {
-    const newLikes = likes.filter(l => l.uid !== uid);
-    await updateDoc(viewRef, { likes: newLikes });
-    setLiked(false);
-    setLikeCount(c => c - 1);
-  } else {
-    const newLikes = [...likes, { uid, date: new Date().toISOString() }];
-    await updateDoc(viewRef, { likes: newLikes });
-    setLiked(true);
-    setLikeCount(c => c + 1);
-  }
-};
+    if (!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+    const viewRef = doc(db, "eventStats", event.id);
+    const snap = await getDoc(viewRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const likes = data.likes || [];
+    
+    if (liked) {
+      const newLikes = likes.filter(l => l.uid !== uid);
+      await updateDoc(viewRef, { likes: newLikes });
+      setLiked(false);
+      setLikeCount(c => c - 1);
+    } else {
+      const newLikes = [...likes, { uid, date: new Date().toISOString() }];
+      await updateDoc(viewRef, { likes: newLikes });
+      setLiked(true);
+      setLikeCount(c => c + 1);
+    }
+  };
 
-const handleJoin = async () => {
-  if (!auth.currentUser) return;
-  const uid = auth.currentUser.uid;
-  const viewRef = doc(db, "eventStats", event.id);
-  const snap = await getDoc(viewRef);
-  if (!snap.exists()) return;
-  const data = snap.data();
-  const joins = data.joins || [];
+  const handleJoin = async () => {
+    if (!auth.currentUser) return;
+    const uid = auth.currentUser.uid;
+    const viewRef = doc(db, "eventStats", event.id);
+    const snap = await getDoc(viewRef);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    const joins = data.joins || [];
 
-  if (joining) {
-    const newJoins = joins.filter(j => j.uid !== uid);
-    await updateDoc(viewRef, { joins: newJoins });
-    setJoining(false);
-    setJoinCount(c => c - 1);
-  } else {
-    const newJoins = [...joins, { uid, date: new Date().toISOString() }];
-    await updateDoc(viewRef, { joins: newJoins });
-    setJoining(true);
-    setJoinCount(c => c + 1);
-  }
-};
+    if (joining) {
+      const newJoins = joins.filter(j => j.uid !== uid);
+      await updateDoc(viewRef, { joins: newJoins });
+      setJoining(false);
+      setJoinCount(c => c - 1);
+    } else {
+      const newJoins = [...joins, { uid, date: new Date().toISOString() }];
+      await updateDoc(viewRef, { joins: newJoins });
+      setJoining(true);
+      setJoinCount(c => c + 1);
+    }
+  };
 
-  // 編集モード
+  const handleNavigateToGroupCreation = () => {
+    if (window.confirm("グループの新規作成・参加はマイページの「グループ管理」から行えます。一度編集をキャンセルしてマイページへ移動しますか？")) {
+      window.location.href = "/mypage";
+    }
+  };
+
+  // ─── 編集モード画面 ───
   if (editMode) return (
     <div style={s.container}>
       <div style={{ maxWidth:720, margin:"0 auto", width:"100%", padding:"8px 16px" }}>
@@ -194,15 +263,69 @@ const handleJoin = async () => {
       <div style={s.editBox}>
         <h2 style={s.editTitle}>イベントを編集</h2>
 
+        {/* 募集者選択カードセクション（必須） */}
+        <div style={s.editSection}>
+          <label style={s.editLabel}>募集者を変更 <span style={s.required}>必須</span></label>
+          <div style={s.cardGrid}>
+            <div 
+              style={{
+                ...s.organizerCard,
+                borderColor: editOrganizerType === "personal" ? THEME : "#D0DDD9",
+                background: editOrganizerType === "personal" ? "#FFF5F7" : "white",
+              }}
+              onClick={() => setEditOrganizerType("personal")}
+            >
+              <div style={s.cardAvatarWrap}>
+                {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} style={s.cardAvatar} alt="user" /> : <User size={16} color={THEME} />}
+              </div>
+              <div style={s.cardInfo}>
+                <div style={s.cardName}>{userProfile?.displayName || "あなた (個人)"}</div>
+                <div style={s.cardTypeTag}>個人名義</div>
+              </div>
+            </div>
+
+            {userGroups.map((group) => (
+              <div 
+                key={group.id}
+                style={{
+                  ...s.organizerCard,
+                  borderColor: (editOrganizerType === "group" && editOrganizerId === group.id) ? THEME : "#D0DDD9",
+                  background: (editOrganizerType === "group" && editOrganizerId === group.id) ? "#FFF5F7" : "white",
+                }}
+                onClick={() => {
+                  setEditOrganizerType("group");
+                  setEditOrganizerId(group.id);
+                }}
+              >
+                <div style={s.cardAvatarWrap}>
+                  {group.avatarUrl ? <img src={group.avatarUrl} style={s.cardAvatar} alt="group" /> : <Users size={16} color="#9AADA8" />}
+                </div>
+                <div style={s.cardInfo}>
+                  <div style={s.cardName}>{group.displayName}</div>
+                  <div style={s.cardTypeTag}>{group.groupType || "サークル"}</div>
+                </div>
+              </div>
+            ))}
+
+            <div style={{ ...s.organizerCard, ...s.dashedCard }} onClick={handleNavigateToGroupCreation}>
+              <div style={s.plusIconWrap}><Plus size={16} color="#5A7370" /></div>
+              <div style={s.cardInfo}>
+                <div style={{ ...s.cardName, color: "#5A7370" }}>新しいグループ</div>
+                <div style={{ ...s.cardTypeTag, color: "#7A9591" }}>作成・参加はこちら</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* 画像 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>イベント画像</label>
+          <label style={s.editLabel}>イベント画像（任意）</label>
           <div style={s.imageArea} onClick={() => document.getElementById("editImgInput").click()}>
             {editPreview ? (
               <img src={editPreview} alt="preview" style={s.previewImg} />
             ) : (
               <div style={s.imagePlaceholder}>
-                <span style={{ fontSize:36 }}>🖼️</span>
+                <ImageIcon size={32} color="#BACFCB" />
                 <span style={s.imagePlaceholderText}>タップして画像を変更</span>
               </div>
             )}
@@ -211,7 +334,7 @@ const handleJoin = async () => {
         </div>
 
         {/* タイトル */}
-        <div style={s.editSection}>
+        <div style={s.editMode ? s.editSection : s.editSection}>
           <label style={s.editLabel}>イベント名 <span style={s.required}>必須</span></label>
           <input style={s.input} value={editTitle} onChange={e => setEditTitle(e.target.value)} />
         </div>
@@ -224,16 +347,16 @@ const handleJoin = async () => {
 
         {/* 日時 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>イベント日時</label>
+          <label style={s.editLabel}>イベント日時 <span style={s.required}>必須</span></label>
           <input style={s.input} type="date" value={editDate} onChange={e => setEditDate(e.target.value)} onFocus={e => e.target.showPicker()} />
           <div style={s.timeRow}>
             <div style={{ flex:1 }}>
-              <label style={{ ...s.editLabel, fontSize:11 }}>開始時刻</label>
+              <label style={{ ...s.editLabel, fontSize:11 }}>開始時刻（任意）</label>
               <input style={s.input} type="time" value={editStartTime} onChange={e => setEditStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
             </div>
             <div style={s.timeSep}>〜</div>
             <div style={{ flex:1 }}>
-              <label style={{ ...s.editLabel, fontSize:11 }}>終了時刻</label>
+              <label style={{ ...s.editLabel, fontSize:11 }}>終了時刻（任意）</label>
               <input style={s.input} type="time" value={editEndTime} onChange={e => setEditEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
             </div>
           </div>
@@ -241,23 +364,23 @@ const handleJoin = async () => {
 
         {/* 場所 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>場所</label>
+          <label style={s.editLabel}>場所 <span style={s.required}>必須</span></label>
           <input style={s.input} value={editLocation} onChange={e => setEditLocation(e.target.value)} />
         </div>
 
         {/* 締切 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>申し込み締切日</label>
+          <label style={s.editLabel}>申し込み締切日 <span style={s.required}>必須</span></label>
           <input style={s.input} type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
-          <div style={s.editSection}>
-            <label style={s.editLabel}>申し込み締切時間</label>
+          <div style={{ marginTop: 8 }}>
+            <label style={{ ...s.editLabel, fontSize:11 }}>申し込み締切時間（任意）</label>
             <input style={s.input} type="time" value={editDeadlineTime} onChange={e => setEditDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-            </div>
-            </div>
+          </div>
+        </div>
 
         {/* ジャンル */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>① ジャンル</label>
+          <label style={s.editLabel}>① ジャンル <span style={s.required}>必須</span></label>
           <div style={s.optionGrid}>
             {GENRE_TAGS.map(t => (
               <button key={t} style={{ ...s.tagBtn, ...(editGenre === t ? s.tagBtnActive : {}) }} onClick={() => setEditGenre(t)}>{t}</button>
@@ -267,7 +390,7 @@ const handleJoin = async () => {
 
         {/* 対象者 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>② 対象者</label>
+          <label style={s.editLabel}>② 対象学年 <span style={s.required}>必須・複数選択可</span></label>
           <div style={s.optionGrid}>
             {TARGET_TAGS.map(t => (
               <button key={t} style={{ ...s.tagBtn, ...(editTargets.includes(t) ? s.tagBtnActive : {}) }}
@@ -275,43 +398,44 @@ const handleJoin = async () => {
             ))}
           </div>
         </div>
+        
         {/* 対象学院 */}
         <div style={s.editSection}>
-        <label style={s.editLabel}>対象学院（任意・複数選択可）</label>
-        <div style={s.optionGrid}>
+          <label style={s.editLabel}>対象学院（任意・複数選択可）</label>
+          <div style={s.optionGrid}>
             {Object.keys(GAKUIN).map(g => (
-            <button
+              <button
                 key={g}
                 style={{ ...s.tagBtn, ...(editTargetGakuin.includes(g) ? s.tagBtnActive : {}) }}
                 onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
-            >
+              >
                 {g}
-            </button>
+              </button>
             ))}
-        </div>
+          </div>
         </div>
 
         {/* 対象学系 */}
         {editTargetGakuin.length > 0 && (
-        <div style={s.editSection}>
+          <div style={s.editSection}>
             <label style={s.editLabel}>対象学系（任意・複数選択可）</label>
             <div style={s.optionGrid}>
-            {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
+              {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
                 <button
-                key={k}
-                style={{ ...s.tagBtn, ...(editTargetGakukei.includes(k) ? s.tagBtnActive : {}) }}
-                onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
+                  key={k}
+                  style={{ ...s.tagBtn, ...(editTargetGakukei.includes(k) ? s.tagBtnActive : {}) }}
+                  onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
                 >
-                {k}
+                  {k}
                 </button>
-            ))}
+              ))}
             </div>
-        </div>
+          </div>
         )}
 
         {/* キャンパス */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>③ キャンパス</label>
+          <label style={s.editLabel}>③ キャンパス <span style={s.required}>必須</span></label>
           <div style={s.optionGrid}>
             {CAMPUS_TAGS.map(t => (
               <button key={t} style={{ ...s.tagBtn, ...(editCampus === t ? s.tagBtnActive : {}) }} onClick={() => setEditCampus(t)}>{t}</button>
@@ -321,7 +445,7 @@ const handleJoin = async () => {
 
         {/* 参加スタイル */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>④ 参加スタイル</label>
+          <label style={s.editLabel}>④ 参加スタイル（任意）</label>
           <div style={s.optionGrid}>
             {STYLE_TAGS.map(t => (
               <button key={t} style={{ ...s.tagBtn, ...(editStyle === t ? s.tagBtnActive : {}) }} onClick={() => setEditStyle(prev => prev === t ? "" : t)}>{t}</button>
@@ -331,32 +455,32 @@ const handleJoin = async () => {
 
         {/* 募集者 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>⑤ 募集者</label>
+          <label style={s.editLabel}>⑤ 募集者種別（任意）</label>
           <div style={s.optionGrid}>
             {ORGANIZER_TAGS.map(t => (
-              <button key={t} style={{ ...s.tagBtn, ...(editOrganizer === t ? s.tagBtnActive : {}) }} onClick={() => setEditOrganizer(t)}>{t}</button>
+              <button key={t} style={{ ...s.tagBtn, ...(editOrganizer === t ? s.tagBtnActive : {}) }} onClick={() => setEditOrganizer(prev => prev === t ? "" : t)}>{t}</button>
             ))}
           </div>
         </div>
 
         {/* 申し込み */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>申し込みボタン名</label>
+          <label style={s.editLabel}>申し込みボタン名（任意）</label>
           <input style={s.input} placeholder="参加を申し込む" value={editApplyLabel} onChange={e => setEditApplyLabel(e.target.value)} />
         </div>
         <div style={s.editSection}>
-          <label style={s.editLabel}>申し込みリンク</label>
-          <input style={s.input} type="url" value={editApplyLink} onChange={e => setEditApplyLink(e.target.value)} />
+          <label style={s.editLabel}>申し込みリンク（任意）</label>
+          <input style={s.input} type="url" placeholder="https://forms.gle/..." value={editApplyLink} onChange={e => setEditApplyLink(e.target.value)} />
         </div>
 
         <div style={s.editSection}>
-        <label style={s.editLabel}>お問い合わせ先（任意）</label>
-        <input
+          <label style={s.editLabel}>お問い合わせ先（任意）</label>
+          <input
             style={s.input}
             placeholder="例：example@m.isct.ac.jp / @Twitter"
             value={editContact}
             onChange={e => setEditContact(e.target.value)}
-        />
+          />
         </div>
 
         <button style={s.saveBtn} onClick={handleSave} disabled={saving}>
@@ -366,7 +490,7 @@ const handleJoin = async () => {
     </div>
   );
 
-  // 詳細表示モード
+  // ─── 通常詳細表示モード ───
   const remaining = event.capacity - (event.participants?.length ?? 0);
 
   return (
@@ -457,7 +581,7 @@ const handleJoin = async () => {
             <div style={s.attachList}>
               {event.attachments.map((a, i) => (
                 <a key={i} href={a.url} target="_blank" rel="noreferrer" style={s.attachItem}>
-                <Paperclip size={14} style={{ marginRight:4 }} /> {a.name}
+                  <Paperclip size={14} style={{ marginRight:4 }} /> {a.name}
                 </a>
               ))}
             </div>
@@ -469,91 +593,84 @@ const handleJoin = async () => {
             {event.applyLabel || "参加を申し込む"} →
           </a>
         )}
+        
         {organizer && (
-            <div style={s.section}>
-                <h2 style={s.sectionTitle}>募集者</h2>
-                <div
-                style={{ display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}
-                onClick={() => {
-                    if (auth.currentUser?.uid === event.createdBy) {
-                        window.location.href = '/mypage';
-                    } else {
-                        window.location.href = `/users/${event.createdBy}`;
-                    }
-                    }}
-                >
-                {organizer.avatarUrl ? (
-                    <img src={organizer.avatarUrl} alt="avatar" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover" }} />
-                ) : (
-                    <div style={{ width:44, height:44, borderRadius:"50%", background:"#F9EAED", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <User size={20} color="#88203a" />
-                    </div>
-                )}
-                <div>
-                    <div style={{ fontSize:15, fontWeight:700, color:"#111" }}>{organizer.displayName}</div>
-                    <div style={{ fontSize:12, color:"#5A7370" }}>{organizer.gakuin} {organizer.gakukei}</div>
+          <div style={s.section}>
+            <h2 style={s.sectionTitle}>募集者</h2>
+            <div
+              style={{ display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}
+              onClick={() => {
+                if (organizer.type === "group") {
+                  window.location.href = `/groups/${event.organizerId || event.createdBy}`;
+                } else {
+                  if (auth.currentUser?.uid === event.createdByPersonal || auth.currentUser?.uid === event.createdBy) {
+                    window.location.href = '/mypage';
+                  } else {
+                    window.location.href = `/users/${event.createdByPersonal || event.createdBy}`;
+                  }
+                }
+              }}
+            >
+              {organizer.avatarUrl ? (
+                <img src={organizer.avatarUrl} alt="avatar" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover" }} />
+              ) : (
+                <div style={{ width:44, height:44, borderRadius:"50%", background:"#F4F6F5", border:"1px solid #E0E8E7", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {organizer.type === "group" ? <Users size={20} color="#9AADA8" /> : <User size={18} color={THEME} />}
                 </div>
-                <ChevronRight size={18} color="#B0BEC5" style={{ marginLeft:"auto" }} />
+              )}
+              <div>
+                <div style={{ fontSize:15, fontWeight:700, color:"#111" }}>{organizer.displayName}</div>
+                <div style={{ fontSize:12, color:"#5A7370", marginTop:3 }}>
+                  {organizer.type === "group" ? (
+                    <span style={s.organizerBadge}>{organizer.groupType || "サークル"}</span>
+                  ) : (
+                    <span>{organizer.gakuin} {organizer.gakukei}</span>
+                  )}
                 </div>
+              </div>
+              <ChevronRight size={18} color="#B0BEC5" style={{ marginLeft:"auto" }} />
             </div>
-            )}
+          </div>
+        )}
 
         {/* お問い合わせ */}
         {event.contact && (
-            <div style={s.section}>
-                <h2 style={s.sectionTitle}>お問い合わせ先</h2>
-                <p style={s.detailText}>{event.contact}</p>
-            </div>
-            )}
+          <div style={s.section}>
+            <h2 style={s.sectionTitle}>お問い合わせ先</h2>
+            <p style={s.detailText}>{event.contact}</p>
+          </div>
+        )}
             
         {/* いいね・参加予定ボタン */}
         {auth.currentUser && (
-        <div style={s.actionRow}>
+          <div style={s.actionRow}>
             <button
-            style={{ ...s.actionBtn, ...(liked ? s.actionBtnActive : {}) }}
-            onClick={handleLike}
+              style={{ ...s.actionBtn, ...(liked ? s.actionBtnActive : {}) }}
+              onClick={handleLike}
             >
-            {liked ? <Heart size={16} fill="#E53935" color="#E53935" /> : <Heart size={16} />} いいね {likeCount > 0 && likeCount}
+              {liked ? <Heart size={16} fill="#E53935" color="#E53935" /> : <Heart size={16} />} いいね {likeCount > 0 && likeCount}
             </button>
             <button
-            style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
-            onClick={handleJoin}
+              style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
+              onClick={handleJoin}
             >
-            {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} 参加予定 {joinCount > 0 && joinCount}
+              {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} 参加予定 {joinCount > 0 && joinCount}
             </button>
-        </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-const THEME = "#88203a";
 const s = {
   container: { background:BG_COLOR, minHeight:"100vh" },
   topBar: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px", maxWidth:720, margin:"0 auto", width:"100%" },
   backBtn: { display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:THEME, fontSize:14, fontWeight:700, cursor:"pointer", padding:"8px 0" },
   editEventBtn: { background:THEME, color:"white", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer" },
-  heroImg: { 
-  height: window.innerWidth > 768 ? 400 : "auto", 
-  width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", 
-  objectFit:"cover", 
-  display:"block", 
-  margin: window.innerWidth > 768 ? "0 auto" : "0 14px",
-  maxWidth: "100%",
-  borderRadius: 12,
-},
-heroPlaceholder: { 
-  height: window.innerWidth > 768 ? 400 : "auto",
-  width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)",
-  aspectRatio:"16/9", 
-  margin: window.innerWidth > 768 ? "0 auto" : "0 14px",
-  display:"flex", 
-  alignItems:"center", 
-  justifyContent:"center",
-  borderRadius: 12,
-},
-body: { padding:"20px 16px", maxWidth:720, margin:"0 auto", display:"flex", flexDirection:"column", gap:16 },
+  heroImg: { height: window.innerWidth > 768 ? 400 : "auto", width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", objectFit:"cover", display:"block", margin: window.innerWidth > 768 ? "0 auto" : "0 14px", maxWidth: "100%", borderRadius: 12 },
+  heroPlaceholder: { height: window.innerWidth > 768 ? 400 : "auto", width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", aspectRatio:"16/9", margin: window.innerWidth > 768 ? "0 auto" : "0 14px", display:"flex", alignItems:"center", justifyContent:"center", borderRadius: 12 },
+  body: { padding:"20px 16px", maxWidth:720, margin:"0 auto", display:"flex", flexDirection:"column", gap:16 },
   title: { fontSize:24, fontWeight:900, color:"#111", lineHeight:1.3, margin:0 },
   tag: { display:"inline-block", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999, width:"fit-content" },
   infoBox: { background:"white", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.07)", display:"flex", flexDirection:"column", gap:12 },
@@ -588,7 +705,18 @@ body: { padding:"20px 16px", maxWidth:720, margin:"0 auto", display:"flex", flex
   tagBtnActive: { background:THEME, color:"white", border:`1.5px solid ${THEME}` },
   saveBtn: { padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   actionRow: { display:"flex", gap:12 },
-    actionBtn: { flex:1, padding:"12px", background:"white", border:"1.5px solid #D0DDD9", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 },
-    actionBtnActive: { background:"#FFF0F0", border:"1.5px solid #E53935", color:"#E53935" },
-    actionBtnJoinActive: { background:"#E8F5E9", border:"1.5px solid #2E7D32", color:"#2E7D32" },
+  actionBtn: { flex:1, padding:"12px", background:"white", border:"1.5px solid #D0DDD9", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 },
+  actionBtnActive: { background:"#FFF0F0", border:"1.5px solid #E53935", color:"#E53935" },
+  actionBtnJoinActive: { background:"#E8F5E9", border:"1.5px solid #2E7D32", color:"#2E7D32" },
+
+  cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginTop: 4 },
+  organizerCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 8, border: "2px solid #D0DDD9", cursor: "pointer", transition: "all 0.2s" },
+  dashedCard: { borderStyle: "dashed", background: "#F4F6F5", borderColor: "#BACFCB" },
+  cardAvatarWrap: { width: 32, height: 32, borderRadius: "50%", background: "#F4F6F5", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
+  plusIconWrap: { width: 32, height: 32, borderRadius: "50%", background: "#E0E8E7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  cardAvatar: { width: "100%", height: "100%", objectFit: "cover" },
+  cardInfo: { minWidth: 0, flex: 1 },
+  cardName: { fontSize: 12, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" },
+  cardTypeTag: { fontSize: 10, color: "#7A9591", marginTop: 1, textAlign: "left" },
+  organizerBadge: { background: "#F4F6F5", color: "#5A7370", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4 },
 };
