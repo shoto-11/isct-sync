@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { db, storage } from "./firebase";
 import { doc, getDoc, updateDoc, collection, getDocs, deleteDoc, setDoc } from "firebase/firestore";
 import { useNavigate, useParams } from "react-router-dom";
-import { Settings, Calendar, User, Users, ImageIcon, Paperclip, X } from "lucide-react";
+import { Settings, Calendar, User, Users, ImageIcon, Paperclip, X,Crown } from "lucide-react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { 
   THEME, 
@@ -92,6 +92,16 @@ export default function AdminPanel({ user }) {
   const [proxyContact, setProxyContact] = useState("");
   const [proxyPreview, setProxyPreview] = useState(null);
   const [proxyImageFile, setProxyImageFile] = useState(null);
+
+  const [editGroupName, setEditGroupName] = useState("");
+  const [editGroupEmail, setEditGroupEmail] = useState("");
+  const [editGroupType, setEditGroupType] = useState("");
+  const [editGroupDesc, setEditGroupDesc] = useState("");
+  const [editGroupTwitter, setEditGroupTwitter] = useState("");
+  const [editGroupInstagram, setEditGroupInstagram] = useState("");
+  const [editGroupHomepage, setEditGroupHomepage] = useState("");
+  const [editGroupAvatar, setEditGroupAvatar] = useState("");
+  const [groupMembersData, setGroupMembersData] = useState([]); // メンバーのユーザー詳細表示用
 
   useEffect(() => {
     const fetchData = async () => {
@@ -359,6 +369,62 @@ export default function AdminPanel({ user }) {
     setGroups((prev) => prev.filter((g) => g.id !== groupId));
     setSelectedGroup(null);
     alert("削除しました");
+  };
+  // 💡 【新規追加】管理者がグループを選択したときの初期値バインド & メンバーフェッチ
+  // 💡 【修正版】管理者がグループを選択したときの初期値バインド & メンバーフェッチ
+  const handleOpenGroupDetail = async (group) => {
+    setSelectedGroup(group);
+    setEditGroupName(group.displayName || "");
+    // 💡 フィールド名を group.email から group.groupEmail に修正して初期値を確実にバインドします
+    setEditGroupEmail(group.groupEmail || group.email || "");
+    setEditGroupType(group.groupType || "サークル");
+    setEditGroupDesc(group.description || "");
+    setEditGroupTwitter(group.twitterUrl || "");
+    setEditGroupInstagram(group.instagramUrl || "");
+    setEditGroupHomepage(group.homepageUrl || "");
+    setEditGroupAvatar(group.avatarUrl || "");
+
+    // 所属メンバーのユーザーデータを全ユーザーState(users)からマッピング
+    const memberIds = group.members || [];
+    const mappedMembers = users.filter(u => memberIds.includes(u.id));
+    setGroupMembersData(mappedMembers);
+  };
+
+  // 💡 【新規追加】管理者権限でのグループ情報の更新・確定保存処理
+  // 💡 【修正版】管理者権限でのグループ情報の更新・確定保存処理
+  const handleAdminSaveGroup = async () => {
+    if (!editGroupName.trim()) {
+      alert("グループ名を入力してください。");
+      return;
+    }
+    setSaving(true);
+    try {
+      const groupRef = doc(db, "groups", selectedGroup.id);
+      const updatedFields = {
+        displayName: editGroupName.trim(),
+        // 💡 データの不整合を防ぐため、双方のフィールドに新しいアドレスを格納します
+        groupEmail: editGroupEmail.trim(),
+        email: editGroupEmail.trim(),
+        groupType: editGroupType,
+        description: editGroupDesc.trim(),
+        twitterUrl: editGroupTwitter.trim(),
+        instagramUrl: editGroupInstagram.trim(),
+        homepageUrl: editGroupHomepage.trim(),
+        avatarUrl: editGroupAvatar
+      };
+
+      await updateDoc(groupRef, updatedFields);
+
+      // クライアント側のgroups一覧Stateも同期更新
+      setGroups(prev => prev.map(g => g.id === selectedGroup.id ? { ...g, ...updatedFields } : g));
+      setSelectedGroup(null);
+      alert("グループ情報を更新しました。");
+    } catch (err) {
+      console.error(err);
+      alert("グループ情報の保存に失敗しました。");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleCarousel = (eventId) => {
@@ -1070,7 +1136,7 @@ export default function AdminPanel({ user }) {
             </button>
           </div>
         )}
-        
+
         {/* ── 登録者一覧 ── */}      
         {activeTab === "users" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1194,52 +1260,153 @@ export default function AdminPanel({ user }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700 }}>グループ一覧（{groups.length}件）</h2>
             <input style={adS.input} placeholder="グループ名・メールで検索..." value={groupSearch} onChange={(e) => setGroupSearch(e.target.value)} />
+            
+            {/* 💡 クリックイベントを handleOpenGroupDetail(g) に差し替え */}
             {groups.filter((g) => !groupSearch || g.displayName?.includes(groupSearch) || g.email?.includes(groupSearch)).map((g) => (
-              <div key={g.id} style={{ ...adS.listItem, cursor: "pointer" }} onClick={() => setSelectedGroup(g)}>
+              <div key={g.id} style={{ ...adS.listItem, cursor: "pointer" }} onClick={() => handleOpenGroupDetail(g)}>
                 <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#F9EAED", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
-                  {g.avatarUrl ? <img src={g.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👥"}
+                  {g.avatarUrl ? <img src={g.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : "👥"}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>{g.displayName}</div>
-                  <div style={{ fontSize: 11, color: "#5A7370" }}>{g.groupType} · {g.email} · メンバー{g.members?.length || 0}人</div>
+                  <div style={{ fontSize: 11, color: "#5A7370" }}>{g.groupType} · {g.email || "アドレス未登録"} · メンバー{g.members?.length || 0}人</div>
                 </div>
                 <span style={{ fontSize: 12, color: THEME, fontWeight: 700 }}>詳細 ›</span>
               </div>
             ))}
 
+            {/* 💡 【高機能な編集・確認モーダル】 */}
             {selectedGroup && (
               <div style={adS.modal}>
-                <div style={adS.modalCard}>
+                <div style={{ ...adS.modalCard, maxHeight: "90vh", overflowY: "auto" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700 }}>グループ詳細</h3>
+                    <h3 style={{ fontSize: 16, fontWeight: 700 }}>グループ詳細・編集 (管理者)</h3>
                     <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20 }} onClick={() => setSelectedGroup(null)}>✕</button>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                    <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#F9EAED", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
-                      {selectedGroup.avatarUrl ? <img src={selectedGroup.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : "👥"}
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 18, fontWeight: 900 }}>{selectedGroup.displayName}</div>
-                      <div style={{ fontSize: 12, color: "#5A7370" }}>{selectedGroup.groupType}</div>
+                  
+                  {/* アバター画像エリア（編集・クリア対応） */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, background: "#F4F6F5", padding: 16, borderRadius: 12, alignItems: "center" }}>
+                    {editGroupAvatar ? (
+                      <img src={editGroupAvatar} alt="avatar" style={{ width: 72, height: 72, borderRadius: "50%", objectFit: "cover", border: "2px solid white", boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }} />
+                    ) : (
+                      <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#F9EAED", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid white", boxShadow: "0 2px 6px rgba(0,0,0,0.1)" }}><Users size={32} color={THEME} /></div>
+                    )}
+                    
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <label style={{ padding: "5px 12px", background: "white", border: "1.5px solid #D0DDD9", borderRadius: 6, fontSize: 11, fontWeight: 700, color: "#5A7370", cursor: "pointer" }}>
+                        アバター画像アップロード
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          style={{ display: "none" }} 
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              alert("グループ画像をアップロード中...");
+                              const storageRef = ref(storage, `groups/${selectedGroup.id}/avatar.png`);
+                              await uploadBytes(storageRef, file);
+                              const downloadUrl = await getDownloadURL(storageRef);
+                              setEditGroupAvatar(downloadUrl);
+                              alert("アップロード完了！（下の変更保存で確定します）");
+                            } catch (err) {
+                              alert("アップロードに失敗しました。");
+                            }
+                          }}
+                        />
+                      </label>
+                      {editGroupAvatar && (
+                        <button type="button" style={{ padding: "5px 12px", background: "#FFEBEE", border: "none", borderRadius: 6, color: "#C62828", fontSize: 11, fontWeight: 700, cursor: "pointer" }} onClick={() => setEditGroupAvatar("")}>画像をクリア</button>
+                      )}
                     </div>
                   </div>
-                  {[
-                    { label: "グループID", value: selectedGroup.id },
-                    { label: "メールアドレス", value: selectedGroup.email },
-                    { label: "種別", value: selectedGroup.groupType },
-                    { label: "メンバー数", value: `${selectedGroup.members?.length || 0}人` },
-                    { label: "作成日", value: selectedGroup.createdAt?.toDate?.()?.toLocaleDateString?.() || "-" },
-                  ].map(({ label, value }) => (
-                    <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid #F0F0F0" }}>
-                      <span style={{ fontSize: 13, color: "#5A7370", fontWeight: 600 }}>{label}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>{value}</span>
+
+                  {/* グループ基本情報入力欄 */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>グループ名 / サークル名 <span style={adS.required}>必須</span></label>
+                    <input style={adS.input} value={editGroupName} onChange={e => setEditGroupName(e.target.value)} />
+                  </div>
+
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>グループ共通メールアドレス</label>
+                    <input style={adS.input} value={editGroupEmail} onChange={e => setEditGroupEmail(e.target.value)} placeholder="未登録" />
+                  </div>
+
+                  {/* グループ区分トグルボタン */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>グループ区分</label>
+                    <div style={adS.optionGrid}>
+                      {["サークル", "団体", "企業", "その他"].map((t) => (
+                        <button 
+                          key={t} 
+                          type="button" 
+                          style={{ ...adS.tagBtn, ...(editGroupType === t ? adS.tagBtnActive : {}) }} 
+                          onClick={() => setEditGroupType(t)}
+                        >
+                          {t}
+                        </button>
+                      ))}
                     </div>
-                  ))}
+                  </div>
+
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>グループ説明文 / 紹介テキスト</label>
+                    <textarea style={{ ...adS.input, height: 70, resize: "vertical", lineHeight: 1.5 }} value={editGroupDesc} onChange={e => setEditGroupDesc(e.target.value)} placeholder="サークルの新歓紹介テキスト" />
+                  </div>
+
+                  {/* SNS・リンク */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, border: "1px solid #E0E8E7", padding: 12, borderRadius: 10, background: "#FAFDFC" }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: "#5A7370" }}>SNS・外部リンクの編集</span>
+                    <input style={{ ...adS.input, padding: "8px 12px", fontSize: 13 }} placeholder="𝕏 (Twitter) URL" value={editGroupTwitter} onChange={e => setEditGroupTwitter(e.target.value)} />
+                    <input style={{ ...adS.input, padding: "8px 12px", fontSize: 13 }} placeholder="Instagram URL" value={editGroupInstagram} onChange={e => setEditGroupInstagram(e.target.value)} />
+                    <input style={{ ...adS.input, padding: "8px 12px", fontSize: 13 }} placeholder="公式ホームページ URL" value={editGroupHomepage} onChange={e => setEditGroupHomepage(e.target.value)} />
+                  </div>
+
+                  {/* メンバー一覧セクション（代表者マーク付き） */}
+                  {/* メンバー一覧セクション（代表者マークの判定フィールドを修正） */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>所属メンバー（{groupMembersData.length}人）</label>
+                    <div style={{ maxHeight: "150px", overflowY: "auto", border: "1px solid #F0F0F0", borderRadius: 8, padding: "4px 8px" }}>
+                      {groupMembersData.length === 0 ? (
+                        <div style={{ fontSize: 12, color: "#9AADA8", textAlign: "center", padding: "8px 0" }}>所属メンバーはいません</div>
+                      ) : (
+                        groupMembersData.map(m => {
+                          // 👑 代表者判定用キーを owner から createdBy に正確に修正
+                          const isOwner = selectedGroup.createdBy === m.id;
+                          return (
+                            <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 0", borderBottom: "1px solid #F8FAF9" }}>
+                              <div style={{ width: 22, height: 22, borderRadius: "50%", background: isOwner ? "#FFF9C4" : "#F9EAED", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                {m.avatarUrl ? <img src={m.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : <User size={12} color={THEME} />}
+                              </div>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: "#111" }}>{m.displayName || "名前なし"}</span>
+                              
+                              {/* 👑 正しいフラグを基に王冠・代表者バッジを表示 */}
+                              {isOwner && (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "#FFF3E0", color: "#E65100", fontSize: 10, fontWeight: 800, padding: "2px 6px", borderRadius: 4, border: "1px solid #FFE0B2" }}>
+                                  <Crown size={12} color="#E65100" fill="#E65100" /> 代表者
+                                </span>
+                              )}
+
+                              <span style={{ fontSize: 11, color: "#7A9591", marginLeft: "auto" }}>{m.gakuin} / {m.gakunen}</span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+
+                  {/* モーダルボトムアクション */}
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <button style={{ flex: 1, padding: 12, background: "white", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => setSelectedGroup(null)}>閉じる</button>
-                    <button style={{ flex: 1, padding: 12, background: "#E53935", color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-                      onClick={() => handleDeleteGroup(selectedGroup.id, selectedGroup.displayName)}>グループを削除</button>
+                    <button type="button" style={{ flex: 1, padding: 12, background: "white", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={() => setSelectedGroup(null)}>キャンセル</button>
+                    <button type="button" style={{ flex: 1, padding: 12, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={handleAdminSaveGroup} disabled={saving}>
+                      {saving ? "保存中..." : "グループ変更を保存"}
+                    </button>
                   </div>
+                  
+                  <button type="button" style={{ width: "100%", padding: "10px", background: "none", border: "1px solid #E53935", color: "#E53935", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", marginTop: 4 }}
+                    onClick={() => handleDeleteGroup(selectedGroup.id, selectedGroup.displayName)}>
+                    ⚠️ このグループをシステムから強制削除する
+                  </button>
                 </div>
               </div>
             )}
