@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
-import { db } from "./firebase";
-import { doc, getDoc, updateDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
+import { db, storage } from "./firebase";
+import { doc, getDoc, updateDoc, collection, getDocs, deleteDoc, setDoc } from "firebase/firestore";
 import { useNavigate, useParams } from "react-router-dom";
-import { Settings, Calendar, User, Users } from "lucide-react";
+import { Settings, Calendar, User, Users, ImageIcon, Paperclip, X } from "lucide-react";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { storage } from "./firebase"; // firebase.jsからstorageをインポート
-
-const THEME = "#88203a";
+import { 
+  THEME, 
+  GENRE_TAGS, 
+  TARGET_TAGS, 
+  CAMPUS_TAGS, 
+  STYLE_TAGS, 
+  ORGANIZER_TAGS, 
+  BG_COLOR, 
+  GAKUIN 
+} from "./constants"; // 💡 constantsから定数を一括読込
 
 export default function AdminPanel({ user }) {
   const { tab } = useParams();
@@ -24,13 +31,33 @@ export default function AdminPanel({ user }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userSearch, setUserSearch] = useState("");
   const [editingUser, setEditingUser] = useState(null);
-  // 💡 ドラッグ＆ドロップ用のStateを追加
+  
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
-  // 💡 ファイルの先頭付近に追記
+  // 💡 管理者用イベント編集State群の最適化
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [editingEvent, setEditingEvent] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDetail, setEditDetail] = useState("");
+  const [editDate, setEditDate] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [editDeadline, setEditDeadline] = useState("");
+  const [editDeadlineTime, setEditDeadlineTime] = useState("");
+  const [editApplyLabel, setEditApplyLabel] = useState("");
+  const [editApplyLink, setEditApplyLink] = useState("");
+  const [editGenre, setEditGenre] = useState("");
+  const [editTargets, setEditTargets] = useState([]);
+  const [editCampus, setEditCampus] = useState("");
+  const [editStyle, setEditStyle] = useState("");
+  const [editOrganizerTag, setEditOrganizerTag] = useState("");
+  const [editContact, setEditContact] = useState("");
+  const [editTargetGakuin, setEditTargetGakuin] = useState([]);
+  const [editTargetGakukei, setEditTargetGakukei] = useState([]);
+  const [editOrganizerName, setEditOrganizerName] = useState("");
+  const [editPreview, setEditPreview] = useState(null);
+  const [editImageFile, setEditImageFile] = useState(null);
 
   // グループ関連
   const [groups, setGroups] = useState([]);
@@ -49,12 +76,10 @@ export default function AdminPanel({ user }) {
       const settingsSnap = await getDoc(doc(db, "adminSettings", "display"));
       if (settingsSnap.exists()) {
         const data = settingsSnap.data();
-        // 💡 確実に { items: [...] } の形でStateに格納する
         setNotice(data.notice && data.notice.items ? data.notice : { items: [{ text: "", link: "" }] });
         const savedCarousel = localStorage.getItem("carouselEventIds");
         setCarouselEventIds(savedCarousel ? JSON.parse(savedCarousel) : (data.carouselEventIds || []));
       } else {
-        // 💡 ドキュメント自体がまだない場合の初期値
         setNotice({ items: [{ text: "", link: "" }] });
       }
 
@@ -72,25 +97,109 @@ export default function AdminPanel({ user }) {
     fetchData();
   }, [user]);
 
+  // 💡 管理者が「編集」を押した際にStateに初期値をバインドする処理
+  const handleOpenEventEdit = (event) => {
+    setSelectedEvent(event);
+    setEditTitle(event.title || "");
+    setEditDetail(event.detail || event.description || "");
+    setEditDate(event.date || "");
+    setEditStartTime(event.startTime || "");
+    setEditEndTime(event.endTime || "");
+    setEditLocation(event.location || "");
+    setEditDeadline(event.deadline || "");
+    setEditDeadlineTime(event.deadlineTime || "");
+    setEditApplyLabel(event.applyLabel || "");
+    setEditApplyLink(event.applyLink || "");
+    setEditGenre(event.tags?.genre || "");
+    setEditTargets(event.tags?.targets || []);
+    setEditCampus(event.tags?.campus || "");
+    setEditStyle(event.tags?.style || "");
+    setEditOrganizerTag(event.tags?.organizer || "");
+    setEditContact(event.contact || "");
+    setEditTargetGakuin(event.targetGakuin || []);
+    setEditTargetGakukei(event.targetGakukei || []);
+    setEditOrganizerName(event.organizerName || "");
+    setEditPreview(event.imageUrl || null);
+    setEditImageFile(null);
+  };
+
+  const handleAdminImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setEditImageFile(file);
+    setEditPreview(URL.createObjectURL(file));
+  };
+
   const handleSave = async () => {
-      setSaving(true);
-      try {
-        // 💡 notice の中身（items）を直接ドキュメントの直下に展開して保存します
-        await updateDoc(doc(db, "adminSettings", "display"), {
-          notice: notice, // または単に notice とだけ書いてもOK
-          carouselEventIds: carouselEventIds
-        });
-      } catch (error) {
-        console.error("updateDoc failed, trying setDoc:", error);
-        const { setDoc } = await import("firebase/firestore");
-        await setDoc(doc(db, "adminSettings", "display"), {
-          notice: notice,
-          carouselEventIds: carouselEventIds
-        });
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, "adminSettings", "display"), {
+        notice: notice,
+        carouselEventIds: carouselEventIds
+      });
+    } catch (error) {
+      await setDoc(doc(db, "adminSettings", "display"), {
+        notice: notice,
+        carouselEventIds: carouselEventIds
+      });
+    }
+    setSaving(false);
+    alert("保存しました！");
+  };
+
+  // 💡 管理者による全情報の強制上書き更新処理（バリデーション同期）
+  const handleAdminSaveEvent = async () => {
+    if (!editTitle.trim() || !editDetail.trim() || !editDate || !editLocation.trim() || !editDeadline || !editGenre || !editTargets.length || !editCampus) {
+      alert("必須項目が入力・選択されていません。確認してください。");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      let finalImageUrl = selectedEvent.imageUrl || null;
+      if (editImageFile) {
+        const storageRef = ref(storage, `events/${Date.now()}_${editImageFile.name}`);
+        await uploadBytes(storageRef, editImageFile);
+        finalImageUrl = await getDownloadURL(storageRef);
       }
+
+      const updatedFields = {
+        title: editTitle.trim(),
+        detail: editDetail.trim(),
+        date: editDate,
+        startTime: editStartTime,
+        endTime: editEndTime,
+        location: editLocation.trim(),
+        deadline: editDeadline,
+        deadlineTime: editDeadlineTime,
+        applyLabel: editApplyLabel,
+        applyLink: editApplyLink,
+        contact: editContact,
+        organizerName: editOrganizerName.trim(),
+        imageUrl: finalImageUrl,
+        tags: {
+          genre: editGenre,
+          targets: editTargets,
+          campus: editCampus,
+          style: editStyle,
+          organizer: editOrganizerTag,
+        },
+        targetGakuin: editTargetGakuin,
+        targetGakukei: editTargetGakukei,
+      };
+
+      await updateDoc(doc(db, "events", selectedEvent.id), updatedFields);
+      
+      // クライアント側の一覧Stateも更新
+      setEvents((prev) => prev.map((e) => e.id === selectedEvent.id ? { ...e, ...updatedFields } : e));
+      setSelectedEvent(null);
+      alert("イベント情報を管理者権限で上書き更新しました！");
+    } catch (err) {
+      alert("保存に失敗しました: " + err.message);
+    } finally {
       setSaving(false);
-      alert("保存しました！");
-    };
+    }
+  };
 
   const handleDeleteEvent = async (eventId, title) => {
     if (!window.confirm(`「${title}」を削除しますか？`)) return;
@@ -192,7 +301,6 @@ export default function AdminPanel({ user }) {
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700 }}>PR広告に表示するイベント（最大10件）</h2>
             
-            {/* 選択中のイベント一覧 */}
             {carouselEventIds.length > 0 && (
               <div style={adS.card}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, color: "#5A7370" }}>
@@ -204,19 +312,18 @@ export default function AdminPanel({ user }) {
                   return (
                     <div 
                       key={id} 
-                      draggable // 💡 ドラッグ可能にする
+                      draggable 
                       onDragStart={() => setDraggedIndex(i)}
                       onDragOver={(e) => {
-                        e.preventDefault(); // ドロップを許可する
+                        e.preventDefault();
                         if (dragOverIndex !== i) setDragOverIndex(i);
                       }}
                       onDragEnd={() => {
-                        // ドラッグが終了した瞬間に配列を並び替える
                         if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
                           setCarouselEventIds((prev) => {
                             const next = [...prev];
-                            const [removed] = next.splice(draggedIndex, 1); // ドラッグした要素を一旦抜く
-                            next.splice(dragOverIndex, 0, removed); // ホバーしている位置に差し込む
+                            const [removed] = next.splice(draggedIndex, 1);
+                            next.splice(dragOverIndex, 0, removed);
                             localStorage.setItem("carouselEventIds", JSON.stringify(next));
                             return next;
                           });
@@ -230,14 +337,13 @@ export default function AdminPanel({ user }) {
                         gap: 12, 
                         padding: "10px 8px", 
                         borderBottom: "1px solid #F0F0F0",
-                        cursor: "grab", // 掴めるアイコンに変える
-                        backgroundColor: draggedIndex === i ? "#F4F6F5" : dragOverIndex === i ? "#F9EAED" : "transparent", // ドラッグ中・ホバー中の視覚効果
+                        cursor: "grab",
+                        backgroundColor: draggedIndex === i ? "#F4F6F5" : dragOverIndex === i ? "#F9EAED" : "transparent",
                         opacity: draggedIndex === i ? 0.5 : 1,
                         transition: "background-color 0.2s ease, opacity 0.2s ease",
                         borderRadius: 6
                       }}
                     >
-                      {/* ドラッグ用のツマミアイコンを左端に配置 */}
                       <div style={{ color: "#B0BEC5", fontSize: 16, cursor: "grab", userSelect: "none", paddingRight: 4 }}>☰</div>
                       <div style={{ fontSize: 13, fontWeight: 700, minWidth: 20 }}>{i + 1}.</div>
                       
@@ -251,7 +357,6 @@ export default function AdminPanel({ user }) {
                         {event.title}
                       </div>
                       
-                      {/* 💡 お好みに応じて既存の ↑ ↓ ボタンは残すか、不要なら削除しても大丈夫です */}
                       <button type="button" style={{ ...adS.smallBtn, color: i === 0 ? "#ccc" : "#5A7370" }} onClick={(e) => { e.stopPropagation(); moveCarousel(id, -1); }} disabled={i === 0}>↑</button>
                       <button type="button" style={{ ...adS.smallBtn, color: i === carouselEventIds.length - 1 ? "#ccc" : "#5A7370" }} onClick={(e) => { e.stopPropagation(); moveCarousel(id, 1); }} disabled={i === carouselEventIds.length - 1}>↓</button>
                       <button type="button" style={{ ...adS.smallBtn, color: "#E53935" }} onClick={(e) => { e.stopPropagation(); toggleCarousel(id); }}>✕</button>
@@ -261,14 +366,12 @@ export default function AdminPanel({ user }) {
               </div>
             )}
 
-            {/* 💡 選択中の画面のすぐ下に「設定を保存する」ボタンを配置 */}
             <button style={{ width: "100%", padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 12 }} onClick={handleSave} disabled={saving}>
               {saving ? "保存中..." : "PR広告の設定を保存する"}
             </button>
 
             <div style={{ height: 1, background: "#E0E8E7", margin: "12px 0" }}></div>
 
-            {/* イベント検索・追加エリア */}
             <input style={adS.input} placeholder="イベント名・募集者名で検索..." value={carouselSearch} onChange={(e) => setCarouselSearch(e.target.value)} />
             {events.filter((e) => !carouselSearch || e.title?.includes(carouselSearch) || e.organizerName?.includes(carouselSearch)).map((event) => (
               <div key={event.id} style={adS.listItem}>
@@ -289,7 +392,7 @@ export default function AdminPanel({ user }) {
           </div>
         )}
 
-        {/* ── イベント管理 ── */}
+        {/* ── イベント管理（💡 編集・ボタントグル等フルアップデート版） ── */}
         {activeTab === "events" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700 }}>全イベント一覧（{events.length}件）</h2>
@@ -303,95 +406,203 @@ export default function AdminPanel({ user }) {
                   <div style={{ fontSize: 11, color: "#5A7370" }}>{event.organizerName} · {event.date}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  {/* 💡 編集ボタンを追加 */}
-                  <button style={{ ...adS.smallBtn, color: THEME, border: "1px solid #D0DDD9", background: "white", padding: "6px 12px", borderRadius: 6 }} onClick={() => setSelectedEvent(event)}>編集</button>
-                  <button style={{ ...adS.smallBtn, color: "#E53935" }} onClick={async () => {
-                    if (window.confirm(`「${event.title}」を削除しますか？この操作は取り消せません。`)) {
-                      await deleteDoc(doc(db, "events", event.id));
-                      setEvents(events.filter((e) => e.id !== event.id));
-                      alert("削除しました");
-                    }
-                  }}>削除</button>
+                  {/* 💡 統合された初期値ハンドラーをコール */}
+                  <button style={{ ...adS.smallBtn, color: THEME, border: "1px solid #D0DDD9", background: "white", padding: "6px 12px", borderRadius: 6 }} onClick={() => handleOpenEventEdit(event)}>編集</button>
+                  <button style={{ ...adS.smallBtn, color: "#E53935" }} onClick={() => handleDeleteEvent(event.id, event.title)}>削除</button>
                 </div>
               </div>
             ))}
 
-            {/* 💡 イベント詳細・編集モーダル */}
+            {/* ─── 💡 高機能イベント詳細・編集モーダル（一般フォームと完全同期） ─── */}
             {selectedEvent && (
               <div style={adS.modal}>
-                <div style={{ ...adS.modalCard, maxHeight: "90vh", overflowY: "auto" }}>
+                <div style={{ ...adS.modalCard, maxWidth: 540 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <h3 style={{ fontSize: 16, fontWeight: 700 }}>イベント情報の編集</h3>
-                    <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20 }} onClick={() => { setSelectedEvent(null); setEditingEvent(null); }}>✕</button>
+                    <h3 style={{ fontSize: 16, fontWeight: 700 }}>イベント情報の編集 (管理者専用)</h3>
+                    <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20 }} onClick={() => setSelectedEvent(null)}>✕</button>
                   </div>
                   
-                  {/* アイキャッチ画像のプレビュー */}
-                  <div style={{ width: "100%", height: 160, background: "#F4F6F5", borderRadius: 8, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    {(editingEvent?.imageUrl ?? selectedEvent.imageUrl) ? (
-                      <img src={editingEvent?.imageUrl ?? selectedEvent.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                      <div style={{ color: "#5A7370", fontSize: 13 }}>画像なし</div>
-                    )}
-                  </div>
-
-                  {/* 編集入力フォーム */}
-                  {[
-                    { label: "イベントタイトル", key: "title" },
-                    { label: "募集者（団体）名", key: "organizerName" },
-                    { label: "開催日時", key: "date" },
-                    { label: "定員（数字または「制限なし」など）", key: "capacity" },
-                    { label: "開催場所", key: "location" },
-                    { label: "画像URL", key: "imageUrl" },
-                  ].map(({ label, key }) => (
-                    <div key={key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                      <label style={{ fontSize: 11, fontWeight: 700, color: "#5A7370" }}>{label}</label>
-                      <input 
-                        style={adS.input} 
-                        value={editingEvent?.[key] ?? selectedEvent[key] ?? ""} 
-                        onChange={(e) => setEditingEvent((prev) => ({ ...(prev || selectedEvent), [key]: e.target.value }))} 
-                      />
-                    </div>
-                  ))}
-
-                  {/* 概要（長文用） */}
+                  {/* 画像変更エリア */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, fontWeight: 700, color: "#5A7370" }}>イベント概要・詳細</label>
-                    <textarea 
-                      style={{ ...adS.input, height: 120, resize: "none" }} 
-                      value={editingEvent?.description ?? selectedEvent.description ?? ""} 
-                      onChange={(e) => setEditingEvent((prev) => ({ ...(prev || selectedEvent), description: e.target.value }))} 
-                    />
+                    <label style={adS.formLabel}>イベントカバー画像（任意）</label>
+                    <div style={adS.imageArea} onClick={() => document.getElementById("adminEventFile").click()}>
+                      {editPreview ? (
+                        <img src={editPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} />
+                      ) : (
+                        <div style={{ textAlign: "center", color: "#BACFCB" }}>
+                          <ImageIcon size={28} />
+                          <div style={{ fontSize: 11, marginTop: 4 }}>タップして画像を変更</div>
+                        </div>
+                      )}
+                    </div>
+                    <input id="adminEventFile" type="file" accept="image/*" style={{ display: "none" }} onChange={handleAdminImageChange} />
                   </div>
 
-                  {/* ボタンエリア */}
-                  <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                    <button style={{ flex: 1, padding: 12, background: "white", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => { setSelectedEvent(null); setEditingEvent(null); }}>キャンセル</button>
-                    <button style={{ flex: 1, padding: 12, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
-                      onClick={async () => {
-                        if (!editingEvent) {
-                          setSelectedEvent(null); setEditingEvent(null);
-                          return;
-                        }
-                        // Firestoreの「events」コレクションに上書き保存
-                        await updateDoc(doc(db, "events", selectedEvent.id), editingEvent);
-                        // 管理画面のローカルStateも更新して即座に一覧に反映
-                        setEvents((prev) => prev.map((e) => e.id === selectedEvent.id ? { ...e, ...editingEvent } : e));
-                        setSelectedEvent(null); setEditingEvent(null); 
-                        alert("イベント情報を更新しました！");
-                      }}>保存する</button>
+                  {/* テキスト入力項目 */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>イベント名 <span style={adS.required}>必須</span></label>
+                    <input style={adS.input} value={editTitle} onChange={e => setEditTitle(e.target.value)} />
+                  </div>
+
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>イベント詳細説明 <span style={adS.required}>必須</span></label>
+                    <textarea style={{ ...adS.input, height: 80, resize: "vertical" }} value={editDetail} onChange={e => setEditDetail(e.target.value)} />
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={adS.fieldRow}>
+                      <label style={adS.formLabel}>イベント開催日 <span style={adS.required}>必須</span></label>
+                      <input style={adS.input} type="date" value={editDate} onChange={e => setEditDate(e.target.value)} onFocus={e => e.target.showPicker()} />
+                    </div>
+                    <div style={adS.fieldRow}>
+                      <label style={adS.formLabel}>申し込み締切日 <span style={adS.required}>必須</span></label>
+                      <input style={adS.input} type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
+                    <div style={adS.fieldRow}>
+                      <label style={adS.formLabel}>開始時間</label>
+                      <input style={adS.input} type="time" value={editStartTime} onChange={e => setEditStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+                    </div>
+                    <div style={adS.fieldRow}>
+                      <label style={adS.formLabel}>終了時間</label>
+                      <input style={adS.input} type="time" value={editEndTime} onChange={e => setEditEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+                    </div>
+                    <div style={adS.fieldRow}>
+                      <label style={adS.formLabel}>締切時間</label>
+                      <input style={adS.input} type="time" value={editDeadlineTime} onChange={e => setEditDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+                    </div>
+                  </div>
+
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>開催場所 <span style={adS.required}>必須</span></label>
+                    <input style={adS.input} value={editLocation} onChange={e => setEditLocation(e.target.value)} />
+                  </div>
+
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>表示用の募集者名</label>
+                    <input style={adS.input} value={editOrganizerName} onChange={e => setEditOrganizerName(e.target.value)} placeholder="例：テニスサークルSYNC" />
+                  </div>
+
+                  {/* ① ジャンル選択ボタントグル */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>① ジャンル <span style={adS.required}>必須</span></label>
+                    <div style={adS.optionGrid}>
+                      {GENRE_TAGS.map(t => (
+                        <button key={t} type="button" style={{ ...adS.tagBtn, ...(editGenre === t ? adS.tagBtnActive : {}) }} onClick={() => setEditGenre(t)}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ② 対象学年マルチトグル */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>② 対象学年 <span style={adS.required}>必須・複数選択可</span></label>
+                    <div style={adS.optionGrid}>
+                      {TARGET_TAGS.map(t => (
+                        <button key={t} type="button" style={{ ...adS.tagBtn, ...(editTargets.includes(t) ? adS.tagBtnActive : {}) }}
+                          onClick={() => setEditTargets(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 対象学院選択 */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>対象学院（任意・複数可）</label>
+                    <div style={adS.optionGrid}>
+                      {Object.keys(GAKUIN).map(g => (
+                        <button key={g} type="button" style={{ ...adS.tagBtn, ...(editTargetGakuin.includes(g) ? adS.tagBtnActive : {}) }}
+                          onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}>{g}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 対象学系選択 */}
+                  {editTargetGakuin.length > 0 && (
+                    <div style={adS.fieldRow}>
+                      <label style={adS.formLabel}>対象学系（任意・複数可）</label>
+                      <div style={adS.optionGrid}>
+                        {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
+                          <button key={k} type="button" style={{ ...adS.tagBtn, ...(editTargetGakukei.includes(k) ? adS.tagBtnActive : {}) }}
+                            onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}>{k}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ③ キャンパス選択 */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>③ キャンパス <span style={adS.required}>必須</span></label>
+                    <div style={adS.optionGrid}>
+                      {CAMPUS_TAGS.map(t => (
+                        <button key={t} type="button" style={{ ...adS.tagBtn, ...(editCampus === t ? adS.tagBtnActive : {}) }} onClick={() => setEditCampus(t)}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ④ 参加スタイル */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>④ 参加スタイル（任意）</label>
+                    <div style={adS.optionGrid}>
+                      {STYLE_TAGS.map(t => (
+                        <button key={t} type="button" style={{ ...adS.tagBtn, ...(editStyle === t ? adS.tagBtnActive : {}) }} onClick={() => setEditStyle(prev => prev === t ? "" : t)}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* ⑤ 募集者種別 */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>⑤ 募集者種別（任意）</label>
+                    <div style={adS.optionGrid}>
+                      {ORGANIZER_TAGS.map(t => (
+                        <button 
+                          key={t} 
+                          type="button" 
+                          style={{ ...adS.tagBtn, ...(editOrganizerTag === t ? adS.tagBtnActive : {}) }} 
+                          onClick={() => setEditOrganizerTag(prev => prev === t ? "" : t)}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                    </div>
+
+                  {/* その他任意入力欄 */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={adS.fieldRow}>
+                      <label style={adS.formLabel}>ボタン名</label>
+                      <input style={adS.input} value={editApplyLabel} onChange={e => setEditApplyLabel(e.target.value)} />
+                    </div>
+                    <div style={adS.fieldRow}>
+                      <label style={adS.formLabel}>フォームURL</label>
+                      <input style={adS.input} value={editApplyLink} onChange={e => setEditApplyLink(e.target.value)} />
+                    </div>
+                  </div>
+
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>お問い合わせ連絡先</label>
+                    <input style={adS.input} value={editContact} onChange={e => setEditContact(e.target.value)} />
+                  </div>
+
+                  {/* アクションボタン */}
+                  <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                    <button style={{ flex: 1, padding: 12, background: "white", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => setSelectedEvent(null)}>キャンセル</button>
+                    <button style={{ flex: 1, padding: 12, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={handleAdminSaveEvent} disabled={saving}>
+                      {saving ? "保存中..." : "変更を確定保存"}
+                    </button>
                   </div>
                 </div>
               </div>
             )}
           </div>
         )}
+
         {/* ── 登録者一覧 ── */}      
         {activeTab === "users" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700 }}>登録者一覧（{users.length}人）</h2>
             <input style={adS.input} placeholder="名前・メールアドレスで検索..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
             
-            {/* ユーザーリスト表示部分 */}
             {users.filter((u) => !userSearch || u.displayName?.includes(userSearch) || u.email?.includes(userSearch)).map((u) => (
               <div key={u.id} style={{ ...adS.listItem, cursor: "pointer" }} onClick={() => setSelectedUser(u)}>
                 {u.avatarUrl ? (
@@ -408,7 +619,6 @@ export default function AdminPanel({ user }) {
               </div>
             ))}
 
-            {/* ユーザー詳細モーダル */}
             {selectedUser && (
               <div style={adS.modal}>
                 <div style={{ ...adS.modalCard, maxHeight: "90vh", overflowY: "auto" }}>
@@ -417,7 +627,6 @@ export default function AdminPanel({ user }) {
                     <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20 }} onClick={() => { setSelectedUser(null); setEditingUser(null); }}>✕</button>
                   </div>
                   
-                  {/* 💡 画像の表示と「ファイルから選択して入れ替え」機能 */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, background: "#F4F6F5", padding: 16, borderRadius: 12, alignItems: "center" }}>
                     {(editingUser?.avatarUrl ?? selectedUser.avatarUrl) ? (
                       <img src={editingUser?.avatarUrl ?? selectedUser.avatarUrl} alt="avatar" style={{ width: 80, height: 80, borderRadius: "50%", objectFit: "cover", border: "2px solid white", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }} />
@@ -426,7 +635,6 @@ export default function AdminPanel({ user }) {
                     )}
                     
                     <div style={{ display: "flex", gap: 8, width: "100%", justifyContent: "center" }}>
-                      {/* カスタムファイルアップロードボタン */}
                       <label style={{ padding: "6px 12px", background: "white", border: "1.5px solid #D0DDD9", borderRadius: 6, fontSize: 12, fontWeight: 700, color: "#5A7370", cursor: "pointer" }}>
                         画像を選択してアップロード
                         <input 
@@ -438,12 +646,9 @@ export default function AdminPanel({ user }) {
                             if (!file) return;
                             try {
                               alert("画像をアップロード中...");
-                              // Firebase Storageの「avatars/ユーザーID/ファイル名」に保存
                               const storageRef = ref(storage, `avatars/${selectedUser.id}/${file.name}`);
                               await uploadBytes(storageRef, file);
                               const downloadUrl = await getDownloadURL(storageRef);
-                              
-                              // Stateに即座に反映
                               setEditingUser({ ...(editingUser || selectedUser), avatarUrl: downloadUrl });
                               alert("画像のアップロードが完了しました！（「保存する」を押すと確定します）");
                             } catch (err) {
@@ -466,7 +671,6 @@ export default function AdminPanel({ user }) {
                     </div>
                   </div>
 
-                  {/* 画像URL（手動書き換え用も残す） */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     <label style={{ fontSize: 11, fontWeight: 700, color: "#5A7370" }}>画像URL（直接指定）</label>
                     <input 
@@ -477,7 +681,6 @@ export default function AdminPanel({ user }) {
                     />
                   </div>
 
-                  {/* その他の既存の入力欄 */}
                   {[
                     { label: "表示名", key: "displayName" },
                     { label: "メール", key: "email" },
@@ -492,7 +695,6 @@ export default function AdminPanel({ user }) {
                     </div>
                   ))}
 
-                  {/* ボタンエリア */}
                   <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                     <button style={{ flex: 1, padding: 12, background: "white", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => { setSelectedUser(null); setEditingUser(null); }}>キャンセル</button>
                     <button style={{ flex: 1, padding: 12, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
@@ -531,7 +733,6 @@ export default function AdminPanel({ user }) {
               </div>
             ))}
 
-            {/* グループ詳細モーダル */}
             {selectedGroup && (
               <div style={adS.modal}>
                 <div style={adS.modalCard}>
@@ -589,5 +790,14 @@ const adS = {
   addBtn: { padding: "12px", background: "white", border: "1.5px dashed #D0DDD9", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer", color: "#5A7370", width: "100%" },
   smallBtn: { background: "none", border: "none", cursor: "pointer", fontSize: 16, fontWeight: 700, padding: "2px 6px" },
   modal: { position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 },
-  modalCard: { background: "white", borderRadius: 16, padding: 24, width: "100%", maxWidth: 480, display: "flex", flexDirection: "column", gap: 16, maxHeight: "90vh", overflowY: "auto" },
+  modalCard: { background: "white", borderRadius: 16, padding: "20px", width: "100%", maxWidth: 540, display: "flex", flexDirection: "column", gap: 14, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 8px 32px rgba(0,0,0,0.15)" },
+  
+  // 💡 追加したスタイリッシュな内部パーツオブジェクト
+  formLabel: { fontSize: 12, fontWeight: 700, color: "#5A7370", marginTop: 2 },
+  fieldRow: { display: "flex", flexDirection: "column", gap: 4 },
+  required: { background: "#E53935", color: "white", fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 3, marginLeft: 4, display: "inline-block", width: "fit-content" },
+  imageArea: { width: "100%", height: 130, borderRadius: 10, border: "2px dashed #D0DDD9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFDFC", overflow: "hidden" },
+  optionGrid: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 },
+  tagBtn: { padding: "5px 10px", borderRadius: 999, border: "1.5px solid #D0DDD9", background: "white", fontSize: 11, fontWeight: 600, color: "#5A7370", cursor: "pointer", transition: "all 0.15s" },
+  tagBtnActive: { background: "#88203a", color: "white", border: "1.5px solid #88203a" },
 };
