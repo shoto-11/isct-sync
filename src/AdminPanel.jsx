@@ -68,6 +68,31 @@ export default function AdminPanel({ user }) {
   const [editIsGroup, setEditIsGroup] = useState(false);
   const [orgSearchQuery, setOrgSearchQuery] = useState("");
 
+  // 💡 【新規追加】イベント代打投稿用のState群
+  const [proxyOrganizerId, setProxyOrganizerId] = useState("");
+  const [proxyIsGroup, setProxyIsGroup] = useState(false);
+  const [proxyOrgSearch, setProxyOrgSearch] = useState("");
+  const [proxyTitle, setProxyTitle] = useState("");
+  const [proxyDetail, setProxyDetail] = useState("");
+  const [proxyDate, setProxyDate] = useState("");
+  const [proxyStartTime, setProxyStartTime] = useState("");
+  const [proxyEndTime, setProxyEndTime] = useState("");
+  const [proxyLocation, setProxyLocation] = useState("");
+  const [proxyDeadline, setProxyDeadline] = useState("");
+  const [proxyDeadlineTime, setProxyDeadlineTime] = useState("");
+  const [proxyGenre, setProxyGenre] = useState("");
+  const [proxyTargets, setProxyTargets] = useState([]);
+  const [proxyTargetGakuin, setProxyTargetGakuin] = useState([]);
+  const [proxyTargetGakukei, setProxyTargetGakukei] = useState([]);
+  const [proxyCampus, setProxyCampus] = useState("");
+  const [proxyStyle, setProxyStyle] = useState("");
+  const [proxyOrganizerTag, setProxyOrganizerTag] = useState("");
+  const [proxyApplyLabel, setProxyApplyLabel] = useState("");
+  const [proxyApplyLink, setProxyApplyLink] = useState("");
+  const [proxyContact, setProxyContact] = useState("");
+  const [proxyPreview, setProxyPreview] = useState(null);
+  const [proxyImageFile, setProxyImageFile] = useState(null);
+
   useEffect(() => {
     const fetchData = async () => {
       if (!user) { setLoading(false); return; }
@@ -224,6 +249,110 @@ export default function AdminPanel({ user }) {
     alert("削除しました");
   };
 
+  // 💡 【新規追加】管理者によるイベント代打投稿の登録処理
+  const handleProxySubmitEvent = async () => {
+    if (!proxyOrganizerId) {
+      alert("イベントの募集者（主催者）を先に選択してください。");
+      return;
+    }
+    if (!proxyTitle.trim() || !proxyDetail.trim() || !proxyDate || !proxyLocation.trim() || !proxyDeadline || !proxyGenre || !proxyTargets.length || !proxyCampus) {
+      alert("必須項目（募集者、イベント名、詳細、日時、場所、締切日、ジャンル、対象学年、キャンパス）を全て入力・選択してください。");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // 選択された募集者の情報を全データから特定
+      const targetGroup = proxyIsGroup ? groups.find(g => g.id === proxyOrganizerId) : null;
+      const targetUser = !proxyIsGroup ? users.find(u => u.id === proxyOrganizerId) : null;
+
+      const finalOrganizerName = proxyIsGroup ? (targetGroup?.displayName || "グループ") : (targetUser?.displayName || "個人ユーザー");
+      const finalOrganizerAvatar = proxyIsGroup ? (targetGroup?.avatarUrl || "") : (targetUser?.avatarUrl || "");
+
+      // 画像アップロード処理
+      let imageUrl = null;
+      if (proxyImageFile) {
+        const storageRef = ref(storage, `events/${Date.now()}_proxy_${proxyImageFile.name}`);
+        await uploadBytes(storageRef, proxyImageFile);
+        imageUrl = await getDownloadURL(storageRef);
+      }
+
+      const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
+      
+      const newEventData = {
+        title: proxyTitle.trim(),
+        detail: proxyDetail.trim(),
+        date: proxyDate,
+        startTime: proxyStartTime,
+        endTime: proxyEndTime,
+        location: proxyLocation.trim(),
+        deadline: proxyDeadline,
+        deadlineTime: proxyDeadlineTime,
+        tags: {
+          genre: proxyGenre,
+          targets: proxyTargets,
+          campus: proxyCampus,
+          style: proxyStyle,
+          organizer: proxyOrganizerTag,
+        },
+        imageUrl,
+        attachments: [], // 管理者代打は一旦添付なし
+        applyLabel: proxyApplyLabel || "参加を申し込む",
+        applyLink: proxyApplyLink,
+        participants: [],
+        organizerType: proxyIsGroup ? "group" : "user",
+        organizerId: proxyOrganizerId,
+        createdBy: proxyOrganizerId, // 互換性維持
+        createdByPersonal: user.uid, // 操作した管理者のUIDを記録
+        createdAt: serverTimestamp(),
+        organizerName: finalOrganizerName,
+        organizerAvatar: finalOrganizerAvatar,
+        isGroup: proxyIsGroup,
+        contact: proxyContact,
+        targetGakuin: proxyTargetGakuin,
+        targetGakukei: proxyTargetGakukei,
+      };
+
+      const docRef = await addDoc(collection(db, "events"), newEventData);
+      
+      // ローカルのevents一覧Stateにも最新の代打投稿をマージ
+      setEvents(prev => [{ id: docRef.id, ...newEventData }, ...prev]);
+
+      // フォームの入力値をすべてきれいにリセット
+      setProxyOrganizerId("");
+      setProxyIsGroup(false);
+      setProxyOrgSearch("");
+      setProxyTitle("");
+      setProxyDetail("");
+      setProxyDate("");
+      setProxyStartTime("");
+      setProxyEndTime("");
+      setProxyLocation("");
+      setProxyDeadline("");
+      setProxyDeadlineTime("");
+      setProxyGenre("");
+      setProxyTargets([]);
+      setProxyTargetGakuin([]);
+      setProxyTargetGakukei([]);
+      setProxyCampus("");
+      setProxyStyle("");
+      setProxyOrganizerTag("");
+      setProxyApplyLabel("");
+      setProxyApplyLink("");
+      setProxyContact("");
+      setProxyPreview(null);
+      setProxyImageFile(null);
+
+      alert(`「${finalOrganizerName}」名義での代打イベント投稿が正常に完了しました！`);
+      setActiveTab("events"); // 管理一覧タブに自動で戻す
+    } catch (err) {
+      console.error(err);
+      alert("代打投稿に失敗しました: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleDeleteGroup = async (groupId, name) => {
     if (!window.confirm(`グループ「${name}」を削除しますか？この操作は取り消せません。`)) return;
     await deleteDoc(doc(db, "groups", groupId));
@@ -261,6 +390,7 @@ export default function AdminPanel({ user }) {
     { id: "notice", label: "お知らせ" },
     { id: "carousel", label: "PR広告" },
     { id: "events", label: "イベント管理" },
+    { id: "proxy_post", label: "イベント代打投稿" }, // 💡 「イベント管理」の隣に新設
     { id: "users", label: "登録者一覧" },
     { id: "groups", label: "グループ一覧" },
   ];
@@ -701,7 +831,246 @@ export default function AdminPanel({ user }) {
             )}
           </div>
         )}
+        {/* ── 💡 【新規追加】イベント代打投稿（PostEventと同一のフォーム配置） ── */}
+        {activeTab === "proxy_post" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, background: "white", padding: 20, borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+            <h2 style={{ fontSize: 16, fontWeight: 900, margin: 0 }}>イベント代打投稿 (管理者専用)</h2>
+            <p style={{ fontSize: 12, color: "#5A7370", margin: 0 }}>学内の特定のユーザーやサークルに代わってイベントを新規作成・代理公開します。</p>
 
+            {/* 1. 募集者選択（検索欄付きハイブリッドグリッド） */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>イベントの本当の募集者（主催者）を選択 <span style={adS.required}>必須</span></label>
+              <input 
+                style={{ ...adS.input, marginTop: 4, marginBottom: 8 }}
+                placeholder="主催する個人名、またはサークル名・メールアドレスで検索..." 
+                value={proxyOrgSearch}
+                onChange={(e) => setProxyOrgSearch(e.target.value)}
+              />
+              
+              <div style={{ maxHeight: "160px", overflowY: "auto", border: "1px solid #D0DDD9", borderRadius: 8, padding: 8, background: "#FAFDFC" }}>
+                <div style={adS.cardGrid}>
+                  {/* 個人ユーザーの絞り込み表示 */}
+                  {users
+                    .filter(u => {
+                      const q = proxyOrgSearch.toLowerCase().trim();
+                      return !q || (u.displayName?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q));
+                    })
+                    .map(u => {
+                      const isSelected = !proxyIsGroup && proxyOrganizerId === u.id;
+                      return (
+                        <div key={u.id}
+                          style={{ ...adS.organizerCard, borderColor: isSelected ? "#88203a" : "#D0DDD9", background: isSelected ? "#FFF5F7" : "white" }}
+                          onClick={() => { setProxyOrganizerId(u.id); setProxyIsGroup(false); }}
+                        >
+                          <div style={adS.cardAvatarWrap}>
+                            {u.avatarUrl ? <img src={u.avatarUrl} style={adS.cardAvatar} alt="" /> : <User size={14} color="#9AADA8" />}
+                          </div>
+                          <div style={adS.cardInfo}>
+                            <div style={adS.cardName}>{u.displayName || "名前なし"}</div>
+                            <div style={{ fontSize: 9, color: "#8A9F9B", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{u.email}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                  {/* サークル団体の絞り込み表示 */}
+                  {groups
+                    .filter(g => {
+                      const q = proxyOrgSearch.toLowerCase().trim();
+                      return !q || (g.displayName?.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q));
+                    })
+                    .map(g => {
+                      const isSelected = proxyIsGroup && proxyOrganizerId === g.id;
+                      return (
+                        <div key={g.id}
+                          style={{ ...adS.organizerCard, borderColor: isSelected ? "#88203a" : "#D0DDD9", background: isSelected ? "#FFF5F7" : "white" }}
+                          onClick={() => { setProxyOrganizerId(g.id); setProxyIsGroup(true); }}
+                        >
+                          <div style={adS.cardAvatarWrap}>
+                            {g.avatarUrl ? <img src={g.avatarUrl} style={adS.cardAvatar} alt="" /> : <Users size={14} color="#9AADA8" />}
+                          </div>
+                          <div style={adS.cardInfo}>
+                            <div style={adS.cardName}>{g.displayName || "名前なし"}</div>
+                            <div style={{ fontSize: 9, color: "#8A9F9B", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{g.email}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </div>
+
+            {/* 2. イベント画像 */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>イベント画像（任意）</label>
+              <div style={{ ...adS.imageArea, height: 160 }} onClick={() => document.getElementById("proxyEventFile").click()}>
+                {proxyPreview ? (
+                  <img src={proxyPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div style={{ textAlign: "center", color: "#BACFCB" }}>
+                    <ImageIcon size={32} />
+                    <div style={{ fontSize: 12, marginTop: 4, fontWeight: 600 }}>タップして画像を追加</div>
+                  </div>
+                )}
+              </div>
+              <input id="proxyEventFile" type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                setProxyImageFile(file);
+                setProxyPreview(URL.createObjectURL(file));
+              }} />
+            </div>
+
+            {/* 3. イベント名 */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>イベント名 <span style={adS.required}>必須</span></label>
+              <input style={adS.input} placeholder="例：【代打投稿】第1回 新歓説明会" value={proxyTitle} onChange={e => setProxyTitle(e.target.value)} />
+            </div>
+
+            {/* 4. イベント詳細 */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>イベント詳細 <span style={adS.required}>必須</span></label>
+              <textarea style={{ ...adS.input, minHeight: 100, resize: "vertical", lineHeight: 1.6 }} placeholder="イベントの紹介文やタイムスケジュール、集合場所などを詳細に入力" value={proxyDetail} onChange={e => setProxyDetail(e.target.value)} rows={4} />
+            </div>
+
+            {/* 5. 開催日時 */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>イベント日時 <span style={adS.required}>必須</span></label>
+              <input style={adS.input} type="date" value={proxyDate} onChange={e => setProxyDate(e.target.value)} onFocus={e => e.target.showPicker()} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 11, color: "#5A7370", fontWeight: 700 }}>開始時刻（任意）</label>
+                  <input style={adS.input} type="time" value={proxyStartTime} onChange={e => setProxyStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+                </div>
+                <div style={{ paddingTop: 20, color: "#5A7370" }}>〜</div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontSize: 11, color: "#5A7370", fontWeight: 700 }}>終了時刻（任意）</label>
+                  <input style={adS.input} type="time" value={proxyEndTime} onChange={e => setProxyEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+                </div>
+              </div>
+            </div>
+
+            {/* 6. 開催場所 */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>場所 <span style={adS.required}>必須</span></label>
+              <input style={adS.input} placeholder="例：大岡山キャンパス W2棟講義室" value={proxyLocation} onChange={e => setProxyLocation(e.target.value)} />
+            </div>
+
+            {/* 7. 申し込み締め切り */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={adS.fieldRow}>
+                <label style={adS.formLabel}>申し込み締切日 <span style={adS.required}>必須</span></label>
+                <input style={adS.input} type="date" value={proxyDeadline} onChange={e => setProxyDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
+              </div>
+              <div style={adS.fieldRow}>
+                <label style={adS.formLabel}>締め切り時間（任意）</label>
+                <input style={adS.input} type="time" value={proxyDeadlineTime} onChange={e => setProxyDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+              </div>
+            </div>
+
+            {/* ① ジャンル */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>① ジャンル <span style={adS.required}>必須</span></label>
+              <div style={adS.optionGrid}>
+                {GENRE_TAGS.map(t => (
+                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyGenre === t ? adS.tagBtnActive : {}) }} onClick={() => setProxyGenre(t)}>{t}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* ② 対象学年 */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>② 対象学年 <span style={adS.required}>必須・複数選択可</span></label>
+              <div style={adS.optionGrid}>
+                {TARGET_TAGS.map(t => (
+                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyTargets.includes(t) ? adS.tagBtnActive : {}) }}
+                    onClick={() => setProxyTargets(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>{t}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* 対象学院 */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>対象学院（任意・複数選択可）</label>
+              <div style={adS.optionGrid}>
+                {Object.keys(GAKUIN).map(g => (
+                  <button key={g} type="button" style={{ ...adS.tagBtn, ...(proxyTargetGakuin.includes(g) ? adS.tagBtnActive : {}) }}
+                    onClick={() => setProxyTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}>{g}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* 対象学系 */}
+            {proxyTargetGakuin.length > 0 && (
+              <div style={adS.fieldRow}>
+                <label style={adS.formLabel}>対象学系（任意・複数選択可）</label>
+                <div style={adS.optionGrid}>
+                  {proxyTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
+                    <button key={k} type="button" style={{ ...adS.tagBtn, ...(proxyTargetGakukei.includes(k) ? adS.tagBtnActive : {}) }}
+                      onClick={() => setProxyTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}>{k}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ③ キャンパス */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>③ キャンパス <span style={adS.required}>必須</span></label>
+              <div style={adS.optionGrid}>
+                {CAMPUS_TAGS.map(t => (
+                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyCampus === t ? adS.tagBtnActive : {}) }} onClick={() => setProxyCampus(t)}>{t}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* ④ 参加スタイル */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>④ 参加スタイル（任意）</label>
+              <div style={adS.optionGrid}>
+                {STYLE_TAGS.map(t => (
+                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyStyle === t ? adS.tagBtnActive : {}) }} onClick={() => setProxyStyle(prev => prev === t ? "" : t)}>{t}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* ⑤ 募集者種別 */}
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>⑤ 募集者種別（任意）</label>
+              <div style={adS.optionGrid}>
+                {ORGANIZER_TAGS.map(t => (
+                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyOrganizerTag === t ? adS.tagBtnActive : {}) }} onClick={() => setProxyOrganizerTag(prev => prev === t ? "" : t)}>{t}</button>
+                ))}
+              </div>
+            </div>
+
+            {/* 外部リンク */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={adS.fieldRow}>
+                <label style={adS.formLabel}>申し込みボタン名</label>
+                <input style={adS.input} placeholder="参加を申し込む" value={proxyApplyLabel} onChange={e => setProxyApplyLabel(e.target.value)} />
+              </div>
+              <div style={adS.fieldRow}>
+                <label style={adS.formLabel}>申し込みリンクURL</label>
+                <input style={adS.input} type="url" placeholder="https://forms.gle/..." value={proxyApplyLink} onChange={e => setProxyApplyLink(e.target.value)} />
+              </div>
+            </div>
+
+            <div style={adS.fieldRow}>
+              <label style={adS.formLabel}>お問い合わせ連絡先</label>
+              <input style={adS.input} placeholder="例：example@m.isct.ac.jp" value={proxyContact} onChange={e => setProxyContact(e.target.value)} />
+            </div>
+
+            {/* 送信ボタン */}
+            <button 
+              style={{ padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 12 }} 
+              onClick={handleProxySubmitEvent} 
+              disabled={saving}
+            >
+              {saving ? "代打投稿中..." : "この内容で代打投稿を完了する"}
+            </button>
+          </div>
+        )}
+        
         {/* ── 登録者一覧 ── */}      
         {activeTab === "users" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
