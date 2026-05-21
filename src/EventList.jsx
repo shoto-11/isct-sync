@@ -331,8 +331,14 @@ function Carousel({ events, onSelect }) {
     </div>
   );
 }
-
-export default function EventList({ user, onLoginRequired, pendingEvent, onPendingEventClear }) {
+export default function EventList({ 
+  user, 
+  onLoginRequired, 
+  pendingEvent, 
+  onPendingEventClear, 
+  noticeItems = [], 
+  noticeIndex = 0 
+}) {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
@@ -550,9 +556,68 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
 
   const currentRanking = rankTab === "view" ? viewRanking : rankTab === "like" ? likeRanking : joinRanking;
   const rankLabel = rankTab === "view" ? "閲覧" : rankTab === "like" ? "いいね" : "参加予定";
-  
-return (
-    <div>
+  return (
+  <div>
+    {/* ── 💡 完全に元のスタイルを適用した Notice Bar ── */}
+    {noticeItems && noticeItems.length > 0 && (
+      <div
+        style={{ ...s.noticeBar, cursor: noticeItems[noticeIndex]?.link ? "pointer" : "default" }}
+        onClick={() => noticeItems[noticeIndex]?.link && window.open(noticeItems[noticeIndex].link, "_blank")}
+      >
+        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "flex", alignItems: "center", height: "100%" }}>
+          {/* アイコンの右側の余白（marginRight: 10）も維持 */}
+          <div style={{ ...s.noticeIcon, display: "flex", alignItems: "center", marginRight: 10 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007A6E" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
+          <div style={{ flex: 1, overflow: "hidden", position: "relative", height: "100%", display: "flex", alignItems: "center" }}>
+            {noticeItems.map((item, i) => {
+              const total = noticeItems.length;
+              const isCurrent = i === noticeIndex;
+              const isNext = i === (noticeIndex + 1) % total;
+              const isPrev = i === (noticeIndex - 1 + total) % total;
+
+              let translateY = "100%";
+              let opacity = 0;
+              let hasTransition = false;
+
+              if (isCurrent) {
+                translateY = "0";
+                opacity = 1;
+                hasTransition = true;
+              } else if (isPrev) {
+                translateY = "-100%";
+                opacity = 0;
+                hasTransition = true;
+              } else if (isNext) {
+                translateY = "100%";
+                opacity = 0;
+                hasTransition = false;
+              }
+
+              return (
+                <div key={i} style={{
+                  position: "absolute",
+                  width: "100%",
+                  opacity: opacity,
+                  transform: `translateY(${translateY})`,
+                  transition: hasTransition ? "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease" : "none",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: "#1A2E2B",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}>{item.text}</div>
+              );
+            })}
+          </div>
+          <div style={{ color: "#B0BEC5", fontSize: 16, flexShrink: 0 }}>›</div>
+        </div>
+      </div>
+    )}
+        
 {/* ── カルーセル ── */}
 {carouselEvents.length > 0 && <Carousel events={carouselEvents} onSelect={handleSelect} />}
 
@@ -625,6 +690,31 @@ return (
   );
 }
 const s = {
+    // ─── 💡 ここからお知らせバー用のCSSを追加 ───
+  noticeBar: { 
+    background: "white", 
+    borderLeft: `4px solid ${THEME}`, // ← 左側のテーマカラー太線
+    margin: window.innerWidth > 768 ? "12px 100px" : "12px 14px", 
+    borderRadius: 6, 
+    padding: "10px 14px", 
+    display: "flex", 
+    alignItems: "center", 
+    gap: 10, 
+    boxShadow: "0 1px 4px rgba(0,0,0,0.07)", 
+    overflow: "hidden", 
+    height: 48,
+    boxSizing: "border-box" // 高さが崩れないように安全策
+  },
+  noticeIcon: { 
+    background: "#F9EAED", // ← 薄いピンクの円形背景
+    borderRadius: "50%", 
+    width: 32, 
+    height: 32, 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center", 
+    flexShrink: 0 
+  },
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px" },
   sectionTitle: { fontSize:24, fontWeight:700, color:"#1A2E2B" },
   sectionBadge: { background:"#F9EAED", color:THEME, fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999, marginLeft:4 },

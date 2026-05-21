@@ -28,12 +28,13 @@ import {
 const THEME = "#88203a";
 
 // ─── MainLayout: App の外で定義することで再マウントを防ぐ ────────────
+// ─── MainLayout: App の外で定義することで再マウントを防ぐ ────────────
 function MainLayout({
   children,
   user, menuProfile, isAdmin,
   menuOpen, setMenuOpen,
   showContact, setShowContact,
-  noticeItems, noticeIndex,
+  noticeItems, noticeIndex, // ←これらは後ほどEventListへ移動させるためここでは使わなくなります
   navigate,
 }) {
   return (
@@ -56,63 +57,6 @@ function MainLayout({
           </div>
         </div>
       </header>
-{/* ── Notice Bar ── */}
-      <div
-        style={{ ...s.noticeBar, cursor: noticeItems[noticeIndex]?.link ? "pointer" : "default" }}
-        onClick={() => noticeItems[noticeIndex]?.link && window.open(noticeItems[noticeIndex].link, "_blank")}
-      >
-        <div style={{ maxWidth: 1200, margin: "0 auto", width: "100%", display: "flex", alignItems: "center", height: "100%" }}>
-          {/* 💡 修正箇所：アイコンの右側に marginRight: 8 を追加して、文字との間隔を開けました */}
-          <div style={{ ...s.noticeIcon, display: "flex", alignItems: "center", marginRight: 10 }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#007A6E" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-          </div>
-          <div style={{ flex: 1, overflow: "hidden", position: "relative", height: "100%", display: "flex", alignItems: "center" }}>
-            {noticeItems.map((item, i) => {
-              const total = noticeItems.length;
-              
-              const isCurrent = i === noticeIndex;
-              // 💡 常に下でスタンバイする「次のアイテム」
-              const isNext = i === (noticeIndex + 1) % total;
-              // 💡 💡 上にスライドしながら消えていく「直前のアイテム」
-              const isPrev = i === (noticeIndex - 1 + total) % total;
-
-              // 状態に応じた位置（Y軸）と透明度（Opacity）の決定
-              let translateY = "100%"; // デフォルト（画面下で待機）
-              let opacity = 0;
-              let hasTransition = false;
-
-              if (isCurrent) {
-                translateY = "0";      // 中央に表示
-                opacity = 1;
-                hasTransition = true;  // 下から上がってくるアニメーションを有効に
-              } else if (isPrev) {
-                translateY = "-100%";  // 上にスライドアウト
-                opacity = 0;           // フェードアウト
-                hasTransition = true;  // 上に消えていくアニメーションを有効に
-              } else if (isNext) {
-                translateY = "100%";   // 次のアイテムは下で待機
-                opacity = 0;
-                hasTransition = false; // 画面外の下に戻る時はアニメーションさせずに瞬間移動
-              }
-
-              return (
-                <div key={i} style={{
-                  position: "absolute", width: "100%",
-                  opacity: opacity,
-                  transform: `translateY(${translateY})`,
-                  // 💡 transition に Y軸の動きだけでなく opacity（フェード）も追加
-                  transition: hasTransition ? "transform 1.0s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease" : "none",
-                  fontSize: 13, fontWeight: 600, color: "#1A2E2B",
-                  whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
-                }}>{item.text}</div>
-              );
-            })}
-          </div>
-          <div style={{ color: "#B0BEC5", fontSize: 16, flexShrink: 0 }}>›</div>
-        </div>
-      </div>
 
       {/* ── Content ── */}
       <div style={{ flex: 1 }}>{children}</div>
@@ -422,7 +366,13 @@ export default function App() {
       {/* ── メインコンテンツ（ヘッダーあり） ── */}
       <Route path="/" element={
         <MainLayout {...layoutProps}>
-          <EventList user={user} onLoginRequired={() => navigate("/login")} />
+          {/* 💡 EventListにお知らせデータをバケツリレーで渡します */}
+          <EventList 
+            user={user} 
+            onLoginRequired={() => navigate("/login")} 
+            noticeItems={noticeItems}
+            noticeIndex={noticeIndex}
+          />
         </MainLayout>
       } />
       <Route path="/events/:eventId" element={
@@ -472,8 +422,6 @@ const s = {
   logoImg: { height: 40, objectFit: "contain" },
   headerIcons: { display: "flex", gap: 24, alignItems: "center" },
   iconBtn: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, color: "rgba(255,255,255,0.9)", fontSize: 10, background: "none", border: "none", cursor: "pointer" },
-  noticeBar: { background: "white", borderLeft: `4px solid ${THEME}`, margin: window.innerWidth > 768 ? "12px 100px" : "12px 14px", borderRadius: 6, padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 1px 4px rgba(0,0,0,0.07)", overflow: "hidden", height: 48 },
-  noticeIcon: { background: "#F9EAED", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   fab: { position: "fixed", bottom: 24, right: 18, background: THEME, color: "white", border: "none", borderRadius: 999, padding: "12px 20px", fontSize: 14, fontWeight: 900, cursor: "pointer", boxShadow: `0 4px 18px rgba(136,32,58,0.45)`, zIndex: 99 },
   loginPrompt: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", gap: 16 },
   loginPromptText: { fontSize: 15, color: "#5A7370", fontWeight: 600 },
