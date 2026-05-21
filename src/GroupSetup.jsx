@@ -29,6 +29,7 @@ export default function GroupSetup({ user, onComplete, onSkip }) {
   const [code, setCode] = useState("");
   const [groupName, setGroupName] = useState("");
   const [groupType, setGroupType] = useState("サークル");
+  const [groupDescription, setGroupDescription] = useState("");
 
   // アイコン画像用ステート
   const [avatarFile, setAvatarFile] = useState(null);
@@ -39,6 +40,10 @@ export default function GroupSetup({ user, onComplete, onSkip }) {
   const [targetGroupId, setTargetGroupId] = useState(null); 
 
   const fileInputRef = useRef(null); 
+
+  const [twitterUrl, setTwitterUrl] = useState("");
+const [instagramUrl, setInstagramUrl] = useState("");
+const [homepageUrl, setHomepageUrl] = useState("");
 
   // 画像選択時の処理
   const handleFileChange = (e) => {
@@ -257,6 +262,10 @@ export default function GroupSetup({ user, onComplete, onSkip }) {
         displayName: groupName.trim(),
         groupEmail: cleanEmail,
         groupType: groupType,
+        description: groupDescription.trim(),
+        twitterUrl: twitterUrl.trim(),   // 💡 追加
+        instagramUrl: instagramUrl.trim(), // 💡 追加
+        homepageUrl: homepageUrl.trim(),   // 💡 追加
         avatarUrl: uploadedAvatarUrl, 
         createdAt: serverTimestamp(),
         createdBy: user.uid,
@@ -500,6 +509,24 @@ export default function GroupSetup({ user, onComplete, onSkip }) {
                   </button>
                 ))}
               </div>
+            </div>
+
+            <div style={s.formGroup}>
+              <label style={s.label}>グループ説明（任意）<span style={{ fontSize: 11, color: "#9AADA8", fontWeight: "normal", marginLeft: 4 }}>※ユーザーに公開されます</span></label>
+              <textarea 
+                style={{ ...s.input, minHeight: 90, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+                placeholder="サークルの活動内容、新歓情報、練習日程などを自由に入力してください（後からいつでも変更できます）"
+                value={groupDescription}
+                onChange={(e) => setGroupDescription(e.target.value)}
+                disabled={loading}
+              />
+            </div>
+
+            <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:10 }}>
+              <label style={s.label}>SNS / リンク（任意）</label>
+              <input style={s.input} placeholder="Twitter(X) URL" value={twitterUrl} onChange={e => setTwitterUrl(e.target.value)} />
+              <input style={s.input} placeholder="Instagram URL" value={instagramUrl} onChange={e => setInstagramUrl(e.target.value)} />
+              <input style={s.input} placeholder="ホームページ URL" value={homepageUrl} onChange={e => setHomepageUrl(e.target.value)} />
             </div>
 
             <button type="submit" style={{ ...s.btn, marginTop: 8 }} disabled={loading || !groupName.trim()}>

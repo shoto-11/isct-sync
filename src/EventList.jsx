@@ -92,7 +92,9 @@ function Section({ title, badge, events, onSelect, icon, maxItems = 20 }) {
   const [hovered, setHovered] = useState(false);
   const ref = { current: null };
   const displayEvents = events.slice(0, maxItems);
-
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
   useEffect(() => {
   const el = ref.current;
   if (!el) return;

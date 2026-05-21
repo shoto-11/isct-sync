@@ -43,6 +43,10 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
   const [userProfile, setUserProfile] = useState(null);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+  
+  useEffect(() => {
     const fetchUserProfile = async () => {
       if (!auth.currentUser) return;
       try {

@@ -10,13 +10,14 @@
 
 import { useState, useEffect } from "react";
 import { db, storage } from "./firebase";
-import { doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, updateDoc, arrayRemove, collection, query, where, getDocs } from "firebase/firestore"; // 💡 collection群を追加
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { BG_COLOR } from "./constants";
-import { User, Camera, LogOut, ShieldAlert, UserMinus, Award, Users, Edit2, X, Crown } from "lucide-react"; // 💡 Crown を追加
-const THEME = "#88203a";
+import { THEME, GENRE_STYLES, GENRE_EMOJI, BG_COLOR } from "./constants"; // 💡 THEMEなどを constants から統合// 💡 「Instagram」の最後のTは大文字ではなく小文字の「t」にします
+import { User, Camera, LogOut, UserMinus, Award, Users, Edit2, X, Crown, Info, Calendar, MapPin, Mail } from "lucide-react";
+import { FaXTwitter, FaInstagram } from "react-icons/fa6"; // X(Twitter) と Instagram
+import { FaGlobe } from "react-icons/fa"; // 地球儀（ホームページ用）
 
-export default function GroupManage({ group, currentUserId, onBack, onChanged }) {
+export default function GroupManage({ group, currentUserId, onBack, onChanged, onEventSelect }) {
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [editMode, setEditMode] = useState(false);
@@ -35,6 +36,15 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
   // 💡 権限チェック：現在のユーザーがこのグループの「代表者」かどうか
   const isLeader = group.createdBy === currentUserId;
 
+  const [editDescription, setEditDescription] = useState(group.description || "");
+  const [groupEvents, setGroupEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
+  const [eventTab, setEventTab] = useState("active");
+
+  const [editTwitter, setEditTwitter] = useState(group.twitterUrl || "");
+  const [editInstagram, setEditInstagram] = useState(group.instagramUrl || "");
+  const [editHomepage, setEditHomepage] = useState(group.homepageUrl || "");
+
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [group.id]);
@@ -42,6 +52,7 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
   useEffect(() => {
     setEditName(group.displayName || "");
     setEditType(group.groupType || "サークル");
+    setEditDescription(group.description || "");
     setAvatarPreview(group.avatarUrl || null);
     setAvatarFile(null);
   }, [group]);
@@ -56,14 +67,34 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
     fetchMembers();
   }, [group.id, group.members]);
 
+  useEffect(() => {
+    const fetchGroupEvents = async () => {
+      if (!group.id) return;
+      setLoadingEvents(true);
+      try {
+        const q = query(collection(db, "events"), where("organizerId", "==", group.id));
+        const snap = await getDocs(q);
+        const fetched = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // 開催日が新しい順にソート
+        fetched.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setGroupEvents(fetched);
+      } catch (err) {
+        console.error("グループイベントの取得に失敗しました:", err);
+      } finally {
+        setLoadingEvents(false);
+      }
+    };
+    fetchGroupEvents();
+  }, [group.id]);
+
+
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
   };
-
-  const handleSave = async () => {
+const handleSave = async () => {
     setError("");
     if (!editName.trim()) { setError("表示名を入力してください"); return; }
     
@@ -76,9 +107,14 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
         avatarUrl = await getDownloadURL(storageRef);
       }
 
+      // 💡 updateDoc 内に、新しく3つのSNS・リンクフィールドを追加します
       await updateDoc(doc(db, "groups", group.id), {
         displayName: editName.trim(),
         groupType: editType,
+        description: editDescription.trim(),
+        twitterUrl: editTwitter.trim(),     // 💡 追加
+        instagramUrl: editInstagram.trim(), // 💡 追加
+        homepageUrl: editHomepage.trim(),   // 💡 追加
         avatarUrl: avatarUrl,
       });
 
@@ -96,6 +132,7 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
   const handleCancelEdit = () => {
     setEditName(group.displayName || "");
     setEditType(group.groupType || "サークル");
+    setEditDescription(group.description || "");
     setAvatarPreview(group.avatarUrl || null);
     setAvatarFile(null);
     setEditMode(false);
@@ -162,7 +199,7 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
       </div>
     );
   }
-  
+
   return (
     <div style={s.container}>
       {/* ヘッダー */}
@@ -248,6 +285,22 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
                   })}
                 </div>
               </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
+                <label style={s.label}>グループ説明文</label>
+                <textarea 
+                  style={{ ...s.input, minHeight: 90, resize: "vertical", lineHeight: 1.5 }} 
+                  value={editDescription} 
+                  onChange={e => setEditDescription(e.target.value)} 
+                  disabled={saving}
+                  placeholder="サークルの紹介文や新歓情報などを記入してください。"
+                />
+              </div>
+              <div style={{ marginTop: 12, display:"flex", flexDirection:"column", gap:8 }}>
+                <label style={s.label}>SNS・リンク編集</label>
+                <input style={s.input} placeholder="𝕏 (旧Twitter) URL (https://x.com/...)" value={editTwitter} onChange={e => setEditTwitter(e.target.value)} disabled={saving} />
+                <input style={s.input} placeholder="Instagram URL (https://instagram.com/...)" value={editInstagram} onChange={e => setEditInstagram(e.target.value)} disabled={saving} />
+                <input style={s.input} placeholder="ホームページ URL" value={editHomepage} onChange={e => setEditHomepage(e.target.value)} disabled={saving} />
+              </div>
 
               <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
                 <button style={s.cancelBtn} onClick={handleCancelEdit} disabled={saving}>キャンセル</button>
@@ -258,6 +311,7 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
             </div>
           ) : (
             /* ── 通常表示モード ── */
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={s.groupInfo}>
               <div style={{ width: 72, height: 72, borderRadius: "50%", background: "#F4F6F5", border: "1px solid #E0E8E7", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 {group.avatarUrl ? (
@@ -266,14 +320,99 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
                   <Users size={32} color="#9AADA8" />
                 )}
               </div>
-              <div style={{ paddingRight: 68 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 900, color: "#111", margin: "0 0 4px" }}>{group.displayName}</h2>
-                <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ paddingRight: 68, flex: 1, minWidth: 0 }}>
+                <div style={{ marginBottom: 4 }}>
                   <span style={s.viewBadge}>{group.groupType || "サークル"}</span>
-                  <span style={{ fontSize: 12, color: "#7A9591" }}>{group.groupEmail}</span>
+                </div>
+                <h2 style={{ fontSize: 19, fontWeight: 900, color: "#111", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{group.displayName}</h2>
+                
+                {/* 💡 【ここに綺麗に収まりました！】登録されているSNSのみ、ブランドカラーのホバーボタンを表示 */}
+                <div style={{ display: "flex", gap: 10, marginTop: 8, marginBottom: 8 }}>
+                  {group.twitterUrl && (
+                    <a 
+                      href={group.twitterUrl} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      style={{ ...s.snsBtnBase, background: "#111111" }} 
+                      title="𝕏 (旧Twitter)"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-3px)";
+                        e.currentTarget.style.boxShadow = "0 6px 12px rgba(0,0,0,0.2)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                      }}
+                    >
+                      <FaXTwitter size={14} color="#FFFFFF" />
+                    </a>
+                  )}
+                  
+                  {group.instagramUrl && (
+                    <a 
+                      href={group.instagramUrl} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      style={{ ...s.snsBtnBase, background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)" }} 
+                      title="Instagram"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-3px)";
+                        e.currentTarget.style.boxShadow = "0 6px 12px rgba(220,39,67,0.3)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                      }}
+                    >
+                      <FaInstagram size={14} color="#FFFFFF" />
+                    </a>
+                  )}
+                  
+                  {group.homepageUrl && (
+                    <a 
+                      href={group.homepageUrl} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      style={{ ...s.snsBtnBase, background: "#0066cc" }} 
+                      title="ホームページ"
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "translateY(-3px)";
+                        e.currentTarget.style.boxShadow = "0 6px 12px rgba(0,102,204,0.3)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "translateY(0)";
+                        e.currentTarget.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+                      }}
+                    >
+                      <FaGlobe size={14} color="#FFFFFF" />
+                    </a>
+                  )}
+                </div>
+
+                <div style={{ fontSize: 12, color: "#7A9591", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Mail size={12} />
+                  <span>{group.groupEmail || group.email}</span>
                 </div>
               </div>
             </div>
+
+            {/* 💡 【説明文紹介ブロックをGroupProfileと同一に】 */}
+            <div style={s.descriptionSection}>
+              <div style={s.sectionIconHeader}>
+                <Info size={14} />
+                <span>サークル紹介</span>
+              </div>
+              <div style={s.descriptionBody}>
+                {group.description ? (
+                  group.description.split("\n").map((line, i) => (
+                    <span key={i}>{line}<br /></span>
+                  ))
+                ) : (
+                  <span style={{ color: "#9AADA8", fontStyle: "italic" }}>紹介文はまだ登録されていません。</span>
+                )}
+              </div>
+            </div>
+          </div>
           )}
         </div>
 
@@ -330,6 +469,84 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
               })}
             </div>
           )}
+        </div>
+        {/* 主催イベント一覧セクション */}
+        <div style={s.card}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Calendar size={18} color={THEME} />
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#111", margin: 0 }}>主催イベント</h3>
+          </div>
+
+          {/* 💡 主催イベント切り替え用タブUI */}
+          <div style={{ display: "flex", gap: 12, marginBottom: 12, borderBottom: "1px solid #E2ECEB", paddingBottom: 4 }}>
+            <button 
+              type="button"
+              style={{ background: "none", border: "none", padding: "6px 12px", fontSize: 13, fontWeight: 700, color: eventTab === "active" ? THEME : "#5A7370", borderBottom: eventTab === "active" ? `2px solid ${THEME}` : "2px solid transparent", cursor: "pointer" }}
+              onClick={() => setEventTab("active")}
+            >
+              募集中
+            </button>
+            <button 
+              type="button"
+              style={{ background: "none", border: "none", padding: "6px 12px", fontSize: 13, fontWeight: 700, color: eventTab === "expired" ? THEME : "#5A7370", borderBottom: eventTab === "expired" ? `2px solid ${THEME}` : "2px solid transparent", cursor: "pointer" }}
+              onClick={() => setEventTab("expired")}
+            >
+              募集終了
+            </button>
+          </div>
+
+          {loadingEvents ? (
+            <div style={{ fontSize: 12, color: "#5A7370", textAlign: "center", padding: "16px 0" }}>イベントを読み込み中...</div>
+          ) : (() => {
+            // 💡 現在時刻を基準にして、イベントをリアルタイムに振り分けます
+            const now = new Date();
+            const filteredEvents = groupEvents.filter(event => {
+              if (!event.deadline) return eventTab === "active"; // 締め切りがないものは募集中扱い
+              const deadlineStr = event.deadlineTime ? `${event.deadline}T${event.deadlineTime}` : `${event.deadline}T23:59`;
+              const isExpired = new Date(deadlineStr) < now;
+              return eventTab === "active" ? !isExpired : isExpired;
+            });
+
+            if (filteredEvents.length === 0) {
+              return (
+                <div style={s.emptyEventCard}>
+                  {eventTab === "active" ? "現在、募集中の公開イベントはありません。" : "過去に募集終了したイベントはありません。"}
+                </div>
+              );
+            }
+
+            return (
+              <div style={s.eventListGrid}>
+                {filteredEvents.map(event => {
+                  const style = GENRE_STYLES[event.tags?.genre] || { bg: "#F5F5F5", color: "#5A7370" };
+                  const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+                  return (
+                    <div 
+                      key={event.id} 
+                      style={s.eventCardItem} 
+                      onClick={() => onEventSelect && onEventSelect(event)}
+                    >
+                      {event.imageUrl ? (
+                        <img src={event.imageUrl} alt="" style={s.eventThumb} />
+                      ) : (
+                        <div style={{ ...s.eventThumb, background: style.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                          {emoji}
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+                        <div style={s.eventCardTitle}>{event.title}</div>
+                        <div style={s.eventMetaRow}><Calendar size={11} /> <span>{event.date}</span></div>
+                        <div style={s.eventMetaRow}><MapPin size={11} /> <span>{event.location}</span></div>
+                        {event.tags?.genre && (
+                          <span style={{ ...s.genreTagLabel, background: style.bg, color: style.color }}>{event.tags.genre}</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </div>
 
         {/* 脱退セクション */}
@@ -396,4 +613,29 @@ const s = {
   saveBtn: { flex: 1, padding: "12px 20px", background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
   cancelBtn: { flex: 1, padding: "12px 20px", background: "#F4F6F5", color: "#5A7370", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
   errorBox: { color: "#C62828", fontSize: 12, background: "#FFEBEE", padding: "10px", borderRadius: 8, fontWeight: 500, marginBottom: 12 },
+  // 💡 スタイルの末尾に以下をそのままコピーして追加してください
+  descriptionSection: { background: "#F8FAF9", borderRadius: 12, padding: "14px", marginTop: 4 },
+  sectionIconHeader: { display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: "#5A7370", marginBottom: 8, letterSpacing: "0.05em" },
+  descriptionBody: { fontSize: 13, color: "#334E4B", lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-all" },
+  countBadge: { background: "#F9EAED", color: THEME, fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 999, marginLeft: 4 },
+  emptyEventCard: { background: "white", borderRadius: 12, padding: "24px", textAlign: "center", color: "#9AADA8", fontSize: 13, border: "1.5px dashed #D0DDD9" },
+  eventListGrid: { display: "flex", flexDirection: "column", gap: 10 },
+  eventCardItem: { background: "#FAFDFC", border: "1px solid #E2ECEB", borderRadius: 12, padding: "12px", display: "flex", gap: 12, alignItems: "center", cursor: "pointer", transition: "transform 0.1s" },
+  eventCardTitle: { fontSize: 14, fontWeight: 800, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+  eventMetaRow: { fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 4 },
+  genreTagLabel: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 999, width: "fit-content", marginTop: 2 },
+  // 💡 横幅を固定し、フレックスボックス内で絶対に縮まない・はみ出さないよう flexShrink と max-width を固定強化します
+  eventThumb: { width: "64px", height: "64px", minWidth: "64px", maxWidth: "64px", borderRadius: 8, objectFit: "cover", flexShrink: 0 },
+  snsBtnBase: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "32px",
+    height: "32px",
+    borderRadius: "50%",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+    transition: "all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1)",
+    cursor: "pointer",
+    textDecoration: "none",
+  },
 };

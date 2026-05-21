@@ -37,10 +37,10 @@ export default function Search() {
     setSearched(true);
     const filtered = allEvents.filter(event => {
       const matchKeyword = keyword === "" ||
-        event.title?.includes(keyword) ||
-        event.detail?.includes(keyword) ||
-        event.location?.includes(keyword) ||
-        event.organizerName?.includes(keyword);
+        event.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+        event.detail?.toLowerCase().includes(keyword.toLowerCase()) ||
+        event.location?.toLowerCase().includes(keyword.toLowerCase()) ||
+        event.organizerName?.toLowerCase().includes(keyword.toLowerCase());
 
       const matchTags = selectedTags.length === 0 || selectedTags.every(tag =>
         event.tags?.genre === tag ||
