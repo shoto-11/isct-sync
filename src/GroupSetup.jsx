@@ -1,21 +1,21 @@
-import { useState } from "react";
-import { db, functions, auth } from "./firebase"; // 💡 auth を追加
+import { useState, useRef } from "react";
+import { db, functions, auth, storage } from "./firebase"; 
 import { httpsCallable } from "firebase/functions";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth"; // 💡 Googleログイン用をインポート
+import { GoogleAuthProvider, signInWithPopup, linkWithCredential, reauthenticateWithPopup } from "firebase/auth"; // 💡 認証汚染を防ぐためのインポート
 import { 
   doc, 
   updateDoc, 
   collection, 
-  addDoc, 
-  setDoc,
   getDocs, 
   query, 
   where, 
   serverTimestamp, 
-  arrayUnion 
+  arrayUnion,
+  setDoc
 } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; 
 import logoRed from "./assets/logo-red.png";
-import { Users, UserCheck, Mail, KeyRound, CheckCircle, ArrowRight } from "lucide-react";
+import { Users, UserCheck, Mail, KeyRound, CheckCircle, ArrowRight, Camera } from "lucide-react"; 
 
 const THEME = "#88203a";
 const BG = "#F4F6F5";
@@ -30,9 +30,24 @@ export default function GroupSetup({ user, onComplete, onSkip }) {
   const [groupName, setGroupName] = useState("");
   const [groupType, setGroupType] = useState("サークル");
 
+  // アイコン画像用ステート
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [targetGroupId, setTargetGroupId] = useState(null); // 参加対象グループID
+  const [targetGroupId, setTargetGroupId] = useState(null); 
+
+  const fileInputRef = useRef(null); 
+
+  // 画像選択時の処理
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
 
   // セットアップ完了時の共通処理
   const finalizeSetup = async () => {
@@ -80,34 +95,56 @@ export default function GroupSetup({ user, onComplete, onSkip }) {
     }
   };
 
-  // 💡 【新規追加】Googleアカウントによるサークル認証処理
+  // 💡 【超重要修正】Googleアカウントによるサークル認証処理（個人のセッションを壊さない防衛実装）
+  // 💡 【完全決着版】個人のセッションを1ミリも刺激せずに、別アカウントのGoogleメールだけを安全に引っこ抜く
   const handleGoogleGroupAuth = async () => {
     setError("");
     setLoading(true);
+
     try {
-      const provider = new GoogleAuthProvider();
-      // 💡 現在の個人ログイン状態を維持したまま、サークル用の別アカウント（Gmail等）をポップアップで選択させる
-      const res = await signInWithPopup(auth, provider);
+      // 1. 既存のインポートから Firebase の初期化関数を動的に取得
+      const { initializeApp, getApps } = await import("firebase/app");
+      const { getAuth, signInWithPopup: isolatedSignIn, GoogleAuthProvider: IsolatedProvider } = await import("firebase/auth");
+      
+      // 2. メインのアカウント環境を絶対に汚さないよう、「使い捨ての隔離アプリ環境」をその場で作る
+      // 💡 すでにデプロイ等で使用している既存の Firebase 設定をメモリ上から拝借します
+      const mainConfig = auth.app.options; 
+      
+      // "isolatedGroupAuthApp" という名前で、メインとは完全に分離された隔離空間を確立
+      const isolatedApp = getApps().find(app => app.name === "isolatedGroupAuthApp") 
+        || initializeApp(mainConfig, "isolatedGroupAuthApp");
+      
+      const isolatedAuth = getAuth(isolatedApp);
+
+      // 3. 隔離された環境で Google ポップアップを起動（これで App.jsx の監視は1ミリも反応しません）
+      const provider = new IsolatedProvider();
+      provider.setCustomParameters({ prompt: 'select_account' }); // 必ずアカウント選択を強制
+
+      const res = await isolatedSignIn(isolatedAuth, provider);
       const googleEmail = res.user.email;
 
-      // 重要：ポップアップによって一時的にauthのユーザーがサークルアカウントに切り替わることがあるため、
-      // 認証が終わったら現在の「個人アカウント」のコンテキストに戻れるように安全に処理します。
       if (!googleEmail) {
         throw new Error("Googleアカウントからメールアドレスを取得できませんでした。");
       }
 
-      // 1. 一般ドメインでもFunctionsが通るようにホワイトリストに先回り追加
-      await setDoc(doc(db, "allowedEmails", googleEmail.toLowerCase()), {
+      const cleanGoogleEmail = googleEmail.toLowerCase();
+
+      // 4. 重複・存在チェックを実行（すでにあるグループならここでエラーが飛んで catch に行きます）
+      await processGroupEmail(cleanGoogleEmail);
+
+      // 5. チェックを無事通過した場合のみ、ホワイトリストに先回り追加
+      await setDoc(doc(db, "allowedEmails", cleanGoogleEmail), {
         isGroupEmail: true,
         registeredBy: user.uid,
         createdAt: serverTimestamp()
       });
 
-      // 2. 作成・参加の振り分けロジックを実行
-      await processGroupEmail(googleEmail);
+      // 💡 使い終わった隔離セッションを安全に消去
+      await isolatedAuth.signOut();
 
     } catch (err) {
-      console.error(err);
+      console.error("Isolated Google Auth Error:", err);
+      // 💡 画面は Login に戻らず、個人セッションも 100% 維持したまま、その場のアラートにエラーを留まらせます！
       setError(err.message || "Google認証に失敗しました。");
     } finally {
       setLoading(false);
@@ -205,32 +242,43 @@ export default function GroupSetup({ user, onComplete, onSkip }) {
 
     try {
       const cleanEmail = email.trim().toLowerCase();
+      const newGroupRef = doc(collection(db, "groups"));
+      const groupId = newGroupRef.id;
+
+      let uploadedAvatarUrl = null;
+
+      if (avatarFile) {
+        const storageRef = ref(storage, `groups/${groupId}/avatar.png`);
+        const snapshot = await uploadBytes(storageRef, avatarFile);
+        uploadedAvatarUrl = await getDownloadURL(snapshot.ref);
+      }
 
       const newGroupData = {
         displayName: groupName.trim(),
         groupEmail: cleanEmail,
         groupType: groupType,
-        avatarUrl: null,
+        avatarUrl: uploadedAvatarUrl, 
         createdAt: serverTimestamp(),
         createdBy: user.uid,
         members: [user.uid]
       };
 
-      const groupDocRef = await addDoc(collection(db, "groups"), newGroupData);
+      await setDoc(newGroupRef, newGroupData);
 
       await updateDoc(doc(db, "users", user.uid), {
-        groups: arrayUnion(groupDocRef.id)
+        groups: arrayUnion(groupId)
       });
 
       setStep("success");
     } catch (err) {
       console.error(err);
-      setError("グループの作成に失敗しました。");
+      setError("グループの作成に失敗しました。詳細: " + err.message);
     } finally {
       setLoading(false);
     }
   };
-return (
+
+  return (
     <div style={s.container}>
       <div style={s.card}>
         <img src={logoRed} alt="SYNC" style={s.logo} />
@@ -245,7 +293,7 @@ return (
             <p style={s.sub}>サークル・団体・企業の公式アカウントとしてイベントを募集できます。後からマイページでも追加できます。</p>
 
             <div style={s.optionList}>
-              <button style={s.optionCard} onClick={() => { setMode("create"); setStep("email"); setError(""); }}>
+              <button style={s.optionCard} onClick={() => { setMode("create"); setStep("email"); setError(""); }} disabled={loading}>
                 <div style={{ ...s.optionIcon, background: "#F9EAED" }}>
                   <Users size={24} color={THEME} />
                 </div>
@@ -256,7 +304,7 @@ return (
                 <ArrowRight size={18} color="#B0BEC5" />
               </button>
 
-              <button style={s.optionCard} onClick={() => { setMode("join"); setStep("email"); setError(""); }}>
+              <button style={s.optionCard} onClick={() => { setMode("join"); setStep("email"); setError(""); }} disabled={loading}>
                 <div style={{ ...s.optionIcon, background: "#E0F2F1" }}>
                   <UserCheck size={24} color="#007A6E" />
                 </div>
@@ -340,9 +388,9 @@ return (
               ※確認コードの有効期限は5分間です。<br />
               メールが届かない場合は、迷惑メールフォルダをご確認ください。
             </div>
-            <button type="button" style={{ ...s.textBtn, marginTop: 4 }} onClick={() => setStep("select")}>
-                ← 選択画面に戻る
-              </button>
+            <button type="button" style={{ ...s.textBtn, marginTop: 4 }} onClick={() => setStep("select")} disabled={loading}>
+              ← 選択画面に戻る
+            </button>
           </>
         )}
 
@@ -393,6 +441,31 @@ return (
             <h2 style={s.title}>グループプロフィールの設定</h2>
             <p style={s.sub}>メールアドレス: <strong>{email}</strong><br />イベントの主催者情報として表示されるサークル名などを設定します。</p>
 
+            {/* アイコン画像設定セクション */}
+            <div style={s.avatarContainer}>
+              <div style={s.avatarWrapper} onClick={() => !loading && fileInputRef.current.click()}>
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="Preview" style={s.avatarImg} />
+                ) : (
+                  <div style={s.avatarPlaceholder}>
+                    <Users size={32} color="#9AADA8" />
+                  </div>
+                )}
+                <div style={s.cameraBadge}>
+                  <Camera size={14} color="white" />
+                </div>
+              </div>
+              <label style={s.avatarLabel}>グループのアイコン画像</label>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept="image/*"
+                style={{ display: "none" }}
+                disabled={loading}
+              />
+            </div>
+
             <div style={s.formGroup}>
               <label style={s.label}>グループ名 / サークル名</label>
               <input 
@@ -401,6 +474,7 @@ return (
                 style={s.input}
                 value={groupName}
                 onChange={(e) => setGroupName(e.target.value)}
+                disabled={loading}
                 required
               />
             </div>
@@ -420,6 +494,7 @@ return (
                       fontSize: 12, fontWeight: 600, cursor: "pointer" 
                     }}
                     onClick={() => setGroupType(t)}
+                    disabled={loading}
                   >
                     {t}
                   </button>
@@ -427,8 +502,8 @@ return (
               </div>
             </div>
 
-            <button type="submit" style={{ ...s.btn, marginTop: 8 }} disabled={loading}>
-              {loading ? "作成中..." : "グループを新規開設する"}
+            <button type="submit" style={{ ...s.btn, marginTop: 8 }} disabled={loading || !groupName.trim()}>
+              {loading ? "グループを開設中..." : "グループを新規開設する"}
             </button>
           </form>
         )}
@@ -444,7 +519,7 @@ return (
                 : `既存グループへの合流が完了しました！イベント管理権限があなた（個人）のアカウントへ共有されます。`}
             </p>
 
-            <button style={{ ...s.btn, marginTop: 8 }} onClick={finalizeSetup}>
+            <button style={{ ...s.btn, marginTop: 8 }} onClick={finalizeSetup} disabled={loading}>
               SYNCをはじめる
             </button>
           </div>
@@ -455,7 +530,6 @@ return (
   );
 }
 
-// ─── 💡 Login.jsx の設計思想と完全に一致させた統合スタイルオブジェクト ───
 const s = {
   container: { background: "#F4F6F5", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
   card: { background: "white", borderRadius: 16, padding: "32px 24px", width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.06)" },
@@ -493,4 +567,11 @@ const s = {
   googleIconWrapper: { display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, marginRight: 12 },
   googleIcon: { width: "100%", height: "100%" },
   googleBtnText: { color: "#3c4043", fontFamily: '"Roboto", "Helvetica Neue", Arial, sans-serif', fontSize: 14, fontWeight: 700, letterSpacing: "0.25px" },
+
+  avatarContainer: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8, marginBottom: 4, width: "100%" },
+  avatarWrapper: { position: "relative", width: 80, height: 80, cursor: "pointer" },
+  avatarImg: { width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover", border: "2.5px solid #D0DDD9" },
+  avatarPlaceholder: { width: "100%", height: "100%", borderRadius: "50%", background: "#F4F6F5", display: "flex", alignItems: "center", justifyContent: "center", border: "2.5px dashed #D0DDD9" },
+  cameraBadge: { position: "absolute", bottom: 0, right: 0, background: THEME, borderRadius: "50%", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.15)" },
+  avatarLabel: { fontSize: 11, fontWeight: 600, color: "#7A9591" }
 };
