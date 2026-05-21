@@ -248,12 +248,40 @@ export default function App() {
 
   // メールリンク処理中フラグ（onAuthStateChanged との競合防止）
   const processingEmailLink = useRef(false);
-
-  // 認証状態監視
+// 認証状態監視
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
       if (u) {
+        // 💡 【新規追加】グループ用アカウント（一般Gmail等）の個人ログインを大元で完全遮断する
+        try {
+          const emailClean = u.email ? u.email.toLowerCase() : "";
+          const allowedSnap = await getDoc(doc(db, "allowedEmails", emailClean));
+          
+          if (allowedSnap.exists() && allowedSnap.data().isGroupEmail === true) {
+            // 🛑 グループアカウントの侵入を検知した場合、即座にサインアウト
+            await signOut(auth);
+            
+            // ログイン画面（Login.jsx）側にエラーメッセージを伝える
+            window.sessionStorage.setItem(
+              "login_error", 
+              "このアドレスはグループ用として登録されています。個人の学籍メール（m.isct.ac.jp）でログインしてください。"
+            );
+            
+            // 各Stateを初期化して強制的にログイン画面へ送還
+            setUser(null);
+            setProfileDone(false);
+            setMenuProfile(null);
+            setUserGroups([]);
+            setLoading(false);
+            navigate("/login");
+            return; // 侵入をここで完全に食い止める
+          }
+        } catch (checkErr) {
+          console.error("App.jsx group account check failed:", checkErr);
+        }
+
+        // ⭕ 正常な個人ユーザー（学籍メール等）のみ、以下の既存処理を進める
+        setUser(u);
         const snap = await getDoc(doc(db, "users", u.uid));
         const done = snap.exists() && !!snap.data().displayName;
         setProfileDone(done);
@@ -284,8 +312,8 @@ export default function App() {
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
-
+  }, [navigate]); // 💡 安全のために依存配列にnavigateを追加
+  
   // お知らせ取得
   useEffect(() => {
     const fetchNotice = async () => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react"; // 💡 useEffectを追加
 import { auth, db, functions } from "./firebase"; // firebase.jsからfunctionsをインポート
 import { httpsCallable } from "firebase/functions";
 import { signInWithCustomToken, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
@@ -18,6 +18,15 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // 💡 【ここに配置します】画面がマウントされた時にセッションストレージのエラーをチェックする
+  useEffect(() => {
+    const savedError = window.sessionStorage.getItem("login_error");
+    if (savedError) {
+      setError(savedError);
+      window.sessionStorage.removeItem("login_error"); // 1度表示したらクリア
+    }
+  }, []);
+
   // ログイン成功後の遷移 (変更なし)
   const handleLoginSuccess = async (uid) => {
     const snap = await getDoc(doc(db, "users", uid));
@@ -29,46 +38,64 @@ export default function Login() {
     }
   };
 
+  // 💡 認証可否およびグループアカウントのブロックチェック
   const checkAllowed = async (targetEmail) => {
-    const domain = targetEmail.split("@")[1];
+    const cleanEmail = targetEmail.trim().toLowerCase();
+    const domain = cleanEmail.split("@")[1];
+    
+    // 1. 東工大の学籍ドメインであれば基本的にはパス
     if (ALLOWED_DOMAINS.includes(domain)) return true;
-    const snap = await getDoc(doc(db, "allowedEmails", targetEmail));
-    return snap.exists();
+
+    // 2. ホワイトリスト（allowedEmails）のチェック
+    const snap = await getDoc(doc(db, "allowedEmails", cleanEmail));
+    
+    if (snap.exists()) {
+      // ⭐ 【重要】もしグループ用メールとしてフラグが立っている場合はエラーをスローして弾く
+      if (snap.data().isGroupEmail === true) {
+        throw new Error("このアドレスはグループ用として登録されています。個人の学籍メール（m.isct.ac.jp）でログインしてください。");
+      }
+      return true;
+    }
+
+    return false;
   };
 
-  // 1. 確認コードをメールへ送信請求する// Login.jsx の handleRequestCode を以下のように微調整
-const handleRequestCode = async (e) => {
-  e.preventDefault();
-  setError("");
-  if (!email.trim()) return;
+  // 1. 確認コードをメールへ送信請求する
+  const handleRequestCode = async (e) => {
+    e.preventDefault();
+    setError("");
+    const cleanEmail = email.trim();
+    if (!cleanEmail) return;
 
-  setLoading(true);
-  try {
-    const allowed = await checkAllowed(email.trim());
-    if (!allowed) {
-      setError("本学の学籍メールアドレス、または事前登録されたアドレスのみログイン可能です。");
+    setLoading(true);
+    try {
+      const allowed = await checkAllowed(cleanEmail);
+      if (!allowed) {
+        setError("本学の学籍メールアドレス、または事前登録されたアドレスのみログイン可能です。");
+        setLoading(false);
+        return;
+      }
+
+      const sendOtpCodeFn = httpsCallable(functions, "sendotpcode");
+      const result = await sendOtpCodeFn({ email: cleanEmail }); 
+
+      if (result.data.success) {
+        setStep("code");
+      }
+    } catch (err) {
+      // 💡 checkAllowedからスローされたメッセージ、またはエラーオブジェクトのメッセージを表示
+      setError(err.message || "コードの送信に失敗しました。");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const sendOtpCodeFn = httpsCallable(functions, "sendotpcode");
-    
-    // 💡 確実に { email: "..." } というオブジェクトで渡す
-    const result = await sendOtpCodeFn({ email: email.trim() }); 
-
-    if (result.data.success) {
-      setStep("code");
-    }
-  } catch (err) {
-    setError(err.message || "コードの送信に失敗しました。");
-  }
-  setLoading(false);
-};
+  };
 
   // 2. 入力された6桁コードを検証してログインする
   const handleVerifyAndLogin = async (e) => {
     e.preventDefault();
     setError("");
+    const cleanEmail = email.trim();
+
     if (verificationCode.length !== 6) {
       setError("6桁の確認コードを入力してください。");
       return;
@@ -76,42 +103,62 @@ const handleRequestCode = async (e) => {
 
     setLoading(true);
     try {
-      // Cloud Functionsの 'verifyOtpCode' を呼び出し
+      // 念のため認証時にも再度グループチェックを走らせておく（安全策）
+      await checkAllowed(cleanEmail);
+
       const verifyOtpCodeFn = httpsCallable(functions, "verifyotpcode");
-      const result = await verifyOtpCodeFn({ email: email.trim(), code: verificationCode });
+      const result = await verifyOtpCodeFn({ email: cleanEmail, code: verificationCode });
 
       const { customToken } = result.data;
       if (customToken) {
-        // 発行されたカスタムトークンでFirebase Authにサインイン
         const userCredential = await signInWithCustomToken(auth, customToken);
         await handleLoginSuccess(userCredential.user.uid);
       } else {
         setError("認証に失敗しました。");
       }
     } catch (err) {
-      // Functionsが投げたエラーメッセージを表示
       setError(err.message || "確認コードが正しくないか、有効期限が切れています。");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  // Googleログイン (変更なし)
+  // Googleログイン
+  // Googleログイン
   const handleGoogleLogin = async () => {
     setError("");
     setLoading(true);
     try {
       const provider = new GoogleAuthProvider();
       const res = await signInWithPopup(auth, provider);
-      const allowed = await checkAllowed(res.user.email);
-      if (!allowed) {
-        setError("本学の学籍メールアドレス、または事前登録されたアドレスのみログイン可能です。");
-        await auth.signOut();
+      
+      // 💡 1. まずはグループ用アカウントか、または未登録アドレスかを厳格にチェック
+      try {
+        const allowed = await checkAllowed(res.user.email);
+        if (!allowed) {
+          setError("本学の学籍メールアドレス、または事前登録されたアドレスのみログイン可能です。");
+          await auth.signOut(); // 認証を即座に取り消す
+          setLoading(false);
+          return;
+        }
+        
+        // 💡 2. 許可されたアドレスであれば、ここで初めて次の画面（またはホーム）へ進む
+        await handleLoginSuccess(res.user.uid);
+
+      } catch (checkErr) {
+        // ⭐ グループアカウントだと判定されてエラー（isGroupEmail === true）がスローされた場合
+        // App.jsxの監視リスナーがホームに飛ばしてしまうのを防ぐため、即座にサインアウトして状態を固定する
+        await auth.signOut(); 
+        setError(checkErr.message || "ログインに失敗しました。");
         setLoading(false);
-        return;
+        return; // リダイレクト処理を完全に遮断
       }
-      await handleLoginSuccess(res.user.uid);
+
     } catch (err) {
+      console.error(err);
       setError("Googleログインに失敗しました。");
+      await auth.signOut();
+    } finally {
       setLoading(false);
     }
   };
@@ -204,22 +251,10 @@ const handleRequestCode = async (e) => {
             >
               <div style={s.googleIconWrapper}>
                 <svg style={s.googleIcon} viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.53-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-8.17z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.11 0-5.74-2.11-6.68-4.96H1.21v3.15C3.18 21.88 7.31 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.32 14.24A7.16 7.16 0 0 1 5 12c0-.79.13-1.57.32-2.34V6.51H1.21A11.94 11.94 0 0 0 0 12c0 1.92.45 3.74 1.21 5.39l4.11-3.15z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.18 2.12 1.21 6.51l4.11 3.15c.94-2.85 3.57-4.96 6.68-4.96z"
-                  />
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.53-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-8.17z" />
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.11 0-5.74-2.11-6.68-4.96H1.21v3.15C3.18 21.88 7.31 24 12 24z" />
+                  <path fill="#FBBC05" d="M5.32 14.24A7.16 7.16 0 0 1 5 12c0-.79.13-1.57.32-2.34V6.51H1.21A11.94 11.94 0 0 0 0 12c0 1.92.45 3.74 1.21 5.39l4.11-3.15z" />
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.18 2.12 1.21 6.51l4.11 3.15c.94-2.85 3.57-4.96 6.68-4.96z" />
                 </svg>
               </div>
               <span style={s.googleBtnText}>Google アカウントでログイン</span>
@@ -236,7 +271,7 @@ const handleRequestCode = async (e) => {
   );
 }
 
-// 既存のスタイルオブジェクト (変更部分のみ適宜調整)
+// 既存のスタイルオブジェクト
 const s = {
   container: { background: "#F4F6F5", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" },
   card: { background: "white", borderRadius: 16, padding: "32px 24px", width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 20, boxShadow: "0 4px 24px rgba(0,0,0,0.06)" },
@@ -255,37 +290,12 @@ const s = {
   dividerLine: { flex: 1, height: 1, background: "#E0E8E7" },
   dividerText: { fontSize: 12, color: "#9AADA8" },
   googleBtn: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: "100%",
-    height: 44,
-    backgroundColor: "#ffffff",
-    border: "1px solid #dadce0",
-    borderRadius: 8,
-    cursor: "pointer",
-    padding: "0 12px",
-    boxSizing: "border-box",
-    transition: "background-color 0.2s, box-shadow 0.2s",
+    display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: 44,
+    backgroundColor: "#ffffff", border: "1px solid #dadce0", borderRadius: 8, cursor: "pointer",
+    padding: "0 12px", boxSizing: "border-box", transition: "background-color 0.2s, box-shadow 0.2s",
     boxShadow: "0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)",
   },
-  googleIconWrapper: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    width: 18,
-    height: 18,
-    marginRight: 12,
-  },
-  googleIcon: {
-    width: "100%",
-    height: "100%",
-  },
-  googleBtnText: {
-    color: "#3c4043",
-    fontFamily: '"Roboto", "Helvetica Neue", Arial, sans-serif',
-    fontSize: 14,
-    fontWeight: 700,
-    letterSpacing: "0.25px",
-  },
+  googleIconWrapper: { display: "flex", alignItems: "center", justifyContent: "center", width: 18, height: 18, marginRight: 12 },
+  googleIcon: { width: "100%", height: "100%" },
+  googleBtnText: { color: "#3c4043", fontFamily: '"Roboto", "Helvetica Neue", Arial, sans-serif', fontSize: 14, fontWeight: 700, letterSpacing: "0.25px" },
 };

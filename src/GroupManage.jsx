@@ -3,16 +3,17 @@
  * マイページからグループを選択したときに表示するグループ管理画面
  * - グループ情報の表示・編集（表示名・アイコン・種別）
  * - メンバー一覧
+ * - 【新規】代表者によるメンバー脱退（キック）機能
+ * - 【新規】代表者権限の他のメンバーへの譲渡機能
  * - グループから脱退
  */
 
 import { useState, useEffect } from "react";
-import { db, storage, auth } from "./firebase";
+import { db, storage } from "./firebase";
 import { doc, getDoc, updateDoc, arrayRemove } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { signInWithEmailAndPassword, updatePassword } from "firebase/auth";
 import { BG_COLOR } from "./constants";
-import { User, Camera, LogOut } from "lucide-react";
+import { User, Camera, LogOut, ShieldAlert, UserMinus, Award } from "lucide-react";
 
 const THEME = "#88203a";
 
@@ -29,8 +30,11 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // 脱退
+  // 脱退・操作確認用
   const [confirmLeave, setConfirmLeave] = useState(false);
+
+  // 💡 権限チェック：現在のユーザーがこのグループの「代表者」かどうか
+  const isLeader = group.createdBy === currentUserId;
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -40,7 +44,7 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
       setLoadingMembers(false);
     };
     fetchMembers();
-  }, [group.id]);
+  }, [group.id, group.members]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -73,13 +77,59 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
     setSaving(false);
   };
 
-  const handleLeave = async () => {
+  // 💡 【新規機能】代表者が特定のメンバーをグループから強制脱退（キック）させる処理
+  const handleKickMember = async (targetMember) => {
+    if (!window.confirm(`本当に「${targetMember.displayName}」さんをこのグループから脱退させますか？`)) return;
+    
+    setError("");
     try {
-      // グループのmembersから自分を削除
+      // 1. グループの members 配列から対象のUIDを削除
+      await updateDoc(doc(db, "groups", group.id), {
+        members: arrayRemove(targetMember.id),
+      });
+      // 2. 対象ユーザー側の users.groups 配列からこのグループIDを削除
+      await updateDoc(doc(db, "users", targetMember.id), {
+        groups: arrayRemove(group.id),
+      });
+      
+      alert(`${targetMember.displayName}さんを脱退させました。`);
+      onChanged(); // 画面を更新
+    } catch (err) {
+      setError("メンバーの脱退処理に失敗しました: " + err.message);
+    }
+  };
+
+  // 💡 【新規機能】代表者権限を他のメンバーに譲渡する処理
+  const handleTransferLeadership = async (targetMember) => {
+    if (!window.confirm(`本当に「${targetMember.displayName}」さんに代表者権限を譲渡しますか？\n譲渡すると、あなたはこのグループの一般メンバーとなり、メンバー削除などの管理操作ができなくなります。`)) return;
+
+    setError("");
+    try {
+      // グループドキュメントの createdBy を対象のUIDに書き換える
+      await updateDoc(doc(db, "groups", group.id), {
+        createdBy: targetMember.id
+      });
+
+      alert(`代表者権限を ${targetMember.displayName} さんに譲渡しました。`);
+      onChanged(); // 画面を更新して権限状態をリセット
+    } catch (err) {
+      setError("権限の譲渡に失敗しました: " + err.message);
+    }
+  };
+
+  // 自分が能動的に脱退する処理
+  const handleLeave = async () => {
+    // 💡 代表者の場合は、メンバーが他にいるなら譲渡してから脱退させる安全策
+    if (isLeader && group.members.length > 1) {
+      alert("あなたは代表者です。グループを脱退する前に、他のメンバーに代表者権限を譲渡してください。");
+      setConfirmLeave(false);
+      return;
+    }
+
+    try {
       await updateDoc(doc(db, "groups", group.id), {
         members: arrayRemove(currentUserId),
       });
-      // 自分のusers.groupsから削除
       await updateDoc(doc(db, "users", currentUserId), {
         groups: arrayRemove(group.id),
       });
@@ -101,6 +151,8 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
       </div>
 
       <div style={s.body}>
+        {error && <div style={s.errorBox}>{error}</div>}
+
         {/* グループ基本情報 */}
         <div style={s.card}>
           {editMode ? (
@@ -135,8 +187,6 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
                 </div>
               </div>
 
-              {error && <p style={s.error}>{error}</p>}
-
               <div style={{ display: "flex", gap: 10 }}>
                 <button style={s.cancelBtn} onClick={() => setEditMode(false)}>キャンセル</button>
                 <button style={s.saveBtn} onClick={handleSave} disabled={saving}>
@@ -152,7 +202,7 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
               <div>
                 <h2 style={{ fontSize: 20, fontWeight: 900, margin: "0 0 4px" }}>{group.displayName}</h2>
                 <p style={{ fontSize: 13, color: "#5A7370", margin: 0 }}>{group.groupType}</p>
-                <p style={{ fontSize: 12, color: "#5A7370", margin: "4px 0 0" }}>{group.email}</p>
+                <p style={{ fontSize: 12, color: "#5A7370", margin: "4px 0 0" }}>{group.groupEmail}</p>
               </div>
             </div>
           )}
@@ -165,34 +215,63 @@ export default function GroupManage({ group, currentUserId, onBack, onChanged })
             <p style={s.loading}>読み込み中...</p>
           ) : (
             <div style={s.memberList}>
-              {members.map((m) => (
-                <div key={m.id} style={s.memberItem}>
-                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#F9EAED", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    {m.avatarUrl ? <img src={m.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={18} color={THEME} />}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>
-                      {m.displayName}
-                      {m.id === currentUserId && <span style={s.youBadge}>あなた</span>}
+              {members.map((m) => {
+                const isTargetLeader = group.createdBy === m.id;
+                return (
+                  <div key={m.id} style={s.memberItem}>
+                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#F9EAED", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      {m.avatarUrl ? <img src={m.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <User size={18} color={THEME} />}
                     </div>
-                    <div style={{ fontSize: 11, color: "#5A7370" }}>{m.gakuin} / {m.gakukei}</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.displayName}</span>
+                        {m.id === currentUserId && <span style={s.youBadge}>あなた</span>}
+                        {isTargetLeader && <span style={s.leaderBadge}>👑 代表者</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#5A7370" }}>{m.gakuin} / {m.gakukei}</div>
+                    </div>
+
+                    {/* 💡 自分が代表者、かつ「自分以外の他メンバー」に対して操作ボタンを表示 */}
+                    {isLeader && m.id !== currentUserId && (
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        <button 
+                          style={{ ...s.smallActionBtn, color: "#007A6E", background: "#E0F2F1" }} 
+                          title="代表者権限を譲渡"
+                          onClick={() => handleTransferLeadership(m)}
+                        >
+                          <Award size={14} />
+                          <span style={s.btnLabelText}>権限譲渡</span>
+                        </button>
+                        <button 
+                          style={{ ...s.smallActionBtn, color: "#C62828", background: "#FFEBEE" }} 
+                          title="グループから脱退させる"
+                          onClick={() => handleKickMember(m)}
+                        >
+                          <UserMinus size={14} />
+                          <span style={s.btnLabelText}>脱退</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
 
-        {/* 脱退 */}
+        {/* 脱退セクション */}
         <div style={s.card}>
           {!confirmLeave ? (
             <button style={s.leaveBtn} onClick={() => setConfirmLeave(true)}>
-              <LogOut size={16} /> このグループから脱退する
+              <LogOut size={16} /> {isLeader ? "グループを解散または脱退する" : "このグループから脱退する"}
             </button>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <p style={{ fontSize: 14, color: "#C62828", fontWeight: 700 }}>「{group.displayName}」から脱退しますか？</p>
-              {error && <p style={s.error}>{error}</p>}
+              <p style={{ fontSize: 14, color: "#C62828", fontWeight: 700 }}>
+                {isLeader && group.members.length === 1 
+                  ? "あなたが脱退するとメンバーが0人になるため、グループは実質解散状態になります。よかしいですか？"
+                  : `本当に「${group.displayName}」から脱退しますか？`}
+              </p>
               <div style={{ display: "flex", gap: 10 }}>
                 <button style={s.cancelBtn} onClick={() => setConfirmLeave(false)}>キャンセル</button>
                 <button style={{ ...s.saveBtn, background: "#C62828" }} onClick={handleLeave}>脱退する</button>
@@ -223,12 +302,19 @@ const s = {
   label: { fontSize: 12, fontWeight: 700, color: "#5A7370", letterSpacing: "0.05em" },
   input: { width: "100%", padding: "10px 12px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit", marginTop: 6 },
   sectionTitle: { fontSize: 15, fontWeight: 700, color: "#111", margin: "0 0 12px" },
-  memberList: { display: "flex", flexDirection: "column", gap: 10 },
-  memberItem: { display: "flex", alignItems: "center", gap: 12 },
-  youBadge: { background: "#F9EAED", color: THEME, fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999, marginLeft: 6 },
+  memberList: { display: "flex", flexDirection: "column", gap: 12 },
+  memberItem: { display: "flex", alignItems: "center", gap: 12, paddingBottom: 4, borderBottom: "1px solid #F5F5F5" },
+  
+  youBadge: { background: "#F5F5F5", color: "#5A7370", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999, marginLeft: 4 },
+  leaderBadge: { background: "#FFF3E0", color: "#E65100", fontSize: 10, fontWeight: 700, padding: "1px 6px", borderRadius: 999, marginLeft: 4 },
+  
+  // 💡 追加されたアクションボタンのスタイル
+  smallActionBtn: { display: "flex", alignItems: "center", gap: 4, border: "none", padding: "4px 8px", borderRadius: 6, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "opacity 0.2s" },
+  btnLabelText: { display: window.innerWidth > 480 ? "inline" : "none" }, // スマホ画面ではアイコンだけにして省スペース化
+
   loading: { color: "#5A7370", fontSize: 13 },
   leaveBtn: { background: "none", border: "1.5px solid #C62828", color: "#C62828", borderRadius: 8, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 },
   saveBtn: { flex: 1, padding: "10px 20px", background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
-  cancelBtn: { flex: 1, padding: "10px 20px", background: BG_COLOR, color: "#5A7370", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
-  error: { color: "#E53935", fontSize: 12 },
+  cancelBtn: { flex: 1, padding: "10px 20px", background: "#F4F6F5", color: "#5A7370", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
+  errorBox: { color: "#C62828", fontSize: 12, background: "#FFEBEE", padding: "10px", borderRadius: 8, fontWeight: 500, marginBottom: 12 },
 };
