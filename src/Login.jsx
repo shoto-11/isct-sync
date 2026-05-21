@@ -52,7 +52,7 @@ export default function Login() {
     if (snap.exists()) {
       // ⭐ 【重要】もしグループ用メールとしてフラグが立っている場合はエラーをスローして弾く
       if (snap.data().isGroupEmail === true) {
-        throw new Error("このアドレスはグループ用として登録されています。個人の学籍メール（m.isct.ac.jp）でログインしてください。");
+        throw new Error("このアドレスは学籍メールではありません。個人の学籍メール（m.isct.ac.jp）でログインしてください。");
       }
       return true;
     }
