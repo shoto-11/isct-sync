@@ -24,6 +24,7 @@ import {
   Search as SearchIcon, User, Menu, Home, PenLine,
   Mail, LogOut, LogIn, Settings, ChevronRight,
 } from "lucide-react";
+import GroupProfile from "./GroupProfile";
 
 const THEME = "#88203a";
 
@@ -43,7 +44,13 @@ function MainLayout({
       {/* ── Header ── */}
       <header style={s.header}>
         <div style={s.headerTop}>
-          <img src={logo} alt="SYNC" style={{ ...s.logoImg, cursor: "pointer" }} onClick={() => navigate("/")} />
+          {/* 💡 navigate("/") から window.location.href = "/" に差し替えることで、強制リロードを走らせます */}
+          <img 
+            src={logo} 
+            alt="SYNC" 
+            style={{ ...s.logoImg, cursor: "pointer" }} 
+            onClick={() => window.location.href = "/"} 
+          />
           <div style={s.headerIcons}>
             <button style={s.iconBtn} onClick={() => navigate("/search")}>
               <SearchIcon size={20} /><span>さがす</span>
@@ -135,12 +142,10 @@ function MainLayout({
               <ChevronRight size={16} color="#B0BEC5" />
             </button>
           ))}
-          <div style={s.menuDivider} />
           <button style={s.menuItem} onClick={() => { setShowContact(true); setMenuOpen(false); }}>
             <span style={s.menuItemLeft}><Mail size={18} />&nbsp; お問い合わせ</span>
             <ChevronRight size={16} color="#B0BEC5" />
           </button>
-          <div style={s.menuDivider} />
           {user ? (
             <button style={{ ...s.menuItem, color: "#C62828" }} onClick={() => { signOut(auth); setMenuOpen(false); }}>
               <span style={{ ...s.menuItemLeft, color: "#C62828" }}><LogOut size={18} />&nbsp; ログアウト</span>
@@ -154,7 +159,6 @@ function MainLayout({
           )}
           {user && isAdmin && (
             <>
-              <div style={s.menuDivider} />
               <button style={s.menuItem} onClick={() => { navigate("/admin"); setMenuOpen(false); }}>
                 <span style={s.menuItemLeft}><Settings size={18} />&nbsp; 管理者パネル</span>
                 <ChevronRight size={16} color="#B0BEC5" />
@@ -231,7 +235,18 @@ function UserProfileWrapper() {
     />
   );
 }
-
+// ─── 👥 サークルプロフィールラッパー ─────────────────────────────────
+function GroupProfileWrapper() {
+  const { groupId } = useParams(); // URLからサークルID (:groupId) を引っこ抜く
+  const navigate = useNavigate();
+  return (
+    <GroupProfile
+      groupId={groupId}
+      onBack={() => navigate(-1)}
+      onEventSelect={(event) => navigate(`/events/${event.id}`)}
+    />
+  );
+}
 // ─── メイン App ───────────────────────────────────────────────────
 export default function App() {
   const navigate = useNavigate();
@@ -437,6 +452,10 @@ export default function App() {
         <MainLayout {...layoutProps}><UserProfileWrapper /></MainLayout>
       } />
 
+      <Route path="/groups/:groupId" element={
+        <MainLayout {...layoutProps}><GroupProfileWrapper /></MainLayout>
+      } />
+
       <Route path="/admin" element={<AdminPanel user={user} />} />
       <Route path="/admin/:tab" element={<AdminPanel user={user} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -463,7 +482,6 @@ const s = {
   menuUserEmail: { color: "rgba(255,255,255,0.7)", fontSize: 11, marginTop: 2 },
   menuItems: { display: "flex", flexDirection: "column", padding: "8px 16px", flex: 1 },
   menuItem: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 16px", background: "white", border: "none", borderBottom: "1px solid #F0F0F0", fontSize: 14, fontWeight: 600, color: "#1A2E2B", cursor: "pointer", width: "100%", textAlign: "left", borderRadius: 8, marginBottom: 8 },
-  menuDivider: { height: 8, background: BG_COLOR },
   menuItemLeft: { display: "flex", alignItems: "center", gap: 8 },
   footer: { background: "#1A1A1A", padding: "32px 24px", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 },
   footerLogo: { height: 36, objectFit: "contain", opacity: 0.9 },
