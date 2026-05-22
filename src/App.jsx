@@ -262,7 +262,21 @@ function MainLayout({
       <div style={{ flex: 1 }}>{children}</div>
 
       {/* ── FAB ── */}
-      <button style={s.fab} onClick={() => {
+      <style>{`
+        .fab-btn {
+          transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease !important;
+        }
+        .fab-btn:hover {
+          background-color: #6d152c !important; /* 💡 ホバー時にテーマカラーより少しだけ深い（濃い）赤色に変化 */
+          box-shadow: 0 6px 20px rgba(136,32,58,0.55) !important; /* 💡 浮遊感を増すために影を少し強く */
+        }
+        .fab-btn:active {
+          background-color: #570f22 !important;
+          transform: scale(0.96) !important; /* 💡 クリックした瞬間にキュッと少し縮んで押し込まれた感を演出 */
+          box-shadow: 0 2px 8px rgba(136,32,58,0.4) !important;
+        }
+      `}</style>
+      <button className="fab-btn" style={s.fab} onClick={() => {
         if (!user) { navigate("/login"); return; }
         navigate("/post");
       }}>
@@ -294,6 +308,7 @@ function MainLayout({
       {menuOpen && <div style={s.overlay} onClick={() => setMenuOpen(false)} />}
 
       {/* ── Menu Drawer ── */}
+        {/* ── Menu Drawer ── */}
         <div style={{ ...s.menu, transform: menuOpen ? "translateX(0)" : "translateX(100%)" }}>
           
           {/* 💡 ユーザー情報エリアのレイアウト調整 */}
@@ -325,38 +340,73 @@ function MainLayout({
           </div>
 
         <div style={s.menuItems}>
+          {/* 💡 元のボタン構造を壊さず、ホバーだけを綺麗に枠内に吸い付かせるスタイルインジェクション */}
+          <style>{`
+            .menu-drawer-btn {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              width: 100% !important;
+              box-sizing: border-box !important;
+              padding: 16px 14px !important;       /* 内側の余白を均等化 */
+              background: #ffffff !important;      /* ベースは綺麗な白 */
+              border: none !important;
+              border-bottom: 1px solid #F0F0F0 !important; /* 区切り線 */
+              font-size: 14px !important;
+              font-weight: 600 !important;
+              color: #1A2E2B !important;
+              cursor: pointer !important;
+              text-align: left !important;
+              border-radius: 8px !important;       /* 白いボタンの角丸 */
+              margin-bottom: 8px !important;       /* ボタン同士の間隔 */
+              transition: background-color 0.15s ease, transform 0.1s ease !important;
+            }
+            
+            /* 💡 ホバーした際、ボタンの白い枠の内側だけがズレなく完璧にグレーに染まります */
+            .menu-drawer-btn:hover {
+              background-color: #F4F6F6 !important; /* 押しやすい上品な極薄グレー */
+            }
+            
+            /* 💡 クリックした瞬間 */
+            .menu-drawer-btn:active {
+              background-color: #EAECEB !important;
+              transform: scale(0.985) !important;   /* わずかに弾むようなクリックフィードバック */
+            }
+          `}</style>
+
           {[
             { icon: <Home size={18} />, label: "ホーム", to: "/" },
             { icon: <User size={18} />, label: "マイページ", to: "/mypage" },
             { icon: <PenLine size={18} />, label: "イベントを作る", to: "/post" },
           ].map(({ icon, label, to }) => (
-            <button key={to} style={s.menuItem} onClick={() => { navigate(to); setMenuOpen(false); }}>
+            <button key={to} className="menu-drawer-btn" onClick={() => { navigate(to); setMenuOpen(false); }}>
               <span style={s.menuItemLeft}>{icon}&nbsp; {label}</span>
               <ChevronRight size={16} color="#B0BEC5" />
             </button>
           ))}
-          <button style={s.menuItem} onClick={() => { setShowContact(true); setMenuOpen(false); }}>
+          
+          <button className="menu-drawer-btn" onClick={() => { setShowContact(true); setMenuOpen(false); }}>
             <span style={s.menuItemLeft}><Mail size={18} />&nbsp; お問い合わせ</span>
             <ChevronRight size={16} color="#B0BEC5" />
           </button>
+          
           {user ? (
-            <button style={{ ...s.menuItem, color: "#C62828" }} onClick={() => { signOut(auth); setMenuOpen(false); }}>
+            <button className="menu-drawer-btn" style={{ color: "#C62828" }} onClick={() => { signOut(auth); setMenuOpen(false); }}>
               <span style={{ ...s.menuItemLeft, color: "#C62828" }}><LogOut size={18} />&nbsp; ログアウト</span>
               <ChevronRight size={16} color="#B0BEC5" />
             </button>
           ) : (
-            <button style={s.menuItem} onClick={() => { navigate("/login"); setMenuOpen(false); }}>
+            <button className="menu-drawer-btn" onClick={() => { navigate("/login"); setMenuOpen(false); }}>
               <span style={s.menuItemLeft}><LogIn size={18} />&nbsp; ログイン</span>
               <ChevronRight size={16} color="#B0BEC5" />
             </button>
           )}
+          
           {user && isAdmin && (
-            <>
-              <button style={s.menuItem} onClick={() => { navigate("/admin"); setMenuOpen(false); }}>
-                <span style={s.menuItemLeft}><Settings size={18} />&nbsp; 管理者パネル</span>
-                <ChevronRight size={16} color="#B0BEC5" />
-              </button>
-            </>
+            <button className="menu-drawer-btn" onClick={() => { navigate("/admin"); setMenuOpen(false); }}>
+              <span style={s.menuItemLeft}><Settings size={18} />&nbsp; 管理者パネル</span>
+              <ChevronRight size={16} color="#B0BEC5" />
+            </button>
           )}
         </div>
       </div>
