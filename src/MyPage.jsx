@@ -7,6 +7,7 @@ import GroupManage from "./GroupManage";
 import { BG_COLOR } from "./constants";
 import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, Calendar, MapPin, Users, ChevronRight, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import "./animations.css";
 
 const THEME = "#88203a";
 
@@ -118,20 +119,30 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
       onEventSelect={onEventSelect}
     />
   );
-
-  const EventCard = ({ event }) => {
+const EventCard = ({ event }) => {
     const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
     const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
     const isGroupEvent = userGroups.some((g) => g.id === event.createdBy);
     return (
-      <div style={s.eventItem} onClick={() => onEventSelect(event)}>
+      <div 
+        /* 💡 animations.css の共通ホバー・クリッククラスを適用！ */
+        className="event-hover-card" 
+        style={s.eventItem} 
+        onClick={() => onEventSelect(event)}
+      >
         {event.imageUrl ? (
           <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
         ) : (
-          <div style={{ ...s.eventThumb, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>{emoji}</div>
+          /* 💡 画像がないプレースホルダー背景も連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
+          <div style={{ ...s.eventThumb, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, aspectRatio: "1/1" }}>
+            {emoji}
+          </div>
         )}
         <div style={s.eventInfo}>
-          <div style={s.eventTitle}>{event.title}</div>
+          {/* 💡 タイトルにホバー時下線連動クラスを追加 */}
+          <div className="hover-title-underline" style={s.eventTitle}>
+            {event.title}
+          </div>
           <div style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 6 }}>
             <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
           </div>
@@ -165,7 +176,11 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
 
           <div style={s.nameRow}>
             <h2 style={s.name}>{profile?.displayName}</h2>
-            <button style={s.editBtn} onClick={() => setEditMode(!editMode)}>
+            <button 
+              className="tag-tab-btn" 
+              style={{ ...s.editBtn, "--normal-bg": "none", "--normal-color": THEME, "--normal-border": `1px solid ${THEME}` }} 
+              onClick={() => setEditMode(!editMode)}
+            >
               {editMode ? "✕ 閉じる" : <><Pencil size={14} /> 編集</>}
             </button>
           </div>
@@ -181,9 +196,9 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
           </div>
           <button 
             type="button"
-            // 💡 自分のUIDを載せた固有のURLに完全遷移させる
+            className="tag-tab-btn"
             onClick={() => navigate(`/notification-settings/${uid}`)} 
-            style={{ background: "white", border: `1.5px solid ${THEME}`, borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: THEME, cursor: "pointer" }}
+            style={{ ...s.outlineBtn, padding: "6px 14px", fontSize: 12, "--normal-bg": "white", "--normal-color": THEME, "--normal-border": `1.5px solid ${THEME}` }}
           >
             一覧を見る ({followCount}人)
           </button>
@@ -292,10 +307,17 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
         )}
 
         {/* ── グループ一覧 ── */}
+        {/* ── グループ一覧 ── */}
         <div style={s.groupSection}>
           <div style={s.groupHeader}>
             <span style={s.groupHeaderTitle}><Users size={16} /> 所属グループ</span>
-            <button style={s.addGroupBtn} onClick={() => navigate("/group-setup")}>＋ グループを追加</button>
+            <button 
+              className="tag-tab-btn" 
+              style={{ ...s.addGroupBtn, "--normal-bg": "none", "--normal-color": THEME, "--normal-border": `1px solid ${THEME}` }} 
+              onClick={() => navigate("/group-setup")}
+            >
+              ＋ グループを追加
+            </button>
           </div>
           {userGroups.length === 0 ? (
             <div style={s.groupEmpty}>
@@ -305,8 +327,14 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
           ) : (
             <div style={s.groupList}>
               {userGroups.map((group) => (
-                <div key={group.id} style={s.groupItem} onClick={() => setSelectedGroup(group)}>
-                  {/* 💡 アイコン画像エリアの絵文字を Users アイコンに置換 */}
+                <div 
+                  key={group.id} 
+                  /* 💡 イベントカードと全く同じ共通ホバー・クリックアニメーションクラスを適用！ */
+                  className="event-hover-card" 
+                  style={s.groupItem} 
+                  onClick={() => setSelectedGroup(group)}
+                >
+                  {/* アイコン画像エリア */}
                   <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#F4F6F5", border: "1px solid #E0E8E7", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     {group.avatarUrl ? (
                       <img src={group.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="Avatar" />
@@ -316,11 +344,14 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
                   </div>
                   
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700 }}>{group.displayName}</div>
+                    {/* 💡 グループ名もホバー時に連動して下線が走るようにクラス名を追加 */}
+                    <div className="hover-title-underline" style={{ fontSize: 14, fontWeight: 700 }}>
+                      {group.displayName}
+                    </div>
                     <div style={{ fontSize: 11, color: "#5A7370" }}>{group.groupType} · {group.members?.length || 0}人</div>
                   </div>
                   
-                  {/* 💡 右端の「詳細 ›」の記号を ChevronRight アイコンに置換 */}
+                  {/* 右端の「詳細 ›」 */}
                   <div style={{ display: "flex", alignItems: "center", gap: 2, color: THEME, fontSize: 12, fontWeight: 700 }}>
                     <span>詳細</span>
                     <ChevronRight size={14} />

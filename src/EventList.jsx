@@ -7,23 +7,24 @@ import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { useEffect, useState, useRef } from "react";
 import { BG_COLOR } from "./constants";
 import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck, MapPin, Zap, TrendingUp } from "lucide-react";
+import "./animations.css";
+
+// 💡 【共通定義】アプリ内のすべてのイベント要素で使い回すYouTubeライクな高品質アニメーション
+// コンポーネントの外、または最上部に一度だけインジェクションします
+
 
 function EventCard({ event, onSelect }) {
-  const [hovered, setHovered] = useState(false);
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
   return (
     <div
+      className="event-hover-card" /* 💡 共通アニメーションクラスを適用 */
       style={{
         ...s.card,
-        background: hovered ? "#F8FAFA" : "white",
-        transform: hovered ? "translateY(-2px)" : "none",
-        boxShadow: hovered ? "0 6px 20px rgba(0,0,0,0.13)" : "0 2px 10px rgba(0,0,0,0.08)",
-        transition: "all 0.18s",
+        background: "white",
+        boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
       }}
       onClick={() => onSelect(event)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
       {event.imageUrl ? (
         <img src={event.imageUrl} alt={event.title} style={s.cardImg} />
@@ -33,11 +34,8 @@ function EventCard({ event, onSelect }) {
         </div>
       )}
       <div style={s.cardBody}>
-        <div style={{
-          ...s.cardTitle,
-          textDecoration: hovered ? "underline" : "none",
-          textDecorationColor: THEME,
-        }}>
+        {/* className="hover-title-underline" を付与し、カードホバー時に連動して下線が走るように変更 */}
+        <div className="hover-title-underline" style={s.cardTitle}>
           {event.title}
         </div>
         <div style={s.cardDate}>{event.date}{event.startTime ? ` ${event.startTime}` : ""}</div>
@@ -57,13 +55,16 @@ function EventCard({ event, onSelect }) {
     </div>
   );
 }
-
 function RankItem({ event, rank, count, label, onSelect }) {
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
   const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
   return (
-    <div style={s.rankItem} onClick={() => onSelect(event)}>
+    <div 
+      className="event-hover-card" /* 💡 週間ランキングにも共通アニメーションを強制適用！ */
+      style={s.rankItem} 
+      onClick={() => onSelect(event)}
+    >
       <div style={{ ...s.rankNum, color: rankColors[rank] }}>{rank+1}</div>
       {event.imageUrl ? (
         <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
@@ -73,16 +74,18 @@ function RankItem({ event, rank, count, label, onSelect }) {
         </div>
       )}
       <div style={{ flex:1 }}>
-        <div style={s.rankTitle}>{event.title}</div>
+        {/* 通常カードと同じように、ホバー時に綺麗に下線が連動するクラス名を追加 */}
+        <div className="hover-title-underline" style={s.rankTitle}>{event.title}</div>
         <div style={s.rankMeta}>
-        <span style={{ display:"flex", alignItems:"center", gap:4 }}><Calendar size={11} color="#5A7370" /> {event.date}</span>
-        <span style={{ display:"flex", alignItems:"center", gap:4 }}><MapPin size={11} color="#5A7370" /> {event.location}</span>
+          <span style={{ display:"flex", alignItems:"center", gap:4 }}><Calendar size={11} color="#5A7370" /> {event.date}</span>
+          <span style={{ display:"flex", alignItems:"center", gap:4 }}><MapPin size={11} color="#5A7370" /> {event.location}</span>
         </div>
       </div>
       <div style={s.rankParticipants}>{count} {label}</div>
     </div>
   );
 }
+
 function Section({ title, badge, events, onSelect, icon, maxItems = 20 }) {
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
@@ -663,6 +666,8 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
             ].map(t => (
             <button
                 key={t.id}
+                /* 💡 共通化クラス「tag-tab-btn」を追加！さらに選択中なら「tag-active-tab」も追加 */
+                className={`tag-tab-btn ${rankTab === t.id ? "tag-active-tab" : ""}`}
                 style={{ ...s.rankTab, ...(rankTab === t.id ? s.rankTabActive : {}), display:"flex", alignItems:"center", gap:4 }}
                 onClick={() => setRankTab(t.id)}
             >
@@ -744,7 +749,7 @@ const s = {
   rankTab: { padding:"6px 14px", borderRadius:999, border:`1.5px solid #D0DDD9`, background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
   rankTabActive: { background:THEME, color:"white", border:`1.5px solid ${THEME}` },
   rankingList: { padding:"0 14px 16px", display:"flex", flexDirection:"column", gap:8, width:"100%", boxSizing:"border-box" },
-  rankItem: { background:"white", borderRadius:10, padding:"12px 14px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 1px 5px rgba(0,0,0,0.06)", cursor:"pointer", boxSizing:"border-box", overflow:"hidden", width:"100%" },
+  rankItem: { background:"white", borderRadius:10, padding:"12px 14px", display:"flex", alignItems:"center", gap:12, boxShadow:"0 2px 10px rgba(0,0,0,0.08)", cursor:"pointer", boxSizing:"border-box", overflow:"hidden", width:"100%" },
   rankNum: { fontFamily:"monospace", fontSize:18, fontWeight:700, width:28, textAlign:"center", flexShrink:0 },
   rankImg: { width:92, height:52, borderRadius:8, objectFit:"cover", flexShrink:0 },
   rankThumb: { width:92, height:52, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 },

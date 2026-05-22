@@ -132,7 +132,12 @@ export default function Search() {
                   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
                   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
                   return (
-                    <div key={event.id} style={s.resultItem} onClick={() => navigate(`/events/${event.id}`)}>
+                    <div 
+                      key={event.id} 
+                      className="event-hover-card" /* 💡 animations.css の共通ホバークラスを適用 */
+                      style={s.resultItem} 
+                      onClick={() => navigate(`/events/${event.id}`)}
+                    >
                       {event.imageUrl ? (
                         <img src={event.imageUrl} alt={event.title} style={s.resultThumb} />
                       ) : (
@@ -141,9 +146,12 @@ export default function Search() {
                         </div>
                       )}
                       <div style={s.resultInfo}>
-                        <div style={s.resultTitle}>{event.title}</div>
+                        {/* 💡 ホバー時に下線が連動して引かれるクラス名を追加 */}
+                        <div className="hover-title-underline" style={s.resultTitle}>
+                          {event.title}
+                        </div>
                         <div style={{ ...s.resultMeta, display:"flex", alignItems:"center", gap:6 }}>
-                        <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
+                          <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
                         </div>
                         <div style={s.resultTags}>
                           {event.tags?.genre && <span style={{ ...s.resultTag, background:cs.bg, color:cs.color }}>{event.tags.genre}</span>}

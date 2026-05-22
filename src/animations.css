@@ -1,0 +1,49 @@
+.event-hover-card {
+      transition: background-color 0.3s ease, transform 0.15s ease !important;
+      cursor: pointer;
+    }
+    
+    /* 💡 カード自体のホバー：背景を薄グレーにし、タイトルに下線を入れる */
+    .event-hover-card:hover {
+      background-color: rgb(227, 227, 227) !important;
+    }
+    .event-hover-card:hover .hover-title-underline {
+      text-decoration: underline !important;
+      text-decoration-color: #88203a !important;
+    }
+
+    /* 💡 【新規追加】カードがホバーされたとき、中の画像とプレースホルダー画像も連動して少し暗くする */
+    .event-hover-card:hover img,
+    .event-hover-card:hover div[style*="aspectRatio"] {
+      filter: brightness(0.87) !important; /* 明るさを少し落としてグレー感を連動 */
+      transition: filter 0.3s ease !important;
+    }
+    
+    /* 通常時の画像のトランジションも滑らかに */
+    .event-hover-card img,
+    .event-hover-card div[style*="aspectRatio"] {
+      transition: filter 0.3s ease !important;
+    }
+
+    /* 💡 クリックした瞬間：さらに少しだけ暗く、キュッと沈む */
+    .event-hover-card:active {
+      background-color: rgba(0, 0, 0, 0.04) !important;
+      transform: scale(0.993) !important;
+    }
+    .event-hover-card:active img,
+    .event-hover-card:active div[style*="aspectRatio"] {
+      filter: brightness(0.83) !important;
+    }
+      /* ─── ② 【新規統合】ランキングタブボタン用のホバー＆クリック効果 ─── */
+    .tag-tab-btn {
+      transition: background-color 0.3s ease, color 0.3s ease, transform 0.15s ease !important;
+    }
+    /* 選択されていない（アクティブじゃない）ボタンをホバーした時だけ薄グレーにする */
+    .tag-tab-btn:not(.tag-active-tab):hover {
+      background-color: rgb(142, 64, 84) !important;
+      color: rgb(255, 255, 255) !important;
+    }
+    /* ボタンを押し込んだ瞬間、キュッと小さく沈むリッチな手応え */
+    .tag-tab-btn:active {
+      transform: scale(0.95) !important;
+    }

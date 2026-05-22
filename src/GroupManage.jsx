@@ -16,6 +16,7 @@ import { THEME, GENRE_STYLES, GENRE_EMOJI, BG_COLOR } from "./constants"; // �
 import { User, Camera, LogOut, UserMinus, Award, Users, Edit2, X, Crown, Info, Calendar, MapPin, Mail } from "lucide-react";
 import { FaXTwitter, FaInstagram } from "react-icons/fa6"; // X(Twitter) と Instagram
 import { FaGlobe } from "react-icons/fa"; // 地球儀（ホームページ用）
+import "./animations.css";
 
 export default function GroupManage({ group, currentUserId, onBack, onChanged, onEventSelect }) {
   const [members, setMembers] = useState([]);
@@ -514,8 +515,7 @@ const handleSave = async () => {
                 </div>
               );
             }
-
-            return (
+return (
               <div style={s.eventListGrid}>
                 {filteredEvents.map(event => {
                   const style = GENRE_STYLES[event.tags?.genre] || { bg: "#F5F5F5", color: "#5A7370" };
@@ -523,18 +523,24 @@ const handleSave = async () => {
                   return (
                     <div 
                       key={event.id} 
+                      /* 💡 animations.css の共通ホバー・クリックアニメーションクラスを適用！ */
+                      className="event-hover-card"
                       style={s.eventCardItem} 
                       onClick={() => onEventSelect && onEventSelect(event)}
                     >
                       {event.imageUrl ? (
                         <img src={event.imageUrl} alt="" style={s.eventThumb} />
                       ) : (
-                        <div style={{ ...s.eventThumb, background: style.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>
+                        /* 💡 画像がない場合の枠。ホバー時に連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
+                        <div style={{ ...s.eventThumb, background: style.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, aspectRatio: "1/1" }}>
                           {emoji}
                         </div>
                       )}
                       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-                        <div style={s.eventCardTitle}>{event.title}</div>
+                        {/* 💡 イベントタイトルにホバー時下線連動クラスを追加 */}
+                        <div className="hover-title-underline" style={s.eventCardTitle}>
+                          {event.title}
+                        </div>
                         <div style={s.eventMetaRow}><Calendar size={11} /> <span>{event.date}</span></div>
                         <div style={s.eventMetaRow}><MapPin size={11} /> <span>{event.location}</span></div>
                         {event.tags?.genre && (

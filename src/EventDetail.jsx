@@ -4,6 +4,8 @@ import { db, storage, auth } from "./firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { MapPin, Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon } from "lucide-react";
+import "./animations.css";
+
 
 export default function EventDetail({ event: initialEvent, onBack }) {
   const [event, setEvent] = useState(initialEvent);
@@ -601,12 +603,23 @@ export default function EventDetail({ event: initialEvent, onBack }) {
             {event.applyLabel || "参加を申し込む"} →
           </a>
         )}
-        
         {organizer && (
           <div style={s.section}>
             <h2 style={s.sectionTitle}>募集者</h2>
             <div
-              style={{ display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}
+              /* 💡 animations.css の共通ホバー・クリックアニメーションクラスを適用！ */
+              className="event-hover-card"
+              /* 💡 マイページの一覧に合わせた、綺麗で統一感のあるパディング・角丸・背景に微調整 */
+              style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: 12, 
+                cursor: "pointer",
+                padding: "10px 12px",
+                borderRadius: 10,
+                background: "#FAFAFA",
+                border: "1px solid #F0F0F0"
+              }}
               onClick={() => {
                 // 💡 organizer.type または event.organizerType に基づいてルーティングを完全確定させます
                 const type = event.organizerType || organizer?.type || "personal";
@@ -624,17 +637,21 @@ export default function EventDetail({ event: initialEvent, onBack }) {
                     window.location.href = `/users/${personalUid}`;
                     }
                 }
-                }}
+              }}
             >
               {organizer.avatarUrl ? (
-                <img src={organizer.avatarUrl} alt="avatar" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover" }} />
+                <img src={organizer.avatarUrl} alt="avatar" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
               ) : (
-                <div style={{ width:44, height:44, borderRadius:"50%", background:"#F4F6F5", border:"1px solid #E0E8E7", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                /* 💡 画像がない場合の枠。ホバー時に連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
+                <div style={{ width:44, height:44, borderRadius:"50%", background:"#F4F6F5", border:"1px solid #E0E8E7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, aspectRatio:"1/1" }}>
                   {organizer.type === "group" ? <Users size={20} color="#9AADA8" /> : <User size={18} color={THEME} />}
                 </div>
               )}
-              <div>
-                <div style={{ fontSize:15, fontWeight:700, color:"#111" }}>{organizer.displayName}</div>
+              <div style={{ flex: 1 }}>
+                {/* 💡 募集者名にホバー時下線連動クラスを追加 */}
+                <div className="hover-title-underline" style={{ fontSize:15, fontWeight:700, color:"#111" }}>
+                  {organizer.displayName}
+                </div>
                 <div style={{ fontSize:12, color:"#5A7370", marginTop:3 }}>
                   {organizer.type === "group" ? (
                     <span style={s.organizerBadge}>{organizer.groupType || "サークル"}</span>
@@ -643,7 +660,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
                   )}
                 </div>
               </div>
-              <ChevronRight size={18} color="#B0BEC5" style={{ marginLeft:"auto" }} />
+              <ChevronRight size={18} color="#B0BEC5" />
             </div>
           </div>
         )}
