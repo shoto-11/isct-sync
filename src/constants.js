@@ -45,3 +45,18 @@ export const GAKUNEN = [
 export const GENDER = ["男", "女", "回答しない"];
 
 export const BG_COLOR = "#d6d6d6ff";
+
+export const COMMON_BACK_BTN_STYLE = {
+  background: "rgba(255,255,255,0.15)",
+  border: "none",
+  borderRadius: "50%",
+  width: "36px",
+  height: "36px",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "white",
+  cursor: "pointer",
+  marginRight: "12px",
+  transition: "background 0.2s", // ホバー時の微細なアニメーション用
+};

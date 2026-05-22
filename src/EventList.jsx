@@ -734,10 +734,10 @@ const s = {
   ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)`, width:"calc(100% - 28px)", boxSizing:"border-box" },
   ctaText: { color:"white", fontSize:15, fontWeight:700 },
   ctaSub: { color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:2 },
-  ctaArrow: { background:"#F5A623", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#111", fontSize:18, fontWeight:900 },
+  ctaArrow: { background:"#F5A623", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#111", fontSize:18, fontWeight:700 },
   surveyBanner: { margin:"0 14px 20px", background:"linear-gradient(120deg,#FFF8E7,#FFFDE7)", border:"1.5px solid #F0D98A", borderRadius:12, padding:"14px 16px", width:"calc(100% - 28px)", boxSizing:"border-box" },
   surveyLabel: { fontSize:10, fontWeight:700, color:"#C8A84B", letterSpacing:"0.1em", marginBottom:4 },
-  surveyTitle: { fontSize:14, fontWeight:900, lineHeight:1.4 },
+  surveyTitle: { fontSize:14, fontWeight:700, lineHeight:1.4 },
   surveyDeadline: { display:"inline-flex", alignItems:"center", gap:4, background:"#C8A84B", color:"#0D1B2A", fontFamily:"monospace", fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:999, marginTop:8 },
   rankingHeader: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 14px", width:"100%", boxSizing:"border-box" },
   rankTabs: { display:"flex", gap:8, padding:"0 14px 12px", width:"100%", boxSizing:"border-box", flexWrap:"wrap" },
@@ -751,7 +751,7 @@ const s = {
   rankTitle: { fontSize:13, fontWeight:700, marginBottom:3 },
   rankMeta: { fontSize:11, color:"#5A7370", display:"flex", gap:8, flexWrap:"wrap" },
   rankParticipants: { fontSize:11, fontWeight:700, color:THEME },
-  scrollArrow: { position:"absolute", top:"50%", transform:"translateY(-50%)", zIndex:10, background:"white", border:"none", borderRadius:"50%", width:36, height:36, fontSize:24, fontWeight:900, cursor:"pointer", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#88203a" },
+  scrollArrow: { position:"absolute", top:"50%", transform:"translateY(-50%)", zIndex:10, background:"white", border:"none", borderRadius:"50%", width:36, height:36, fontSize:24, fontWeight:700, cursor:"pointer", boxShadow:"0 2px 8px rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", color:"#88203a" },
   fade: { position:"absolute", top:0, bottom:16, width:60, zIndex:9, pointerEvents:"none" },
 };
 

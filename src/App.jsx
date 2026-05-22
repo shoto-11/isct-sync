@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { auth, db } from "./firebase";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
 
@@ -17,12 +17,13 @@ import Search from "./Search";
 import MyPage from "./MyPage";
 import Contact from "./Contact";
 import AdminPanel from "./AdminPanel";
+import NotificationSettings from "./NotificationSettings";
 
 import logo from "./assets/logo.png";
-import { BG_COLOR } from "./constants";
+import { BG_COLOR, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import {
   Search as SearchIcon, User, Menu, Home, PenLine,
-  Mail, LogOut, LogIn, Settings, ChevronRight,
+  Mail, LogOut, LogIn, Settings, ChevronRight,Bell,Megaphone, LockKeyhole
 } from "lucide-react";
 import GroupProfile from "./GroupProfile";
 
@@ -38,6 +39,68 @@ function MainLayout({
   noticeItems, noticeIndex, // ←これらは後ほどEventListへ移動させるためここでは使わなくなります
   navigate,
 }) {
+  const [notifications, setNotifications] = useState([]);
+  const [showNoticeDropdown, setShowNoticeDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const [lastChecked, setLastChecked] = useState(() => {
+    return localStorage.getItem(`notices_checked_${user?.uid}`) || "1970-01-01T00:00:00.000Z";
+  });
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const fetchNotifications = async () => {
+      try {
+        const userSnap = await getDoc(doc(db, "users", user.uid));
+        if (!userSnap.exists()) return;
+        const follows = userSnap.data().follows || [];
+        if (follows.length === 0) { setNotifications([]); return; }
+
+        const q = query(collection(db, "events"), where("createdBy", "in", follows.slice(0, 10)));
+        const querySnapshot = await getDocs(q);
+        const eventList = [];
+        const now = new Date();
+
+        querySnapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          let isExpired = false;
+          if (data.deadline) {
+            const deadlineStr = data.deadlineTime ? `${data.deadline}T${data.deadlineTime}` : `${data.deadline}T23:59`;
+            if (new Date(deadlineStr) < now) isExpired = true;
+          }
+          
+          // 💡 修正：Firestoreの作成日時(createdAt)をミリ秒（タイムスタンプ）に変換。無ければ開催日を基準に。
+          const eventTime = data.createdAt?.toMillis 
+            ? data.createdAt.toMillis() 
+            : (data.createdAt ? new Date(data.createdAt).getTime() : new Date(`${data.date}T00:00:00.000Z`).getTime());
+
+          if (!isExpired) {
+            // 💡 eventTime をデータに含めて登録します
+            eventList.push({ id: docSnap.id, eventTime, ...data });
+          }
+        });
+
+       eventList.sort((a, b) => b.eventTime - a.eventTime);
+        setNotifications(eventList);
+      } catch (error) {
+        console.error("通知のフェッチに失敗しました:", error);
+      }
+    };
+    fetchNotifications();
+  }, [user, showNoticeDropdown]);
+
+  // パネル外クリックで閉じる処理
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) setShowNoticeDropdown(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 💡 リストの中に、最後にベルを押した時間（lastChecked）よりも新しいイベントが1件でもある場合のみ赤丸を灯す
+  const hasUnread = notifications.some(ev => new Date(ev.eventTime) > new Date(lastChecked));
+  
   return (
     <div style={{ background: BG_COLOR, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
 
@@ -52,6 +115,111 @@ function MainLayout({
             onClick={() => window.location.href = "/"} 
           />
           <div style={s.headerIcons}>
+            
+            {/* 💡 ── 【通知マーク】さがすボタンの左隣へ移動 ── */}
+            {user && (
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }} ref={dropdownRef}>
+                <button
+                    onClick={() => {
+                      const nextState = !showNoticeDropdown;
+                      setShowNoticeDropdown(nextState);
+                      
+                      // 💡 通知を開いた（確認した）瞬間の現在時刻を保存して赤丸をリセット
+                      if (nextState && user?.uid) {
+                        const nowIso = new Date().toISOString();
+                        localStorage.setItem(`notices_checked_${user.uid}`, nowIso);
+                        setLastChecked(nowIso);
+                      }
+                    }}
+                    style={{
+                      display: "flex", flexDirection: "column", alignItems: "center", gap: 2, 
+                      color: "rgba(255,255,255,0.9)", fontSize: 10, background: "none", border: "none", cursor: "pointer",
+                      padding: "0 4px", position: "relative"
+                    }}
+                  >
+                  {/* アイコンサイズを他のメニュー（20）に合わせ、上下並びを統一 */}
+                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: 20 }}>
+                    <Bell size={20} style={{ opacity: showNoticeDropdown ? 1 : 0.85 }} />
+                    {/* 未読の赤丸バッジ */}
+                    {hasUnread && (
+                      <span style={{
+                        position: "absolute", top: -2, right: -2, width: 7, height: 7,
+                        background: "#E53935", borderRadius: "50%", border: `1px solid ${THEME}`
+                      }} />
+                    )}
+                  </div>
+                  <span>通知</span>
+                </button>
+
+                {/* YouTubeスタイルの通知ドロップダウンメニュー */}
+                {showNoticeDropdown && (
+                  <div style={{
+                    position: "absolute", top: 42, right: -40, width: 290, // 右側に綺麗に開くよう位置調整
+                    background: "white", borderRadius: 12, boxShadow: "0 4px 24px rgba(0,0,0,0.22)",
+                    zIndex: 1000, overflow: "hidden", border: "1px solid #E3ECEB"
+                  }}>
+                    <div style={{ padding: "12px 16px", borderBottom: "1px solid #E0E8E7", fontWeight: 900, fontSize: 13, color: "#111", background: "#FAFBFB" }}>
+                      新着通知イベント ({notifications.length}件)
+                    </div>
+                    <div style={{ maxHeight: 280, overflowY: "auto" }}>
+                      {notifications.length === 0 ? (
+                        <div style={{ padding: "24px 16px", fontSize: 12, color: "#7A9591", textAlign: "center" }}>
+                          通知設定中の新着募集はありません
+                        </div>
+                      ) : (
+                        notifications.map((ev) => {
+                          // 💡 定数からジャンルごとの背景色と絵文字を取得（画像がない場合のプレースホルダー用）
+                          const bg = GENRE_STYLES[ev.tags?.genre]?.bg || "#F5F5F5";
+                          const emoji = GENRE_EMOJI[ev.tags?.genre] || "📌";
+
+                          return (
+                            <div
+                              key={ev.id}
+                              onClick={() => {
+                                setShowNoticeDropdown(false);
+                                navigate(`/events/${ev.id}`);
+                              }}
+                              style={{
+                                padding: "10px 12px", borderBottom: "1px solid #F0F4F3", cursor: "pointer",
+                                display: "flex", alignItems: "center", gap: 10, background: "white", textAlign: "left", transition: "background 0.15s"
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = "#F4F7F6"}
+                              onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                            >
+                              {/* 💡 画像があれば画像を表示、なければ可愛いジャンル別絵文字を表示 */}
+                              {ev.imageUrl ? (
+                                <img src={ev.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
+                              ) : (
+                                <div style={{ width: 44, height: 44, borderRadius: 6, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>
+                                  {emoji}</div>
+                              )}
+
+                              {/* テキスト情報エリア */}
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                 {/* 💡 未確認（最後にベルを押した時間より新しい）のイベントにだけ「📢 新着投稿！」を表示 */}
+                                {new Date(ev.eventTime) > new Date(lastChecked) && (
+                                  <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, color: THEME, marginBottom: 2 }}>
+                                    <Megaphone size={11} />
+                                    <span>新着投稿！</span>
+                                  </div>
+                                )}
+                                <div style={{ fontSize: 13, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {ev.title}
+                                </div>
+                                <div style={{ fontSize: 11, color: "#5A7370", marginTop: 1 }}>
+                                  開催: {ev.date}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <button style={s.iconBtn} onClick={() => navigate("/search")}>
               <SearchIcon size={20} /><span>さがす</span>
             </button>
@@ -210,9 +378,11 @@ function EventPageWrapper({ user }) {
         : <div style={{ width: "100%", maxWidth: 720, aspectRatio: "16/9", background: "#F5F5F5", margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 80 }}>📌</div>
       }
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
-        <h1 style={{ fontSize: 24, fontWeight: 900, color: "#111" }}>{event.title}</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: "#111" }}>{event.title}</h1>
         <div style={{ background: "white", borderRadius: 12, padding: "32px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 16, textAlign: "center" }}>
-          <span style={{ fontSize: 40 }}>🔒</span>
+          <div style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <LockKeyhole size={52} color={THEME} strokeWidth={1.5} />
+          </div>
           <p style={{ fontSize: 15, color: "#5A7370", fontWeight: 600 }}>イベントの詳細を見るにはログインが必要です</p>
           <button style={s.primaryBtn} onClick={() => navigate("/login")}>ログイン</button>
         </div>
@@ -459,6 +629,11 @@ export default function App() {
       <Route path="/admin" element={<AdminPanel user={user} />} />
       <Route path="/admin/:tab" element={<AdminPanel user={user} />} />
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/notification-settings/:userId" element={
+        <MainLayout {...layoutProps}>
+          <NotificationSettings />
+        </MainLayout>
+      } />
     </Routes>
   );
 }
@@ -469,7 +644,7 @@ const s = {
   logoImg: { height: 40, objectFit: "contain" },
   headerIcons: { display: "flex", gap: 24, alignItems: "center" },
   iconBtn: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, color: "rgba(255,255,255,0.9)", fontSize: 10, background: "none", border: "none", cursor: "pointer" },
-  fab: { position: "fixed", bottom: 24, right: 18, background: THEME, color: "white", border: "none", borderRadius: 999, padding: "12px 20px", fontSize: 14, fontWeight: 900, cursor: "pointer", boxShadow: `0 4px 18px rgba(136,32,58,0.45)`, zIndex: 99 },
+  fab: { position: "fixed", bottom: 24, right: 18, background: THEME, color: "white", border: "none", borderRadius: 999, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 18px rgba(136,32,58,0.45)`, zIndex: 99 },
   loginPrompt: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", gap: 16 },
   loginPromptText: { fontSize: 15, color: "#5A7370", fontWeight: 600 },
   primaryBtn: { padding: "12px 32px", background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" },

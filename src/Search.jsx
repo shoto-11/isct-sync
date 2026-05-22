@@ -166,7 +166,7 @@ export default function Search() {
 const s = {
   container: { background:BG_COLOR, minHeight:"100vh" },
   inner: { maxWidth:800, margin:"0 auto", padding:"24px 16px" },
-  heading: { fontSize:22, fontWeight:900, color:"#111", marginBottom:20 },
+  heading: { fontSize:22, fontWeight:700, color:"#111", marginBottom:20 },
   searchBar: { display:"flex", gap:8, marginBottom:24 },
   searchInput: { flex:1, padding:"12px 16px", border:"2px solid #88203a", borderRadius:8, fontSize:15, outline:"none", fontFamily:"inherit" },
   searchBtn: { background:"#88203a", border:"none", borderRadius:8, padding:"0 16px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" },

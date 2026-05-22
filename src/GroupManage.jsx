@@ -324,7 +324,7 @@ const handleSave = async () => {
                 <div style={{ marginBottom: 4 }}>
                   <span style={s.viewBadge}>{group.groupType || "サークル"}</span>
                 </div>
-                <h2 style={{ fontSize: 19, fontWeight: 900, color: "#111", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{group.displayName}</h2>
+                <h2 style={{ fontSize: 19, fontWeight: 700, color: "#111", margin: "0 0 4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{group.displayName}</h2>
                 
                 {/* 💡 【ここに綺麗に収まりました！】登録されているSNSのみ、ブランドカラーのホバーボタンを表示 */}
                 <div style={{ display: "flex", gap: 10, marginTop: 8, marginBottom: 8 }}>
@@ -578,7 +578,7 @@ const s = {
   container: { background: BG_COLOR, minHeight: "100vh" },
   header: { background: THEME, padding: "14px 20px", display: "flex", alignItems: "center", justifyItems: "center" },
   backBtn: { background: "none", border: "none", color: "white", fontSize: 13, fontWeight: 700, cursor: "pointer" },
-  headerTitle: { flex: 1, color: "white", fontSize: 17, fontWeight: 900, margin: 0, textAlign: "center" },
+  headerTitle: { flex: 1, color: "white", fontSize: 17, fontWeight: 700, margin: 0, textAlign: "center" },
   body: { maxWidth: 720, margin: "0 auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 16 },
   
   infoCardRelative: { background: "white", borderRadius: 12, padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", position: "relative" },

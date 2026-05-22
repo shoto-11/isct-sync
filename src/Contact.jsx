@@ -93,7 +93,7 @@ const s = {
   container: { background:BG_COLOR, minHeight:"100vh" },
   header: { background:THEME, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 },
   backBtn: { background:"none", border:"none", color:"white", fontSize:14, fontWeight:700, cursor:"pointer" },
-  title: { color:"white", fontSize:18, fontWeight:900, margin:0 },
+  title: { color:"white", fontSize:18, fontWeight:700, margin:0 },
   body: { maxWidth:720, margin:"0 auto", padding:"24px 20px", display:"flex", flexDirection:"column", gap:20 },
   desc: { fontSize:14, color:"#5A7370", lineHeight:1.7, background:"white", padding:"16px", borderRadius:12, boxShadow:"0 2px 8px rgba(0,0,0,0.06)" },
   form: { background:"white", borderRadius:12, padding:"24px 20px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", gap:16 },
@@ -104,6 +104,6 @@ const s = {
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
   submitBtn: { padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
   doneBox: { background:"white", borderRadius:12, padding:"40px 24px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", gap:16, textAlign:"center" },
-  doneTitle: { fontSize:20, fontWeight:900, color:"#111" },
+  doneTitle: { fontSize:20, fontWeight:700, color:"#111" },
   doneText: { fontSize:14, color:"#5A7370", lineHeight:1.7 },
 };

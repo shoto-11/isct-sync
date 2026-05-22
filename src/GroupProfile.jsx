@@ -6,10 +6,10 @@
  */
 
 import { useState, useEffect } from "react";
-import { db } from "./firebase";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { db, auth } from "./firebase";
+import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore"; // 💡 メソッドを追加
 import { GENRE_STYLES, GENRE_EMOJI, THEME, BG_COLOR } from "./constants";
-import { Users, Calendar, MapPin, ChevronLeft, Info } from "lucide-react";
+import { Users, Calendar, MapPin, ChevronLeft, Info, Bell, BellOff } from "lucide-react"; // 💡 Bell, BellOff を追加
 import { FaXTwitter, FaInstagram } from "react-icons/fa6";
 import { FaGlobe } from "react-icons/fa";
 
@@ -17,6 +17,8 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
   const [group, setGroup] = useState(null);
   const [groupEvents, setGroupEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isNotifying, setIsNotifying] = useState(false);
+  const currentUid = auth.currentUser?.uid;
 
   useEffect(() => {
     const fetchGroupData = async () => {
@@ -27,6 +29,16 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
         const groupSnap = await getDoc(doc(db, "groups", groupId));
         if (groupSnap.exists()) {
           setGroup(groupSnap.data());
+        }
+
+        // 💡 ログイン中なら、自分がこのグループを通知設定しているかチェック
+        if (currentUid) {
+          const userSnap = await getDoc(doc(db, "users", currentUid));
+          if (userSnap.exists()) {
+            const userData = userSnap.data();
+            const follows = userData.follows || [];
+            setIsNotifying(follows.includes(groupId));
+          }
         }
 
         // 2. このグループが「主催者」となっているイベントを検索
@@ -165,6 +177,48 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
             </div>
           </div>
 
+          {/* 💡 🔔 通知オン/オフの切り替え処理を追加 */}
+          {auth.currentUser && (
+            <button
+              onClick={async () => {
+                if (!currentUid) return;
+                const myRef = doc(db, "users", currentUid);
+                const groupRef = doc(db, "groups", groupId);
+                try {
+                  if (isNotifying) {
+                    await updateDoc(myRef, { follows: arrayRemove(groupId) });
+                    await updateDoc(groupRef, { followers: arrayRemove(currentUid) });
+                    setIsNotifying(false);
+                  } else {
+                    await updateDoc(myRef, { follows: arrayUnion(groupId) });
+                    await updateDoc(groupRef, { followers: arrayUnion(currentUid) });
+                    setIsNotifying(true);
+                  }
+                } catch (err) {
+                  console.error("通知設定の変更に失敗しました", err);
+                }
+              }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                padding: "10px 0", width: "100%", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                cursor: "pointer", transition: "all 0.2s", marginBottom: 16,
+                background: isNotifying ? "#E0F2F1" : THEME,
+                color: isNotifying ? "#004D40" : "white",
+                border: isNotifying ? "1px solid #B2DFDB" : "none"
+              }}
+            >
+              {isNotifying ? (
+                <>
+                  <BellOff size={15} /> このサークルの新着通知をオフにする
+                </>
+              ) : (
+                <>
+                  <Bell size={15} /> このサークルの新着通知を受け取る
+                </>
+              )}
+            </button>
+          )}
+
           {/* 活動説明文 */}
           <div style={s.descriptionSection}>
             <div style={s.sectionHeader}>
@@ -238,7 +292,7 @@ const s = {
   titleInfo: { flex: 1 },
   badgeRow: { marginBottom: 4 },
   groupTypeBadge: { background: THEME, color: "white", fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 4 },
-  groupName: { fontSize: 19, fontWeight: 900, color: "#111", margin: "0 0 4px" },
+  groupName: { fontSize: 19, fontWeight: 700, color: "#111", margin: "0 0 4px" },
   emailRow: { fontSize: 12, color: "#7A9591", display: "flex", alignItems: "center", gap: 4 },
 
   descriptionSection: { background: "#F8FAF9", borderRadius: 12, padding: "14px" },
@@ -246,7 +300,7 @@ const s = {
   descriptionBody: { fontSize: 13, color: "#334E4B", lineHeight: 1.6, whiteSpace: "pre-wrap" },
 
   eventSectionHeader: { display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "0 4px" },
-  sectionTitle: { fontSize: 16, fontWeight: 900, color: "#111", margin: 0 },
+  sectionTitle: { fontSize: 16, fontWeight: 700, color: "#111", margin: 0 },
   countBadge: { background: "#F9EAED", color: THEME, fontSize: 11, fontWeight: 800, padding: "2px 8px", borderRadius: 999 },
 
   emptyCard: { background: "white", borderRadius: 12, padding: "32px", textAlign: "center", color: "#9AADA8", fontSize: 13, border: "1.5px dashed #D0DDD9" },

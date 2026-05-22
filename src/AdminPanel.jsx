@@ -465,7 +465,7 @@ export default function AdminPanel({ user }) {
     <div style={{ background: "#F4F6F5", minHeight: "100vh" }}>
       {/* ヘッダー */}
       <div style={{ background: THEME, padding: "16px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h1 style={{ color: "white", fontSize: 18, fontWeight: 900, display: "flex", alignItems: "center", gap: 8 }}>
+        <h1 style={{ color: "white", fontSize: 18, fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
           <Settings size={20} /> 管理者パネル
         </h1>
         <button style={{ background: "none", border: "1px solid white", color: "white", borderRadius: 8, padding: "6px 14px", cursor: "pointer", fontSize: 13 }} onClick={() => navigate("/")}>← サイトに戻る</button>
@@ -900,7 +900,7 @@ export default function AdminPanel({ user }) {
         {/* ── 💡 【新規追加】イベント代打投稿（PostEventと同一のフォーム配置） ── */}
         {activeTab === "proxy_post" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16, background: "white", padding: 20, borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-            <h2 style={{ fontSize: 16, fontWeight: 900, margin: 0 }}>イベント代打投稿 (管理者専用)</h2>
+            <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>イベント代打投稿 (管理者専用)</h2>
             <p style={{ fontSize: 12, color: "#5A7370", margin: 0 }}>学内の特定のユーザーやサークルに代わってイベントを新規作成・代理公開します。</p>
 
             {/* 1. 募集者選択（検索欄付きハイブリッドグリッド） */}

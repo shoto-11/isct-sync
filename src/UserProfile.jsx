@@ -3,9 +3,8 @@ import { db, auth } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { GENRE_STYLES, GENRE_EMOJI } from "./constants";
-import { BG_COLOR } from "./constants";
-import { User, Building2, Calendar, MapPin } from "lucide-react";
-
+import { BG_COLOR, COMMON_BACK_BTN_STYLE  } from "./constants";
+import { User, Building2, Calendar, MapPin, Bell, BellOff,ArrowLeft } from "lucide-react";
 export default function UserProfile({ userId, onBack, onEventSelect }) {
   const [profile, setProfile] = useState(null);
   const [myEvents, setMyEvents] = useState([]);
@@ -58,7 +57,28 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
   if (!profile) return <p style={{ padding:24 }}>ユーザーが見つかりません</p>;
     return (
     <div style={s.container}>
-        <button style={s.backBtn} onClick={onBack}>← 戻る</button>
+      {/* ── 💡 ここから新しいヘッダー ── */}
+      <div style={{
+        background: "#88203a", 
+        padding: "12px 16px", 
+        display: "flex", 
+        alignItems: "center", 
+        position: "sticky", 
+        top: 0, 
+        zIndex: 100, 
+        boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
+      }}>
+        <button 
+            onClick={onBack}
+            style={COMMON_BACK_BTN_STYLE} // 💡 これだけであの綺麗な丸ボタンになります！
+            >
+            <ArrowLeft size={18} />
+        </button>
+        {/* タイトル */}
+        <h1 style={{ color: "white", fontSize: 17, fontWeight: 900, margin: 0, flex: 1 }}>
+          プロフィール詳細
+        </h1>
+      </div>
         
         <div style={{ maxWidth:720, margin:"0 auto", padding:"0 16px" }}>
         {/* プロフィールヘッダー */}
@@ -83,28 +103,28 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
             </div>
 
             {!isOwn && auth.currentUser && (
-            <button
-                style={{ ...s.followBtn, ...(isFollowing ? s.followingBtn : {}) }}
-                onClick={handleFollow}
-            >
-                {isFollowing ? "フォロー中" : "フォロー"}
-            </button>
-            )}
+                <button
+                    style={{ 
+                    ...s.followBtn, 
+                    ...(isFollowing ? s.followingBtn : {}),
+                    display: "flex", 
+                    alignItems: "center", 
+                    gap: 6 
+                    }}
+                    onClick={handleFollow}
+                >
+                    {isFollowing ? (
+                    <>
+                        <BellOff size={14} /> 通知オフにする
+                    </>
+                    ) : (
+                    <>
+                        <Bell size={14} /> 通知を受け取る
+                    </>
+                    )}
+                </button>
+                )}
         </div>
-
-        {/* フォロー・フォロワー */}
-        <div style={s.followRow}>
-            <div style={s.followItem}>
-            <span style={s.followNum}>{followCount}</span>
-            <span style={s.followLabel}>フォロー</span>
-            </div>
-            <div style={s.followDivider} />
-            <div style={s.followItem}>
-            <span style={s.followNum}>{followerCount}</span>
-            <span style={s.followLabel}>フォロワー</span>
-            </div>
-        </div>
-
         {/* 募集中のイベント */}
         <div style={s.sectionHeading}>
         <Calendar size={18} color="#88203a" />
@@ -155,18 +175,18 @@ const s = {
   avatar: { width:80, height:80, borderRadius:"50%", objectFit:"cover", flexShrink:0 },
   avatarPlaceholder: { width:80, height:80, borderRadius:"50%", background:"#F9EAED", display:"flex", alignItems:"center", justifyContent:"center", fontSize:32, flexShrink:0 },
   profileInfo: { flex:1 },
-  name: { fontSize:20, fontWeight:900, color:"#111", margin:"0 0 4px" },
+  name: { fontSize:20, fontWeight:700, color:"#111", margin:"0 0 4px" },
   subInfo: { fontSize:13, color:"#5A7370", margin:"2px 0" },
   orgInfo: { fontSize:13, color:"#111", fontWeight:600, margin:"4px 0" },
   followBtn: { background:THEME, color:"white", border:"none", borderRadius:999, padding:"8px 20px", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0 },
   followingBtn: { background:"white", color:THEME, border:`1.5px solid ${THEME}` },
   followRow: { background:"white", display:"flex", justifyContent:"center", gap:48, padding:"16px", borderTop:"1px solid #F0F0F0", marginBottom:12 },
   followItem: { display:"flex", flexDirection:"column", alignItems:"center", gap:2 },
-  followNum: { fontSize:20, fontWeight:900, color:"#111" },
+  followNum: { fontSize:20, fontWeight:700, color:"#111" },
   followLabel: { fontSize:12, color:"#5A7370" },
   followDivider: { width:1, background:"#E0E8E7" },
   sectionHeading: { display:"flex", alignItems:"center", gap:8, padding:"16px 14px 10px", maxWidth:720, margin:"0 auto" },
-  sectionTitle: { fontSize:18, fontWeight:900 },
+  sectionTitle: { fontSize:18, fontWeight:700 },
   sectionBadge: { background:"#F9EAED", color:THEME, fontSize:11, fontWeight:700, padding:"2px 8px", borderRadius:999 },
   empty: { color:"#5A7370", fontSize:14, textAlign:"center", padding:"32px 0" },
   eventList: { padding:"0 14px", display:"flex", flexDirection:"column", gap:10, maxWidth:720, margin:"0 auto" },

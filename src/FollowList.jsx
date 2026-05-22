@@ -10,7 +10,7 @@ const s = {
   container: { background:BG_COLOR, minHeight:"100vh" },
   header: { background:THEME, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 },
   backBtn: { background:"none", border:"none", color:"white", fontSize:14, fontWeight:700, cursor:"pointer" },
-  title: { color:"white", fontSize:18, fontWeight:900, margin:0 },
+  title: { color:"white", fontSize:18, fontWeight:700, margin:0 },
   empty: { color:"#5A7370", fontSize:14, textAlign:"center", padding:"32px 0" },
   list: { padding:"12px 16px", display:"flex", flexDirection:"column", gap:8, maxWidth:720, margin:"0 auto" },
   item: { borderRadius:12, padding:"12px 16px", display:"flex", alignItems:"center", gap:12, cursor:"pointer" },
@@ -78,13 +78,15 @@ export default function FollowList({ userId, type, onBack }) {
     <div style={s.container}>
       <div style={s.header}>
         <button style={s.backBtn} onClick={onBack}>← 戻る</button>
-        <h1 style={s.title}>{type === "follows" ? "フォロー中" : "フォロワー"}</h1>
+        {/* 💡 より自然な通知管理用のタイトルに統一 */}
+        <h1 style={s.title}>{type === "follows" ? "通知オンにしているユーザー" : "あなたのお知らせ通知を受け取っているユーザー"}</h1>
       </div>
 
       {loading ? (
         <p style={s.empty}>読み込み中...</p>
       ) : users.length === 0 ? (
-        <p style={s.empty}>{type === "follows" ? "フォロー中のユーザーはいません" : "フォロワーはいません"}</p>
+        /* 💡 フォロー・フォロワーというSNS単語を完全に排除 */
+        <p style={s.empty}>{type === "follows" ? "通知をオンにしているユーザーはいません" : "あなたの通知を登録しているユーザーはいません"}</p>
       ) : (
         <div style={s.list}>
           {users.map(user => (
