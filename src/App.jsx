@@ -148,7 +148,6 @@ function MainLayout({
                       }} />
                     )}
                   </div>
-                  <span>通知</span>
                 </button>
 
                 {/* YouTubeスタイルの通知ドロップダウンメニュー */}
@@ -221,13 +220,13 @@ function MainLayout({
             )}
 
             <button style={s.iconBtn} onClick={() => navigate("/search")}>
-              <SearchIcon size={20} /><span>さがす</span>
+              <SearchIcon size={20} />
             </button>
             <button style={s.iconBtn} onClick={() => navigate("/mypage")}>
-              <User size={20} /><span>マイページ</span>
+              <User size={20} />
             </button>
             <button style={s.iconBtn} onClick={() => setMenuOpen(true)}>
-              <Menu size={20} /><span>メニュー</span>
+              <Menu size={20} />
             </button>
           </div>
         </div>
