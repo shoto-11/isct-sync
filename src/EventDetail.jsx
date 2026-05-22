@@ -149,6 +149,11 @@ export default function EventDetail({ event: initialEvent, onBack }) {
       alert("必須項目を全て入力してください");
       return;
     }
+    // 💡 【新規追加】申し込み締切日がイベント日時を超えていないかチェック
+    if (new Date(deadline) > new Date(date)) {
+      alert("申し込み締切日はイベント当日、またはそれより前の日付に設定してください。");
+      return;
+    }
 
     setSaving(true);
     try {

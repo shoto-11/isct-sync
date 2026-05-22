@@ -177,7 +177,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
         <div style={{ background: "white", padding: "14px 20px", borderRadius: 12, margin: "0 14px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 16 }}><Bell size={16} color={THEME} /></span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#1A2E2B" }}>新着通知設定中のユーザー</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#1A2E2B" }}>通知設定中のユーザー</span>
           </div>
           <button 
             type="button"
@@ -185,7 +185,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
             onClick={() => navigate(`/notification-settings/${uid}`)} 
             style={{ background: "white", border: `1.5px solid ${THEME}`, borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: THEME, cursor: "pointer" }}
           >
-            設定一覧を見る ({followCount}人)
+            一覧を見る ({followCount}人)
           </button>
         </div>
 

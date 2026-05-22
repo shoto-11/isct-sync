@@ -115,11 +115,11 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
                 >
                     {isFollowing ? (
                     <>
-                        <BellOff size={14} /> 通知オフにする
+                        <BellOff size={14} /> 
                     </>
                     ) : (
                     <>
-                        <Bell size={14} /> 通知を受け取る
+                        <Bell size={14} />
                     </>
                     )}
                 </button>

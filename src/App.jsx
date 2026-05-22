@@ -114,32 +114,49 @@ function MainLayout({
             style={{ ...s.logoImg, cursor: "pointer" }} 
             onClick={() => window.location.href = "/"} 
           />
-          <div style={s.headerIcons}>
-            
+          <div style={{ ...s.headerIcons }}>
+            <style>{`
+              .header-icon-btn {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                color: rgba(255, 255, 255, 0.9);
+                padding: 6px;             /* 元の程よいボタン内側の余白 */
+                border-radius: 50%;        /* ホバー時に綺麗な円形にする */
+                position: relative;
+                transition: background-color 0.25s ease, color 0.25s ease;
+              }
+              .header-icon-btn:hover {
+                background-color: rgba(255, 255, 255, 0.15);
+                color: #ffffff;
+              }
+              .header-icon-btn:active {
+                background-color: rgba(255, 255, 255, 0.25);
+              }
+            `}</style>
+
             {/* 💡 ── 【通知マーク】さがすボタンの左隣へ移動 ── */}
             {user && (
               <div style={{ position: "relative", display: "flex", alignItems: "center" }} ref={dropdownRef}>
                 <button
+                    className="header-icon-btn"
                     onClick={() => {
                       const nextState = !showNoticeDropdown;
                       setShowNoticeDropdown(nextState);
                       
-                      // 💡 通知を開いた（確認した）瞬間の現在時刻を保存して赤丸をリセット
                       if (nextState && user?.uid) {
                         const nowIso = new Date().toISOString();
                         localStorage.setItem(`notices_checked_${user.uid}`, nowIso);
                         setLastChecked(nowIso);
                       }
                     }}
-                    style={{
-                      display: "flex", flexDirection: "column", alignItems: "center", gap: 2, 
-                      color: "rgba(255,255,255,0.9)", fontSize: 10, background: "none", border: "none", cursor: "pointer",
-                      padding: "0 4px", position: "relative"
-                    }}
                   >
-                  {/* アイコンサイズを他のメニュー（20）に合わせ、上下並びを統一 */}
-                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", height: 20 }}>
-                    <Bell size={20} style={{ opacity: showNoticeDropdown ? 1 : 0.85 }} />
+                  <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <Bell size={22} style={{ opacity: showNoticeDropdown ? 1 : 0.85 }} />
                     {/* 未読の赤丸バッジ */}
                     {hasUnread && (
                       <span style={{
@@ -153,13 +170,9 @@ function MainLayout({
                 {/* YouTubeスタイルの通知ドロップダウンメニュー */}
                 {showNoticeDropdown && (
                   <div style={{
-                    // 💡 横幅が狭い場合は fixed にして画面全体を基準に位置を決めます
                     position: window.innerWidth < 500 ? "fixed" : "absolute",
-                    // 💡 スマホの時は上部ヘッダー（高さ60px）のすぐ下に配置されるよう微調整
                     top: window.innerWidth < 500 ? 56 : 46,
-                    // 💡 スマホの時は親要素の都合を無視して、画面の右端から12pxの位置に強制ロック！
                     right: window.innerWidth < 500 ? 12 : -10,
-                    // 💡 画面からはみ出さないように横幅を最大290pxに制限しつつ、狭い端末でも両端に12pxずつの余白を持たせます
                     width: window.innerWidth < 500 ? "calc(100vw - 24px)" : 290,
                     maxWidth: 290,
                     background: "white", 
@@ -179,7 +192,6 @@ function MainLayout({
                         </div>
                       ) : (
                         notifications.map((ev) => {
-                          // 💡 定数からジャンルごとの背景色と絵文字を取得（画像がない場合のプレースホルダー用）
                           const bg = GENRE_STYLES[ev.tags?.genre]?.bg || "#F5F5F5";
                           const emoji = GENRE_EMOJI[ev.tags?.genre] || "📌";
 
@@ -197,7 +209,6 @@ function MainLayout({
                               onMouseEnter={(e) => e.currentTarget.style.background = "#F4F7F6"}
                               onMouseLeave={(e) => e.currentTarget.style.background = "white"}
                             >
-                              {/* 💡 画像があれば画像を表示、なければ可愛いジャンル別絵文字を表示 */}
                               {ev.imageUrl ? (
                                 <img src={ev.imageUrl} alt="" style={{ width: 44, height: 44, borderRadius: 6, objectFit: "cover", flexShrink: 0 }} />
                               ) : (
@@ -205,9 +216,7 @@ function MainLayout({
                                   {emoji}</div>
                               )}
 
-                              {/* テキスト情報エリア */}
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                 {/* 💡 未確認（最後にベルを押した時間より新しい）のイベントにだけ「📢 新着投稿！」を表示 */}
                                 {new Date(ev.eventTime) > new Date(lastChecked) && (
                                   <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, fontWeight: 800, color: THEME, marginBottom: 2 }}>
                                     <Megaphone size={11} />
@@ -231,15 +240,20 @@ function MainLayout({
               </div>
             )}
 
-            <button style={s.iconBtn} onClick={() => navigate("/search")}>
-              <SearchIcon size={20} />
+            <button className="header-icon-btn" onClick={() => navigate("/search")}>
+              <SearchIcon size={22} />
             </button>
-            <button style={s.iconBtn} onClick={() => navigate("/mypage")}>
-              <User size={20} />
+
+            {/* 💡 【マイページボタン】 */}
+            <button className="header-icon-btn" onClick={() => navigate("/mypage")}>
+              <User size={22} />
             </button>
-            <button style={s.iconBtn} onClick={() => setMenuOpen(true)}>
-              <Menu size={20} />
+
+            {/* 💡 【メニューボタン】 */}
+            <button className="header-icon-btn" onClick={() => setMenuOpen(true)}>
+              <Menu size={22} />
             </button>
+            
           </div>
         </div>
       </header>
