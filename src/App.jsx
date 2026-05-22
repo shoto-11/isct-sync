@@ -153,9 +153,21 @@ function MainLayout({
                 {/* YouTubeスタイルの通知ドロップダウンメニュー */}
                 {showNoticeDropdown && (
                   <div style={{
-                    position: "absolute", top: 42, right: -40, width: 290, // 右側に綺麗に開くよう位置調整
-                    background: "white", borderRadius: 12, boxShadow: "0 4px 24px rgba(0,0,0,0.22)",
-                    zIndex: 1000, overflow: "hidden", border: "1px solid #E3ECEB"
+                    // 💡 横幅が狭い場合は fixed にして画面全体を基準に位置を決めます
+                    position: window.innerWidth < 500 ? "fixed" : "absolute",
+                    // 💡 スマホの時は上部ヘッダー（高さ60px）のすぐ下に配置されるよう微調整
+                    top: window.innerWidth < 500 ? 56 : 46,
+                    // 💡 スマホの時は親要素の都合を無視して、画面の右端から12pxの位置に強制ロック！
+                    right: window.innerWidth < 500 ? 12 : -10,
+                    // 💡 画面からはみ出さないように横幅を最大290pxに制限しつつ、狭い端末でも両端に12pxずつの余白を持たせます
+                    width: window.innerWidth < 500 ? "calc(100vw - 24px)" : 290,
+                    maxWidth: 290,
+                    background: "white", 
+                    borderRadius: 12, 
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.22)",
+                    zIndex: 1000, 
+                    overflow: "hidden", 
+                    border: "1px solid #E3ECEB"
                   }}>
                     <div style={{ padding: "12px 16px", borderBottom: "1px solid #E0E8E7", fontWeight: 900, fontSize: 13, color: "#111", background: "#FAFBFB" }}>
                       新着通知イベント ({notifications.length}件)
