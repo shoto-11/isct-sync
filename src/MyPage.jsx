@@ -3,28 +3,12 @@ import { db, auth, storage } from "./firebase";
 import { doc, getDoc, collection, query, where, getDocs, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { GENRE_STYLES, GENRE_EMOJI, GAKUIN, GAKUNEN, GENDER } from "./constants";
-import FollowList from "./FollowList";
 import GroupManage from "./GroupManage";
 import { BG_COLOR } from "./constants";
-import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, Calendar, MapPin, Users,ChevronRight } from "lucide-react";
+import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, Calendar, MapPin, Users, ChevronRight, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const THEME = "#88203a";
-
-function FollowButton({ count, label, onClick }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, opacity: hovered ? 0.7 : 1, transition: "opacity 0.18s", cursor: "pointer" }}
-      onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-    >
-      <span style={{ fontSize: 18, fontWeight: 900, color: "#111" }}>{count}</span>
-      <span style={{ fontSize: 11, color: "#5A7370" }}>{label}</span>
-    </div>
-  );
-}
 
 export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsChanged }) {
   const navigate = useNavigate();
@@ -44,7 +28,6 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
   const [joinedEvents, setJoinedEvents] = useState([]);
   const [followCount, setFollowCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
-  const [showFollowList, setShowFollowList] = useState(null);
   const [history, setHistory] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null); // GroupManage表示用
 
@@ -126,10 +109,6 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
 
   if (loading) return <p style={{ padding: 24, color: "#5A7370" }}>読み込み中...</p>;
 
-  if (showFollowList) return (
-    <FollowList userId={uid} type={showFollowList} onBack={() => setShowFollowList(null)} />
-  );
-
   if (selectedGroup) return (
     <GroupManage
       group={selectedGroup}
@@ -192,12 +171,22 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
           </div>
 
           <p style={s.email}>{auth.currentUser?.email}</p>
+        </div>
 
-          <div style={s.followRow}>
-            <FollowButton count={followCount} label="フォロー" onClick={() => setShowFollowList("follows")} />
-            <div style={s.followDivider} />
-            <FollowButton count={followerCount} label="フォロワー" onClick={() => setShowFollowList("followers")} />
+        {/* ── 🔔 【機能変更】フォロー・フォロワー数から新着通知設定の一覧管理へ ── */}
+        <div style={{ background: "white", padding: "14px 20px", borderRadius: 12, margin: "0 14px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16 }}><Bell size={16} color={THEME} /></span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#1A2E2B" }}>新着通知設定中のユーザー</span>
           </div>
+          <button 
+            type="button"
+            // 💡 自分のUIDを載せた固有のURLに完全遷移させる
+            onClick={() => navigate(`/notification-settings/${uid}`)} 
+            style={{ background: "white", border: `1.5px solid ${THEME}`, borderRadius: 8, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: THEME, cursor: "pointer" }}
+          >
+            設定一覧を見る ({followCount}人)
+          </button>
         </div>
 
         {/* ── プロフィール編集 ── */}
@@ -418,13 +407,11 @@ const s = {
   avatarPlaceholder: { width: 90, height: 90, borderRadius: "50%", background: BG_COLOR, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #E0E8E7" },
   avatarEditBtn: { position: "absolute", bottom: 0, right: 0, background: THEME, color: "white", border: "none", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
   nameRow: { display: "flex", alignItems: "center", gap: 8 },
-  name: { fontSize: 20, fontWeight: 900, color: "#111", margin: 0 },
+  name: { fontSize: 20, fontWeight: 700, color: "#111", margin: 0 },
   editBtn: { background: "none", border: `1px solid ${THEME}`, color: THEME, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 700, cursor: "pointer" },
   email: { fontSize: 12, color: "#5A7370", margin: 0 },
-  followRow: { display: "flex", gap: 24, alignItems: "center" },
-  followDivider: { width: 1, height: 30, background: "#E0E8E7" },
   editBox: { background: "white", borderRadius: 12, padding: "20px", margin: "0 14px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 16 },
-  editTitle: { fontSize: 16, fontWeight: 900, color: "#111", margin: 0 },
+  editTitle: { fontSize: 16, fontWeight: 700, color: "#111", margin: 0 },
   editSection: { display: "flex", flexDirection: "column", gap: 8 },
   editLabel: { fontSize: 12, fontWeight: 700, color: "#5A7370", letterSpacing: "0.05em" },
   editInput: { width: "100%", padding: "10px 12px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit" },

@@ -146,7 +146,7 @@ const s = {
   card: { background: "white", borderRadius: 16, padding: "32px 24px", width: "100%", maxWidth: 480, display: "flex", flexDirection: "column", gap: 0, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" },
   logo: { width: 160, objectFit: "contain", marginBottom: 16 },
   stepBadge: { background: "#F9EAED", color: THEME, fontWeight: 700, fontSize: 11, padding: "4px 12px", borderRadius: 999, width: "fit-content", marginBottom: 8, letterSpacing: "0.05em" },
-  title: { fontSize: 20, fontWeight: 900, color: "#111", marginBottom: 4 },
+  title: { fontSize: 20, fontWeight: 700, color: "#111", marginBottom: 4 },
   sub: { fontSize: 13, color: "#5A7370", marginBottom: 20 },
   section: { marginBottom: 20 },
   label: { display: "block", fontSize: 12, fontWeight: 700, color: "#5A7370", letterSpacing: "0.05em", marginBottom: 8 },
