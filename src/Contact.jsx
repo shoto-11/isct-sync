@@ -92,7 +92,7 @@ export default function Contact({ onBack }) {
 const THEME = "#88203a";
 const s = {
   container: { background:BG_COLOR, minHeight:"100vh" },
-  header: { background:THEME, padding:"16px 20px", display:"flex", alignItems:"center", gap:16 },
+  header: { background: "#737373ff", padding:"16px 20px", display:"flex", alignItems:"center", gap:16 },
   backBtn: { background:"none", border:"none", color:"white", fontSize:14, fontWeight:700, cursor:"pointer" },
   title: { color:"white", fontSize:18, fontWeight:700, margin:0 },
   body: { maxWidth:720, margin:"0 auto", padding:"24px 20px", display:"flex", flexDirection:"column", gap:20 },

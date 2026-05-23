@@ -293,7 +293,7 @@ function MainLayout({
           <span style={s.footerDivider}>|</span>
           <button style={s.footerLink} onClick={() => navigate("/mypage")}>マイページ</button>
           <span style={s.footerDivider}>|</span>
-          <button style={s.footerLink} onClick={() => setShowContact(true)}>お問い合わせ</button>
+          <button style={s.footerLink} onClick={() => navigate("/contact")}>お問い合わせ</button>
         </div>
         <p style={s.footerCopy}>© 2026 ISCT Sync. All rights reserved.</p>
       </footer>
@@ -386,7 +386,7 @@ function MainLayout({
             </button>
           ))}
           
-          <button className="menu-drawer-btn" onClick={() => { setShowContact(true); setMenuOpen(false); }}>
+          <button className="menu-drawer-btn" onClick={() => { navigate("/contact"); setMenuOpen(false); }}>
             <span style={s.menuItemLeft}><Mail size={18} />&nbsp; お問い合わせ</span>
             <ChevronRight size={16} color="#B0BEC5" />
           </button>
@@ -720,6 +720,12 @@ export default function App() {
         </MainLayout>
       } />
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/contact" element={
+        <MainLayout {...layoutProps}>
+          <Contact onBack={() => navigate(-1)} />
+        </MainLayout>
+      } />
+
     </Routes>
   );
 }
