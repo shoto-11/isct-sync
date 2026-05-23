@@ -694,6 +694,7 @@ export default function App() {
           }
         </MainLayout>
       } />
+      
       <Route path="/users/:userId" element={
         <MainLayout {...layoutProps}><UserProfileWrapper /></MainLayout>
       } />

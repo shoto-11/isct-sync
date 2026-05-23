@@ -430,7 +430,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 }
 
 const s = {
-  container: { background:"white", borderRadius:16, padding:"24px 16px", margin:"0", maxWidth:720, boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", gap:0, overflow:"hidden", boxSizing:"border-box", width:"100%" },
+  container: { background:"white", borderRadius:16, padding:"24px 20px", margin:"16px auto", maxWidth:720, boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", gap:0, overflow:"hidden", boxSizing:"border-box", width:"100%" },
   heading: { fontSize:18, fontWeight:700, color:"#1A2E2B", marginBottom:20 },
   section: { marginBottom:18 },
   label: { display:"block", fontSize:12, fontWeight:700, color:"#5A7370", letterSpacing:"0.05em", marginBottom:6 },
