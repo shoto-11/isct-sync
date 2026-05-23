@@ -109,7 +109,7 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
                 <button
                     /* 💡 共通ホバー・クリックアニメーションクラスを適用！ */
                     /* 💡 フォロー中（isFollowing）なら クラスを付与してホバー色変化をスキップさせます */
-                    className={`tag-tab-btn ${isFollowing ? "" : "tag-active-tab"}`}
+                    className={`imp-tab-btn ${isFollowing ? "" : "imp-active-tab"}`}
                     style={{ 
                     display: "flex", 
                     alignItems: "center", 

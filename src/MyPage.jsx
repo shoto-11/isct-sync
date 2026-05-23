@@ -177,7 +177,7 @@ const EventCard = ({ event }) => {
           <div style={s.nameRow}>
             <h2 style={s.name}>{profile?.displayName}</h2>
             <button 
-              className="tag-tab-btn" 
+              className="imp-tab-btn" 
               style={{ ...s.editBtn, "--normal-bg": "none", "--normal-color": THEME, "--normal-border": `1px solid ${THEME}` }} 
               onClick={() => setEditMode(!editMode)}
             >
@@ -196,7 +196,7 @@ const EventCard = ({ event }) => {
           </div>
           <button 
             type="button"
-            className="tag-tab-btn"
+            className="imp-tab-btn"
             onClick={() => navigate(`/notification-settings/${uid}`)} 
             style={{ ...s.outlineBtn, padding: "6px 14px", fontSize: 12, "--normal-bg": "white", "--normal-color": THEME, "--normal-border": `1.5px solid ${THEME}` }}
           >
@@ -312,7 +312,7 @@ const EventCard = ({ event }) => {
           <div style={s.groupHeader}>
             <span style={s.groupHeaderTitle}><Users size={16} /> 所属グループ</span>
             <button 
-              className="tag-tab-btn" 
+              className="imp-tab-btn" 
               style={{ ...s.addGroupBtn, "--normal-bg": "none", "--normal-color": THEME, "--normal-border": `1px solid ${THEME}` }} 
               onClick={() => navigate("/group-setup")}
             >

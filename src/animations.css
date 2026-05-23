@@ -39,8 +39,8 @@
     /* 未選択ボタンの通常スタイルを明示（これがないとインラインと競合） */
 .tag-tab-btn:not(.tag-active-tab) {
   background-color: white !important;
-  color: #8e3e52 !important;
-  border: 1.5px solid #8e3e52 !important;
+  color: #5A7370 !important;
+  border: 1.5px solid #D0DDD9 !important;
 }
 
 /* ↓ 既存のホバールールはそのまま。border-color だけ追加 */
@@ -62,5 +62,36 @@
   border-color: #88203a !important;
 }
    .tag-tab-btn:active {
+      transform: scale(0.95) !important;
+    }
+
+
+
+    /* 未選択ボタンの通常スタイルを明示（これがないとインラインと競合） */
+.imp-tab-btn:not(.imp-active-tab) {
+  background-color: white !important;
+  color: #8e3e52 !important;
+  border: 1.5px solid #8e3e52 !important;
+}
+
+/* ↓ 既存のホバールールはそのまま。border-color だけ追加 */
+.imp-tab-btn:not(.imp-active-tab):hover {
+  background-color: rgb(142, 64, 84) !important;
+  color: rgb(255, 255, 255) !important;
+  border-color: rgb(142, 64, 84) !important; /* ← これだけ追加 */
+}
+
+/* ↓ 以下2ルールを新規追加 */
+.imp-tab-btn.imp-active-tab {
+  background-color: #88203a !important;
+  color: white !important;
+  border: 1.5px solid #88203a !important;
+}
+.imp-tab-btn.imp-active-tab:hover {
+  background-color: #88203a !important; /* ホバーしても変化させない */
+  color: white !important;
+  border-color: #88203a !important;
+}
+   .imp-tab-btn:active {
       transform: scale(0.95) !important;
     }
