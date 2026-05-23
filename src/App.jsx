@@ -156,7 +156,7 @@ function MainLayout({
                     }}
                   >
                   <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <Bell size={22} style={{ opacity: showNoticeDropdown ? 1 : 0.85 }} />
+                    <Bell size={22} />
                     {/* 未読の赤丸バッジ */}
                     {hasUnread && (
                       <span style={{
@@ -717,7 +717,7 @@ const s = {
   header: { background: THEME, position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 12px rgba(0,0,0,0.3)" },
   headerTop: { display: "flex", alignItems: "center", justifyContent: "space-between", height: 60, padding: "0 40px", maxWidth: 1200, margin: "0 auto", width: "100%" },
   logoImg: { height: 40, objectFit: "contain" },
-  headerIcons: { display: "flex", gap: 24, alignItems: "center" },
+  headerIcons: { display: "flex", gap: 12, alignItems: "center" },
   iconBtn: { display: "flex", flexDirection: "column", alignItems: "center", gap: 2, color: "rgba(255,255,255,0.9)", fontSize: 10, background: "none", border: "none", cursor: "pointer" },
   fab: { position: "fixed", bottom: 24, right: 18, background: THEME, color: "white", border: "none", borderRadius: 999, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 18px rgba(136,32,58,0.45)`, zIndex: 99 },
   loginPrompt: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", gap: 16 },

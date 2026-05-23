@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { MapPin, Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon } from "lucide-react";
+import { MapPin,  Pencil,Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon } from "lucide-react";
 import "./animations.css";
 
 
@@ -524,7 +524,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
       <div style={s.topBar}>
         <button style={s.backBtn} onClick={onBack}>← 戻る</button>
         {isOwner && (
-          <button style={s.editEventBtn} onClick={() => setEditMode(true)}>✏️ 編集</button>
+          <button className="imp-tab-btn" style={s.editEventBtn} onClick={() => setEditMode(true)}><Pencil size={14} />  編集</button>
         )}
       </div>
 
@@ -713,16 +713,19 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         {auth.currentUser && (
           <div style={s.actionRow}>
             <button
-              style={{ ...s.actionBtn, ...(liked ? s.actionBtnActive : {}) }}
-              onClick={handleLike}
+            className={`reaction-btn ${liked ? "like-active" : ""}`}
+            style={{ ...s.actionBtn, ...(liked ? s.actionBtnActive : {}) }}
+            onClick={handleLike}
             >
-              {liked ? <Heart size={16} fill="#E53935" color="#E53935" /> : <Heart size={16} />} いいね {likeCount > 0 && likeCount}
+            {liked ? <Heart size={16} fill="#E53935" color="#E53935" /> : <Heart size={16} />} いいね {likeCount > 0 && likeCount}
             </button>
+
             <button
-              style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
-              onClick={handleJoin}
+            className={`reaction-btn ${joining ? "join-active" : ""}`}
+            style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
+            onClick={handleJoin}
             >
-              {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} 参加予定 {joinCount > 0 && joinCount}
+            {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} 参加予定 {joinCount > 0 && joinCount}
             </button>
           </div>
         )}
@@ -735,7 +738,7 @@ const s = {
   container: { background:BG_COLOR, minHeight:"100vh" },
   topBar: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px", maxWidth:720, margin:"0 auto", width:"100%" },
   backBtn: { display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:THEME, fontSize:14, fontWeight:700, cursor:"pointer", padding:"8px 0" },
-  editEventBtn: { background:THEME, color:"white", border:"none", borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer" },
+  editEventBtn: {  background:THEME,borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer" },
   heroImg: { height: window.innerWidth > 768 ? 400 : "auto", width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", objectFit:"cover", display:"block", margin: window.innerWidth > 768 ? "0 auto" : "0 14px", maxWidth: "100%", borderRadius: 12 },
   heroPlaceholder: { height: window.innerWidth > 768 ? 400 : "auto", width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", aspectRatio:"16/9", margin: window.innerWidth > 768 ? "0 auto" : "0 14px", display:"flex", alignItems:"center", justifyContent:"center", borderRadius: 12 },
   body: { padding:"20px 16px", maxWidth:720, margin:"0 auto", display:"flex", flexDirection:"column", gap:16 },
@@ -772,10 +775,8 @@ const s = {
   tagBtn: { padding:"6px 12px", borderRadius:999, border:"1.5px solid #D0DDD9", background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
   saveBtn: { padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   actionRow: { display:"flex", gap:12 },
-  actionBtn: { flex:1, padding:"12px", background:"white", border:"1.5px solid #D0DDD9", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 },
-  actionBtnActive: { background:"#FFF0F0", border:"1.5px solid #E53935", color:"#E53935" },
-  actionBtnJoinActive: { background:"#E8F5E9", border:"1.5px solid #2E7D32", color:"#2E7D32" },
-
+  actionBtn: { flex:1, padding:"12px", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 },
+actionBtnJoinActive: {},
   cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginTop: 4 },
   organizerCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 8, border: "2px solid #D0DDD9", cursor: "pointer", transition: "all 0.2s" },
   dashedCard: { borderStyle: "dashed", background: "#F4F6F5", borderColor: "#BACFCB" },

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { db, auth } from "./firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { BG_COLOR } from "./constants";
+import "./animations.css";
 
 export default function Contact({ onBack }) {
   const [name, setName] = useState("");
@@ -77,7 +78,7 @@ export default function Contact({ onBack }) {
                 <label style={s.label}>お問い合わせ内容 <span style={s.required}>必須</span></label>
                 <textarea style={s.textarea} placeholder="お問い合わせ内容を入力してください" rows={6} value={message} onChange={e => setMessage(e.target.value)} />
               </div>
-              <button style={s.submitBtn} type="submit" disabled={loading}>
+              <button className="submit-btn" style={s.submitBtn} type="submit" disabled={loading}>
                 {loading ? "送信中..." : "送信する"}
               </button>
             </form>
@@ -102,7 +103,7 @@ const s = {
   required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
   input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit" },
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
-  submitBtn: { padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
+  submitBtn: { padding:14, borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer" },
   doneBox: { background:"white", borderRadius:12, padding:"40px 24px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)", display:"flex", flexDirection:"column", alignItems:"center", gap:16, textAlign:"center" },
   doneTitle: { fontSize:20, fontWeight:700, color:"#111" },
   doneText: { fontSize:14, color:"#5A7370", lineHeight:1.7 },

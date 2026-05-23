@@ -5,6 +5,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { useNavigate, useParams } from "react-router-dom";
 import { BG_COLOR } from "./constants";
 import { User, Users, ArrowLeft } from "lucide-react";
+import "./animations.css";
 
 const THEME = "#88203a";
 
@@ -111,6 +112,7 @@ export default function NotificationSettings() {
           items.map((item) => (
             <div
               key={item.id}
+              class="event-hover-card"
               style={{
                 borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
                 background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
@@ -133,8 +135,10 @@ export default function NotificationSettings() {
               )}
               
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#111", display: "flex", alignItems: "center" }}>
-                  {item.displayName}
+                <div  style={{ fontSize: 14, fontWeight: 700, color: "#111", display: "flex", alignItems: "center" }}>
+                  <div className="hover-title-underline">
+                    {item.displayName}
+                    </div>
                   {item.isGroup && (
                     <span style={{ fontSize: 9, background: THEME, color: "white", padding: "2px 6px", borderRadius: 4, marginLeft: 8, fontWeight: 800 }}>
                       サークル
