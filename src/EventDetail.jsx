@@ -615,7 +615,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         )}
 
         {event.applyLink && (
-          <a href={event.applyLink} target="_blank" rel="noreferrer" style={s.applyBtn}>
+          <a href={event.applyLink} target="_blank" rel="noreferrer" className="submit-btn" style={s.applyBtn}>
             {event.applyLabel || "参加を申し込む"} →
           </a>
         )}

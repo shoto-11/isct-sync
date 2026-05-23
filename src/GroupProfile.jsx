@@ -176,49 +176,46 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
                 )}
               </div>
             </div>
-          </div>
 
           {/* 💡 🔔 通知オン/オフの切り替え処理を追加 */}
           {auth.currentUser && (
             <button
-              onClick={async () => {
-                if (!currentUid) return;
-                const myRef = doc(db, "users", currentUid);
-                const groupRef = doc(db, "groups", groupId);
-                try {
-                  if (isNotifying) {
-                    await updateDoc(myRef, { follows: arrayRemove(groupId) });
-                    await updateDoc(groupRef, { followers: arrayRemove(currentUid) });
-                    setIsNotifying(false);
-                  } else {
-                    await updateDoc(myRef, { follows: arrayUnion(groupId) });
-                    await updateDoc(groupRef, { followers: arrayUnion(currentUid) });
-                    setIsNotifying(true);
-                  }
-                } catch (err) {
-                  console.error("通知設定の変更に失敗しました", err);
-                }
-              }}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                padding: "10px 0", width: "100%", borderRadius: 8, fontSize: 13, fontWeight: 700,
-                cursor: "pointer", transition: "all 0.2s", marginBottom: 16,
-                background: isNotifying ? "#E0F2F1" : THEME,
-                color: isNotifying ? "#004D40" : "white",
-                border: isNotifying ? "1px solid #B2DFDB" : "none"
-              }}
-            >
-              {isNotifying ? (
-                <>
-                  <BellOff size={15} /> このサークルの新着通知をオフにする
-                </>
-              ) : (
-                <>
-                  <Bell size={15} /> このサークルの新着通知を受け取る
-                </>
-              )}
-            </button>
+                className={`tag-tab-btn ${isNotifying ? "tag-active-tab" : ""}`}
+                onClick={async () => {
+                    if (!currentUid) return;
+                    const myRef = doc(db, "users", currentUid);
+                    const groupRef = doc(db, "groups", groupId);
+                    try {
+                    if (isNotifying) {
+                        await updateDoc(myRef, { follows: arrayRemove(groupId) });
+                        await updateDoc(groupRef, { followers: arrayRemove(currentUid) });
+                        setIsNotifying(false);
+                    } else {
+                        await updateDoc(myRef, { follows: arrayUnion(groupId) });
+                        await updateDoc(groupRef, { followers: arrayUnion(currentUid) });
+                        setIsNotifying(true);
+                    }
+                    } catch (err) {
+                    console.error("通知設定の変更に失敗しました", err);
+                    }
+                }}
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 20px",
+                    borderRadius: 999,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    flexShrink: 0,
+                }}
+                >
+                {isNotifying ? <><BellOff size={14} /></> : <><Bell size={14} /></>}
+                </button>
           )}
+          
+          </div>
 
           {/* 活動説明文 */}
           <div style={s.descriptionSection}>

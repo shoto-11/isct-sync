@@ -302,8 +302,8 @@ const handleSave = async () => {
               </div>
 
               <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
-                <button style={s.cancelBtn} onClick={handleCancelEdit} disabled={saving}>キャンセル</button>
-                <button style={s.saveBtn} onClick={handleSave} disabled={saving || !editName.trim()}>
+                <button className="tag-tab-btn" style={s.cancelBtn} onClick={handleCancelEdit} disabled={saving}>キャンセル</button>
+                <button className="submit-btn" style={s.saveBtn} onClick={handleSave} disabled={saving || !editName.trim()}>
                   {saving ? "保存中..." : "保存する"}
                 </button>
               </div>

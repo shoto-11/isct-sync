@@ -302,7 +302,7 @@ const [homepageUrl, setHomepageUrl] = useState("");
             <p style={s.sub}>サークル・団体・企業の公式アカウントとしてイベントを募集できます。後からマイページでも追加できます。</p>
 
             <div style={s.optionList}>
-              <button style={s.optionCard} onClick={() => { setMode("create"); setStep("email"); setError(""); }} disabled={loading}>
+              <button className="tag-tab-btn" style={s.optionCard} onClick={() => { setMode("create"); setStep("email"); setError(""); }} disabled={loading}>
                 <div style={{ ...s.optionIcon, background: "#F9EAED" }}>
                   <Users size={24} color={THEME} />
                 </div>
@@ -313,7 +313,7 @@ const [homepageUrl, setHomepageUrl] = useState("");
                 <ArrowRight size={18} color="#B0BEC5" />
               </button>
 
-              <button style={s.optionCard} onClick={() => { setMode("join"); setStep("email"); setError(""); }} disabled={loading}>
+              <button className="tag-tab-btn" style={s.optionCard} onClick={() => { setMode("join"); setStep("email"); setError(""); }} disabled={loading}>
                 <div style={{ ...s.optionIcon, background: "#E0F2F1" }}>
                   <UserCheck size={24} color="#007A6E" />
                 </div>
@@ -325,7 +325,7 @@ const [homepageUrl, setHomepageUrl] = useState("");
               </button>
             </div>
 
-            <button style={s.skipBtn} onClick={handleSkip} disabled={loading}>
+            <button className="tag-tab-btn" style={s.skipBtn} onClick={handleSkip} disabled={loading}>
               グループ設定をスキップして個人で使用する
             </button>
           </>
@@ -355,7 +355,7 @@ const [homepageUrl, setHomepageUrl] = useState("");
                 />
               </div>
 
-              <button type="submit" style={s.btn} disabled={loading || !email}>
+              <button className="submit-btn" type="submit" style={s.btn} disabled={loading || !email}>
                 {loading ? "送信中..." : "確認コードを送信"}
               </button>
             </form>
@@ -544,8 +544,8 @@ const [homepageUrl, setHomepageUrl] = useState("");
                 : `既存グループへの合流が完了しました！イベント管理権限があなた（個人）のアカウントへ共有されます。`}
             </p>
 
-            <button style={{ ...s.btn, marginTop: 8 }} onClick={finalizeSetup} disabled={loading}>
-              SYNCをはじめる
+            <button className="submit-btn" style={{ ...s.btn, marginTop: 8 }} onClick={finalizeSetup} disabled={loading}>
+                SYNCをはじめる
             </button>
           </div>
         )}
@@ -563,17 +563,17 @@ const s = {
   title: { fontSize: 18, fontWeight: 800, color: "#111", textAlign: "center" },
   sub: { fontSize: 13, color: "#5A7370", lineHeight: 1.6, textAlign: "center" },
   optionList: { display: "flex", flexDirection: "column", gap: 12, width: "100%" },
-  optionCard: { display: "flex", alignItems: "center", gap: 16, padding: "16px", borderRadius: 12, border: "2px solid #E0DDD9", background: "white", cursor: "pointer", textAlign: "left", width: "100%", transition: "all 0.2s" },
+  optionCard: { display: "flex", alignItems: "center", gap: 16, padding: "16px", borderRadius: 12, cursor: "pointer", textAlign: "left", width: "100%", transition: "all 0.2s" },
   optionIcon: { width: 44, height: 44, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  optionTitle: { fontSize: 14, fontWeight: 700, color: "#111" },
-  optionDesc: { fontSize: 11, color: "#5A7370", marginTop: 2 },
-  skipBtn: { width: "100%", padding: "12px", background: "none", border: "1.5px solid #D0DDD9", borderRadius: 8, color: "#5A7370", fontSize: 13, fontWeight: 600, cursor: "pointer" },
+  optionTitle: { fontSize: 14, fontWeight: 700 },
+  optionDesc: { fontSize: 11, marginTop: 2 },
+  skipBtn: { width: "100%", padding: "12px", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" },
   
   form: { display: "flex", flexDirection: "column", gap: 16, width: "100%" },
   formGroup: { display: "flex", flexDirection: "column", gap: 5, width: "100%" },
   label: { fontSize: 12, fontWeight: 700, color: "#5A7370", letterSpacing: "0.05em" },
   input: { width: "100%", padding: "12px 14px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, outline: "none", boxSizing: "border-box" },
-  btn: { width: "100%", padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" },
+  btn: { width: "100%", padding: 14, border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" },
   textBtn: { background: "none", border: "none", color: "#5A7370", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "4px", margin: "0 auto", textAlign: "center" },
   
   note: { background: "#F9EAED", borderRadius: 8, padding: "10px 14px", fontSize: 11, color: THEME, lineHeight: 1.6, textAlign: "center", width: "100%", boxSizing: "border-box" },
