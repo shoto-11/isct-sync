@@ -578,7 +578,7 @@ export default function AdminPanel({ user }) {
               </div>
             )}
 
-            <button style={{ width: "100%", padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 12 }} onClick={handleSave} disabled={saving}>
+            <button className="submit-btn" style={{ width: "100%", padding: 14, border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 12 }} onClick={handleSave} disabled={saving}>
               {saving ? "保存中..." : "PR広告の設定を保存する"}
             </button>
 
@@ -586,14 +586,15 @@ export default function AdminPanel({ user }) {
 
             <input style={adS.input} placeholder="イベント名・募集者名で検索..." value={carouselSearch} onChange={(e) => setCarouselSearch(e.target.value)} />
             {events.filter((e) => !carouselSearch || e.title?.includes(carouselSearch) || e.organizerName?.includes(carouselSearch)).map((event) => (
-              <div key={event.id} style={adS.listItem}>
+              <div key={event.id} className="event-hover-card" style={adS.listItem}>
                 {event.imageUrl ? <img src={event.imageUrl} alt="" style={{ width: 60, height: 34, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} /> : <div style={{ width: 60, height: 34, background: "#F4F6F5", borderRadius: 6, flexShrink: 0 }} />}
                 <div style={{ flex: 1, cursor: "pointer" }} onClick={() => navigate(`/events/${event.id}`)}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{event.title}</div>
+                  <div className="hover-title-underline" style={{ fontSize: 14, fontWeight: 700 }}>{event.title}</div>
                   <div style={{ fontSize: 11, color: "#5A7370" }}>{event.organizerName}</div>
                 </div>
                 <button
-                  style={{ padding: "6px 16px", borderRadius: 999, border: `1.5px solid ${carouselEventIds.includes(event.id) ? THEME : "#D0DDD9"}`, background: carouselEventIds.includes(event.id) ? THEME : "white", color: carouselEventIds.includes(event.id) ? "white" : "#5A7370", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                  className={`tag-tab-btn ${carouselEventIds.includes(event.id) ? "tag-active-tab" : ""}`}
+                  style={{ padding: "6px 16px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                   onClick={() => toggleCarousel(event.id)}
                   disabled={!carouselEventIds.includes(event.id) && carouselEventIds.length >= 10}
                 >
@@ -611,10 +612,10 @@ export default function AdminPanel({ user }) {
             <input style={adS.input} placeholder="イベント名・募集者名で検索..." value={eventSearch} onChange={(e) => setEventSearch(e.target.value)} />
             
             {events.filter((e) => !eventSearch || e.title?.includes(eventSearch) || e.organizerName?.includes(eventSearch)).map((event) => (
-              <div key={event.id} style={adS.listItem}>
+              <div key={event.id} className="event-hover-card"  style={adS.listItem}>
                 {event.imageUrl ? <img src={event.imageUrl} alt="" style={{ width: 60, height: 34, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} /> : <div style={{ width: 60, height: 34, background: "#F4F6F5", borderRadius: 6, flexShrink: 0 }} />}
                 <div style={{ flex: 1, cursor: "pointer" }} onClick={() => navigate(`/events/${event.id}`)}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{event.title}</div>
+                  <div className="hover-title-underline" style={{ fontSize: 14, fontWeight: 700 }}>{event.title}</div>
                   <div style={{ fontSize: 11, color: "#5A7370" }}>{event.organizerName} · {event.date}</div>
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
@@ -721,13 +722,10 @@ export default function AdminPanel({ user }) {
                           .map((u) => {
                             const isSelected = !editIsGroup && editOrganizerId === u.id;
                             return (
-                              <div
+                              <button
                                 key={u.id}
-                                style={{
-                                  ...adS.organizerCard,
-                                  borderColor: isSelected ? "#88203a" : "#D0DDD9",
-                                  background: isSelected ? "#FFF5F7" : "white",
-                                }}
+                                className={`organizer-card ${isSelected ? "organizer-selected" : ""}`}
+                                  style={adS.organizerCard}
                                 onClick={() => {
                                   setEditOrganizerId(u.id);
                                   setEditIsGroup(false);
@@ -741,7 +739,7 @@ export default function AdminPanel({ user }) {
                                   <div style={adS.cardName}>{u.displayName || "名前なし"}</div>
                                   <div style={{ fontSize: 9, color: "#8A9F9B", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{u.email}</div>
                                 </div>
-                              </div>
+                              </button>
                             );
                           })}
 
@@ -758,13 +756,10 @@ export default function AdminPanel({ user }) {
                           .map((g) => {
                             const isSelected = editIsGroup && editOrganizerId === g.id;
                             return (
-                              <div
+                              <button
                                 key={g.id}
-                                style={{
-                                  ...adS.organizerCard,
-                                  borderColor: isSelected ? "#88203a" : "#D0DDD9",
-                                  background: isSelected ? "#FFF5F7" : "white",
-                                }}
+                                className={`organizer-card ${isSelected ? "organizer-selected" : ""}`}
+                                style={adS.organizerCard}
                                 onClick={() => {
                                   setEditOrganizerId(g.id);
                                   setEditIsGroup(true);
@@ -778,7 +773,7 @@ export default function AdminPanel({ user }) {
                                   <div style={adS.cardName}>{g.displayName || "サークル名なし"}</div>
                                   <div style={{ fontSize: 9, color: "#8A9F9B", textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>{g.email}</div>
                                 </div>
-                              </div>
+                              </button>
                             );
                           })}
 
@@ -791,7 +786,9 @@ export default function AdminPanel({ user }) {
                     <label style={adS.formLabel}>① ジャンル <span style={adS.required}>必須</span></label>
                     <div style={adS.optionGrid}>
                       {GENRE_TAGS.map(t => (
-                        <button key={t} type="button" style={{ ...adS.tagBtn, ...(editGenre === t ? adS.tagBtnActive : {}) }} onClick={() => setEditGenre(t)}>{t}</button>
+                        <button key={t} type="button" className={`tag-tab-btn ${editGenre === t ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
+                          onClick={() => setEditGenre(t)}>{t}</button>
                       ))}
                     </div>
                   </div>
@@ -801,7 +798,9 @@ export default function AdminPanel({ user }) {
                     <label style={adS.formLabel}>② 対象学年 <span style={adS.required}>必須・複数選択可</span></label>
                     <div style={adS.optionGrid}>
                       {TARGET_TAGS.map(t => (
-                        <button key={t} type="button" style={{ ...adS.tagBtn, ...(editTargets.includes(t) ? adS.tagBtnActive : {}) }}
+                        <button key={t} type="button" 
+                        className={`tag-tab-btn ${editTargets.includes(t) ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
                           onClick={() => setEditTargets(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>{t}</button>
                       ))}
                     </div>
@@ -812,7 +811,9 @@ export default function AdminPanel({ user }) {
                     <label style={adS.formLabel}>対象学院（任意・複数可）</label>
                     <div style={adS.optionGrid}>
                       {Object.keys(GAKUIN).map(g => (
-                        <button key={g} type="button" style={{ ...adS.tagBtn, ...(editTargetGakuin.includes(g) ? adS.tagBtnActive : {}) }}
+                        <button key={g} type="button" 
+                        className={`tag-tab-btn ${editTargetGakuin.includes(g) ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
                           onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}>{g}</button>
                       ))}
                     </div>
@@ -824,7 +825,9 @@ export default function AdminPanel({ user }) {
                       <label style={adS.formLabel}>対象学系（任意・複数可）</label>
                       <div style={adS.optionGrid}>
                         {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
-                          <button key={k} type="button" style={{ ...adS.tagBtn, ...(editTargetGakukei.includes(k) ? adS.tagBtnActive : {}) }}
+                          <button key={k} type="button" 
+                          className={`tag-tab-btn ${editTargetGakukei.includes(t) ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
                             onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}>{k}</button>
                         ))}
                       </div>
@@ -836,7 +839,11 @@ export default function AdminPanel({ user }) {
                     <label style={adS.formLabel}>③ キャンパス <span style={adS.required}>必須</span></label>
                     <div style={adS.optionGrid}>
                       {CAMPUS_TAGS.map(t => (
-                        <button key={t} type="button" style={{ ...adS.tagBtn, ...(editCampus === t ? adS.tagBtnActive : {}) }} onClick={() => setEditCampus(t)}>{t}</button>
+                        <button key={t} type="button" 
+                        className={`tag-tab-btn ${editCampus == t ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
+                        onClick={() => setEditCampus(t)}>{t}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -846,7 +853,10 @@ export default function AdminPanel({ user }) {
                     <label style={adS.formLabel}>④ 参加スタイル（任意）</label>
                     <div style={adS.optionGrid}>
                       {STYLE_TAGS.map(t => (
-                        <button key={t} type="button" style={{ ...adS.tagBtn, ...(editStyle === t ? adS.tagBtnActive : {}) }} onClick={() => setEditStyle(prev => prev === t ? "" : t)}>{t}</button>
+                        <button key={t} type="button" 
+                        className={`tag-tab-btn ${editStyle == t ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
+                           onClick={() => setEditStyle(prev => prev === t ? "" : t)}>{t}</button>
                       ))}
                     </div>
                   </div>
@@ -859,7 +869,8 @@ export default function AdminPanel({ user }) {
                         <button 
                           key={t} 
                           type="button" 
-                          style={{ ...adS.tagBtn, ...(editOrganizerTag === t ? adS.tagBtnActive : {}) }} 
+                          className={`tag-tab-btn ${editOrganizerTag== t ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
                           onClick={() => setEditOrganizerTag(prev => prev === t ? "" : t)}
                         >
                           {t}
@@ -887,8 +898,8 @@ export default function AdminPanel({ user }) {
 
                   {/* アクションボタン */}
                   <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                    <button style={{ flex: 1, padding: 12, background: "white", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => setSelectedEvent(null)}>キャンセル</button>
-                    <button style={{ flex: 1, padding: 12, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={handleAdminSaveEvent} disabled={saving}>
+                    <button className="tag-tab-btn" style={{ flex: 1, padding: 12, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => setSelectedEvent(null)}>キャンセル</button>
+                    <button className="submit-btn" style={{ flex: 1, padding: 12, border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={handleAdminSaveEvent} disabled={saving}>
                       {saving ? "保存中..." : "変更を確定保存"}
                     </button>
                   </div>
@@ -925,7 +936,8 @@ export default function AdminPanel({ user }) {
                       const isSelected = !proxyIsGroup && proxyOrganizerId === u.id;
                       return (
                         <div key={u.id}
-                          style={{ ...adS.organizerCard, borderColor: isSelected ? "#88203a" : "#D0DDD9", background: isSelected ? "#FFF5F7" : "white" }}
+                          className={`organizer-card ${isSelected ? "organizer-selected" : ""}`}
+                          style={adS.organizerCard}
                           onClick={() => { setProxyOrganizerId(u.id); setProxyIsGroup(false); }}
                         >
                           <div style={adS.cardAvatarWrap}>
@@ -949,7 +961,8 @@ export default function AdminPanel({ user }) {
                       const isSelected = proxyIsGroup && proxyOrganizerId === g.id;
                       return (
                         <div key={g.id}
-                          style={{ ...adS.organizerCard, borderColor: isSelected ? "#88203a" : "#D0DDD9", background: isSelected ? "#FFF5F7" : "white" }}
+                          className={`organizer-card ${isSelected ? "organizer-selected" : ""}`}
+                          style={adS.organizerCard}
                           onClick={() => { setProxyOrganizerId(g.id); setProxyIsGroup(true); }}
                         >
                           <div style={adS.cardAvatarWrap}>
@@ -1039,7 +1052,11 @@ export default function AdminPanel({ user }) {
               <label style={adS.formLabel}>① ジャンル <span style={adS.required}>必須</span></label>
               <div style={adS.optionGrid}>
                 {GENRE_TAGS.map(t => (
-                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyGenre === t ? adS.tagBtnActive : {}) }} onClick={() => setProxyGenre(t)}>{t}</button>
+                  <button key={t} 
+                  type="button" 
+                  className={`tag-tab-btn ${proxyGenre === t ? "tag-active-tab" : ""}`}
+                  style={adS.tagBtn}
+                  onClick={() => setProxyGenre(t)}>{t}</button>
                 ))}
               </div>
             </div>
@@ -1049,7 +1066,10 @@ export default function AdminPanel({ user }) {
               <label style={adS.formLabel}>② 対象学年 <span style={adS.required}>必須・複数選択可</span></label>
               <div style={adS.optionGrid}>
                 {TARGET_TAGS.map(t => (
-                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyTargets.includes(t) ? adS.tagBtnActive : {}) }}
+                  <button key={t} 
+                  type="button" 
+                  className={`tag-tab-btn ${proxyTargets.includes(t) ? "tag-active-tab" : ""}`}
+                  style={adS.tagBtn}
                     onClick={() => setProxyTargets(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>{t}</button>
                 ))}
               </div>
@@ -1060,7 +1080,9 @@ export default function AdminPanel({ user }) {
               <label style={adS.formLabel}>対象学院（任意・複数選択可）</label>
               <div style={adS.optionGrid}>
                 {Object.keys(GAKUIN).map(g => (
-                  <button key={g} type="button" style={{ ...adS.tagBtn, ...(proxyTargetGakuin.includes(g) ? adS.tagBtnActive : {}) }}
+                  <button key={g} type="button" 
+                  className={`tag-tab-btn ${proxyTargetGakuin.includes(g) ? "tag-active-tab" : ""}`}
+                  style={adS.tagBtn}
                     onClick={() => setProxyTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}>{g}</button>
                 ))}
               </div>
@@ -1072,7 +1094,9 @@ export default function AdminPanel({ user }) {
                 <label style={adS.formLabel}>対象学系（任意・複数選択可）</label>
                 <div style={adS.optionGrid}>
                   {proxyTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
-                    <button key={k} type="button" style={{ ...adS.tagBtn, ...(proxyTargetGakukei.includes(k) ? adS.tagBtnActive : {}) }}
+                    <button key={k} type="button" 
+                    className={`tag-tab-btn ${proxyTargetGakukei.includes(k) ? "tag-active-tab" : ""}`}
+                  style={adS.tagBtn}
                       onClick={() => setProxyTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}>{k}</button>
                   ))}
                 </div>
@@ -1084,7 +1108,10 @@ export default function AdminPanel({ user }) {
               <label style={adS.formLabel}>③ キャンパス <span style={adS.required}>必須</span></label>
               <div style={adS.optionGrid}>
                 {CAMPUS_TAGS.map(t => (
-                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyCampus === t ? adS.tagBtnActive : {}) }} onClick={() => setProxyCampus(t)}>{t}</button>
+                  <button key={t} type="button" 
+                  className={`tag-tab-btn ${proxyCampus === t ? "tag-active-tab" : ""}`}
+                  style={adS.tagBtn}
+                  onClick={() => setProxyCampus(t)}>{t}</button>
                 ))}
               </div>
             </div>
@@ -1094,7 +1121,10 @@ export default function AdminPanel({ user }) {
               <label style={adS.formLabel}>④ 参加スタイル（任意）</label>
               <div style={adS.optionGrid}>
                 {STYLE_TAGS.map(t => (
-                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyStyle === t ? adS.tagBtnActive : {}) }} onClick={() => setProxyStyle(prev => prev === t ? "" : t)}>{t}</button>
+                  <button key={t} type="button" 
+                  className={`tag-tab-btn ${proxyStyle === t ? "tag-active-tab" : ""}`}
+                  style={adS.tagBtn}
+                  onClick={() => setProxyStyle(prev => prev === t ? "" : t)}>{t}</button>
                 ))}
               </div>
             </div>
@@ -1104,7 +1134,10 @@ export default function AdminPanel({ user }) {
               <label style={adS.formLabel}>⑤ 募集者種別（任意）</label>
               <div style={adS.optionGrid}>
                 {ORGANIZER_TAGS.map(t => (
-                  <button key={t} type="button" style={{ ...adS.tagBtn, ...(proxyOrganizerTag === t ? adS.tagBtnActive : {}) }} onClick={() => setProxyOrganizerTag(prev => prev === t ? "" : t)}>{t}</button>
+                  <button key={t} type="button" 
+                  className={`tag-tab-btn ${proxyOrganizerTag === t ? "tag-active-tab" : ""}`}
+                  style={adS.tagBtn}
+                  onClick={() => setProxyOrganizerTag(prev => prev === t ? "" : t)}>{t}</button>
                 ))}
               </div>
             </div>
@@ -1128,7 +1161,8 @@ export default function AdminPanel({ user }) {
 
             {/* 送信ボタン */}
             <button 
-              style={{ padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 12 }} 
+            className="submit-btn"
+              style={{ padding: 14, border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", marginTop: 12 }} 
               onClick={handleProxySubmitEvent} 
               disabled={saving}
             >
@@ -1144,7 +1178,7 @@ export default function AdminPanel({ user }) {
             <input style={adS.input} placeholder="名前・メールアドレスで検索..." value={userSearch} onChange={(e) => setUserSearch(e.target.value)} />
             
             {users.filter((u) => !userSearch || u.displayName?.includes(userSearch) || u.email?.includes(userSearch)).map((u) => (
-              <div key={u.id} style={{ ...adS.listItem, cursor: "pointer" }} onClick={() => setSelectedUser(u)}>
+              <div key={u.id} className="event-hover-card" style={{ ...adS.listItem, cursor: "pointer" }} onClick={() => setSelectedUser(u)}>
                 {u.avatarUrl ? (
                   <img src={u.avatarUrl} alt="avatar" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                 ) : (
@@ -1236,8 +1270,8 @@ export default function AdminPanel({ user }) {
                   ))}
 
                   <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                    <button style={{ flex: 1, padding: 12, background: "white", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => { setSelectedUser(null); setEditingUser(null); }}>キャンセル</button>
-                    <button style={{ flex: 1, padding: 12, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                    <button className="tag-tab-btn" style={{ flex: 1, padding: 12, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => { setSelectedUser(null); setEditingUser(null); }}>キャンセル</button>
+                    <button className="submit-btn" style={{ flex: 1, padding: 12, border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
                       onClick={async () => {
                         if (!editingUser) {
                           setSelectedUser(null); setEditingUser(null);
@@ -1263,12 +1297,12 @@ export default function AdminPanel({ user }) {
             
             {/* 💡 クリックイベントを handleOpenGroupDetail(g) に差し替え */}
             {groups.filter((g) => !groupSearch || g.displayName?.includes(groupSearch) || g.email?.includes(groupSearch)).map((g) => (
-              <div key={g.id} style={{ ...adS.listItem, cursor: "pointer" }} onClick={() => handleOpenGroupDetail(g)}>
+              <div key={g.id} className="event-hover-card" style={{ ...adS.listItem, cursor: "pointer" }} onClick={() => handleOpenGroupDetail(g)}>
                 <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#F9EAED", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
                   {g.avatarUrl ? <img src={g.avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" /> : "👥"}
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700 }}>{g.displayName}</div>
+                  <div className="hover-title-underline" style={{ fontSize: 14, fontWeight: 700 }}>{g.displayName}</div>
                   <div style={{ fontSize: 11, color: "#5A7370" }}>{g.groupType} · {g.email || "アドレス未登録"} · メンバー{g.members?.length || 0}人</div>
                 </div>
                 <span style={{ fontSize: 12, color: THEME, fontWeight: 700 }}>詳細 ›</span>
@@ -1340,7 +1374,8 @@ export default function AdminPanel({ user }) {
                         <button 
                           key={t} 
                           type="button" 
-                          style={{ ...adS.tagBtn, ...(editGroupType === t ? adS.tagBtnActive : {}) }} 
+                          className={`tag-tab-btn ${editGroupType === t ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
                           onClick={() => setEditGroupType(t)}
                         >
                           {t}
@@ -1397,8 +1432,8 @@ export default function AdminPanel({ user }) {
 
                   {/* モーダルボトムアクション */}
                   <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                    <button type="button" style={{ flex: 1, padding: 12, background: "white", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={() => setSelectedGroup(null)}>キャンセル</button>
-                    <button type="button" style={{ flex: 1, padding: 12, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={handleAdminSaveGroup} disabled={saving}>
+                    <button className="tag-tab-btn" type="button" style={{ flex: 1, padding: 12,borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={() => setSelectedGroup(null)}>キャンセル</button>
+                    <button className="submit-btn" type="button" style={{ flex: 1, padding: 12, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={handleAdminSaveGroup} disabled={saving}>
                       {saving ? "保存中..." : "グループ変更を保存"}
                     </button>
                   </div>
@@ -1415,7 +1450,7 @@ export default function AdminPanel({ user }) {
 
         {/* 保存ボタン（お知らせタブ用） */}
         {activeTab === "notice" && (
-          <button style={{ marginTop: 24, width: "100%", padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }} onClick={handleSave} disabled={saving}>
+          <button className="submit-btn" style={{ marginTop: 24, width: "100%", padding: 14, border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }} onClick={handleSave} disabled={saving}>
             {saving ? "保存中..." : "設定を保存する"}
           </button>
         )}
@@ -1439,10 +1474,9 @@ const adS = {
   required: { background: "#E53935", color: "white", fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 3, marginLeft: 4, display: "inline-block", width: "fit-content" },
   imageArea: { width: "100%", height: 130, borderRadius: 10, border: "2px dashed #D0DDD9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: "#FAFDFC", overflow: "hidden" },
   optionGrid: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 },
-  tagBtn: { padding: "5px 10px", borderRadius: 999, border: "1.5px solid #D0DDD9", background: "white", fontSize: 11, fontWeight: 600, color: "#5A7370", cursor: "pointer", transition: "all 0.15s" },
-  tagBtnActive: { background: "#88203a", color: "white", border: "1.5px solid #88203a" },
+  tagBtn: { padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 600, cursor: "pointer" },
   cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: 6 },
-  organizerCard: { display: "flex", alignItems: "center", gap: 6, padding: "6px", borderRadius: 6, border: "2px solid #D0DDD9", cursor: "pointer", transition: "all 0.15s" },
+  organizerCard: { display: "flex", alignItems: "center", gap: 6, padding: "6px", borderRadius: 6, cursor: "pointer" },
   cardAvatarWrap: { width: 24, height: 24, borderRadius: "50%", background: "#E0E8E7", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
   cardAvatar: { width: "100%", height: "100%", objectFit: "cover" },
   cardInfo: { minWidth: 0, flex: 1 },

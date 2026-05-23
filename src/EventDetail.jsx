@@ -277,14 +277,11 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         <div style={s.editSection}>
           <label style={s.editLabel}>募集者を変更 <span style={s.required}>必須</span></label>
           <div style={s.cardGrid}>
-            <div 
-              style={{
-                ...s.organizerCard,
-                borderColor: editOrganizerType === "personal" ? THEME : "#D0DDD9",
-                background: editOrganizerType === "personal" ? "#FFF5F7" : "white",
-              }}
-              onClick={() => setEditOrganizerType("personal")}
-            >
+            <button
+                className={`organizer-card ${editOrganizerType === "personal" ? "organizer-selected" : ""}`}
+                style={s.organizerCard}
+                onClick={() => setEditOrganizerType("personal")}
+                >
               <div style={s.cardAvatarWrap}>
                 {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} style={s.cardAvatar} alt="user" /> : <User size={16} color={THEME} />}
               </div>
@@ -292,21 +289,15 @@ export default function EventDetail({ event: initialEvent, onBack }) {
                 <div style={s.cardName}>{userProfile?.displayName || "あなた (個人)"}</div>
                 <div style={s.cardTypeTag}>個人名義</div>
               </div>
-            </div>
+            </button>
 
             {userGroups.map((group) => (
-              <div 
+              <button
                 key={group.id}
-                style={{
-                  ...s.organizerCard,
-                  borderColor: (editOrganizerType === "group" && editOrganizerId === group.id) ? THEME : "#D0DDD9",
-                  background: (editOrganizerType === "group" && editOrganizerId === group.id) ? "#FFF5F7" : "white",
-                }}
-                onClick={() => {
-                  setEditOrganizerType("group");
-                  setEditOrganizerId(group.id);
-                }}
-              >
+                className={`organizer-card ${editOrganizerType === "group" && editOrganizerId === group.id ? "organizer-selected" : ""}`}
+                style={s.organizerCard}
+                onClick={() => { setEditOrganizerType("group"); setEditOrganizerId(group.id); }}
+                >
                 <div style={s.cardAvatarWrap}>
                   {group.avatarUrl ? <img src={group.avatarUrl} style={s.cardAvatar} alt="group" /> : <Users size={16} color="#9AADA8" />}
                 </div>
@@ -314,16 +305,20 @@ export default function EventDetail({ event: initialEvent, onBack }) {
                   <div style={s.cardName}>{group.displayName}</div>
                   <div style={s.cardTypeTag}>{group.groupType || "サークル"}</div>
                 </div>
-              </div>
+              </button>
             ))}
 
-            <div style={{ ...s.organizerCard, ...s.dashedCard }} onClick={handleNavigateToGroupCreation}>
+            <button
+                className="organizer-card"
+                style={{ ...s.organizerCard, ...s.dashedCard }}
+                onClick={handleNavigateToGroupCreation}
+                >
               <div style={s.plusIconWrap}><Plus size={16} color="#5A7370" /></div>
               <div style={s.cardInfo}>
                 <div style={{ ...s.cardName, color: "#5A7370" }}>新しいグループ</div>
                 <div style={{ ...s.cardTypeTag, color: "#7A9591" }}>作成・参加はこちら</div>
               </div>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -778,7 +773,7 @@ const s = {
   actionBtn: { flex:1, padding:"12px", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 },
 actionBtnJoinActive: {},
   cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginTop: 4 },
-  organizerCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 8, border: "2px solid #D0DDD9", cursor: "pointer", transition: "all 0.2s" },
+  organizerCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 8, cursor: "pointer", transition: "all 0.2s" },
   dashedCard: { borderStyle: "dashed", background: "#F4F6F5", borderColor: "#BACFCB" },
   cardAvatarWrap: { width: 32, height: 32, borderRadius: "50%", background: "#F4F6F5", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
   plusIconWrap: { width: 32, height: 32, borderRadius: "50%", background: "#E0E8E7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },

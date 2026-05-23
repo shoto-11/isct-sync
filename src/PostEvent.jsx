@@ -169,18 +169,16 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       </button>
       <h2 style={s.heading}>イベントを作る</h2>
 
-      {/* 募集者選択（必須） */}
+
+{/* 募集者選択（必須） */}
       <div style={s.section}>
         <label style={s.label}>募集者を選択 <span style={s.required}>必須</span></label>
         <div style={s.cardGrid}>
-          <div 
-            style={{
-              ...s.organizerCard,
-              borderColor: organizerType === "personal" ? THEME : "#D0DDD9",
-              background: organizerType === "personal" ? "#FFF5F7" : "white",
-            }}
+          <button
+            className={`organizer-card ${organizerType === "personal" ? "organizer-selected" : ""}`}
+            style={s.organizerCard}
             onClick={() => setOrganizerType("personal")}
-          >
+            >
             <div style={s.cardAvatarWrap}>
               {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} style={s.cardAvatar} alt="user" /> : <User size={16} color={THEME} />}
             </div>
@@ -188,18 +186,15 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
               <div style={s.cardName}>{userProfile?.displayName || "あなた (個人)"}</div>
               <div style={s.cardTypeTag}>個人名義</div>
             </div>
-          </div>
+          </button>
 
           {userGroups.map(group => (
-            <div 
-              key={group.id}
-              style={{
-                ...s.organizerCard,
-                borderColor: organizerType === "group" && selectedGroupId === group.id ? THEME : "#D0DDD9",
-                background: organizerType === "group" && selectedGroupId === group.id ? "#FFF5F7" : "white",
-              }}
-              onClick={() => { setOrganizerType("group"); setSelectedGroupId(group.id); }}
-            >
+            <button
+                key={group.id}
+                className={`organizer-card ${organizerType === "group" && selectedGroupId === group.id ? "organizer-selected" : ""}`}
+                style={s.organizerCard}
+                onClick={() => { setOrganizerType("group"); setSelectedGroupId(group.id); }}
+                >
               <div style={s.cardAvatarWrap}>
                 {group.avatarUrl ? <img src={group.avatarUrl} style={s.cardAvatar} alt="group" /> : <Users size={16} color="#9AADA8" />}
               </div>
@@ -207,16 +202,20 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
                 <div style={s.cardName}>{group.displayName}</div>
                 <div style={s.cardTypeTag}>{group.groupType || "サークル"}</div>
               </div>
-            </div>
+            </button>
           ))}
 
-          <div style={{ ...s.organizerCard, ...s.dashedCard }} onClick={handleNavigateToGroupCreation}>
+                <button
+                        className="organizer-card"
+                        style={{ ...s.organizerCard, ...s.dashedCard }}
+                        onClick={handleNavigateToGroupCreation}
+                        >
             <div style={s.plusIconWrap}><Plus size={16} color="#5A7370" /></div>
             <div style={s.cardInfo}>
               <div style={{ ...s.cardName, color: "#5A7370" }}>新しいグループ</div>
               <div style={{ ...s.cardTypeTag, color: "#7A9591" }}>作成・参加はこちら</div>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 
@@ -453,8 +452,8 @@ const s = {
   tagBtn: { padding:"6px 12px", borderRadius:999, border:`1.5px solid #D0DDD9`, background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
   backBtn: { background:"none", border:"none", color: THEME, fontSize:14, fontWeight:700, cursor:"pointer", padding:"0 0 12px", alignSelf:"flex-start", display: "flex", alignItems: "center", gap: 4 },
   cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginTop: 4 },
-  organizerCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 8, border: "2px solid #D0DDD9", cursor: "pointer", transition: "all 0.2s" },
-  dashedCard: { borderStyle: "dashed", background: "#F4F6F5", borderColor: "#BACFCB" },
+  organizerCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 8, cursor: "pointer" },
+  dashedCard: { borderStyle: "dashed" },
   cardAvatarWrap: { width: 32, height: 32, borderRadius: "50%", background: "#F4F6F5", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
   plusIconWrap: { width: 32, height: 32, borderRadius: "50%", background: "#E0E8E7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
   cardAvatar: { width: "100%", height: "100%", objectFit: "cover" },
