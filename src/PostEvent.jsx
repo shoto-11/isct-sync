@@ -250,7 +250,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       {/* イベント日時（必須） */}
       <div style={s.section}>
         <label style={s.label}>イベント日時 <span style={s.required}>必須</span></label>
-        <input style={s.input} type="date" value={date} onChange={e => setDate(e.target.value)} onFocus={e => e.target.showPicker()}/>
+        <input style={{ ...s.input, maxWidth: "100%", minWidth: 0 }} type="date" value={date} onChange={e => setDate(e.target.value)} onFocus={e => e.target.showPicker()}/>
         <div style={s.timeRow}>
           <div style={{ flex:1, minWidth:0 }}>
             <label style={{ ...s.label, fontSize:11 }}>開始時刻（任意）</label>
@@ -273,11 +273,11 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       {/* 申し込み締切日（必須） */}
       <div style={s.section}>
         <label style={s.label}>申し込み締切日 <span style={s.required}>必須</span></label>
-        <input style={s.input} type="date" value={deadline} onChange={e => setDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
+        <input style={{ ...s.input, maxWidth: "100%", minWidth: 0 }} type="date" value={deadline} onChange={e => setDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
       </div>
       <div style={s.section}>
         <label style={s.label}>申し込み締切時間（任意）</label>
-        <input style={s.input} type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+        <input style={{ ...s.input, maxWidth: "100%", minWidth: 0 }} type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
       </div>
 
       {/* 添付画像・資料（任意） */}
@@ -435,7 +435,19 @@ const s = {
   section: { marginBottom:18 },
   label: { display:"block", fontSize:12, fontWeight:700, color:"#5A7370", letterSpacing:"0.05em", marginBottom:6 },
   required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
-  input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box" },
+  input: { 
+    width: "100%", 
+    /* 💡 スマホのWebkit系ブラウザ（Safari等）でdate/time要素が親を突き破るのを防ぐお守り */
+    maxWidth: "100%", 
+    minWidth: 0, 
+    padding: "11px 13px", 
+    border: "1.5px solid #D0DDD9", 
+    borderRadius: 8, 
+    fontSize: 14, 
+    outline: "none", 
+    fontFamily: "inherit", 
+    boxSizing: "border-box" 
+  },
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
   imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR },
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },
