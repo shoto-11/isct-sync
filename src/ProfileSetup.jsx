@@ -64,7 +64,10 @@ export default function ProfileSetup({ onComplete }) {
           <label style={s.label}>学院 <span style={s.req}>必須</span></label>
           <div style={s.grid}>
             {Object.keys(GAKUIN).map((g) => (
-              <button key={g} style={{ ...s.chip, ...(gakuin === g ? s.chipActive : {}) }} onClick={() => handleGakuinChange(g)}>{g}</button>
+              <button key={g}
+              className={`tag-tab-btn ${gakuin === g ? "tag-active-tab" : ""}`}
+              style={s.chip} 
+              onClick={() => handleGakuinChange(g)}>{g}</button>
             ))}
           </div>
         </div>
@@ -77,7 +80,8 @@ export default function ProfileSetup({ onComplete }) {
               {gakukei && (
                 <button 
                   type="button"
-                  style={{ background: "none", border: "none", color: "#C62828", fontSize: 11, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                  className={`tag-tab-btn ${gakukei === "" ? "tag-active-tab" : ""}`}
+                  style={s.chip}
                   onClick={() => setGakukei("")}
                 >
                   選択をクリア
@@ -88,7 +92,8 @@ export default function ProfileSetup({ onComplete }) {
               {/* 未所属用の明示的なボタン枠 */}
               <button 
                 type="button" 
-                style={{ ...s.chip, ...(gakukei === "" ? s.chipActive : {}) }}
+                className={`tag-tab-btn ${gakukei === "" ? "tag-active-tab" : ""}`}
+                style={s.chip}
                 onClick={() => setGakukei("")}
               >
                 未所属 / その他
@@ -100,7 +105,8 @@ export default function ProfileSetup({ onComplete }) {
                   <button
                     type="button"
                     key={k}
-                    style={{ ...s.chip, ...(isSelected ? s.chipActive : {}) }}
+                    className={`tag-tab-btn ${gakukei === k ? "tag-active-tab" : ""}`}
+                    style={s.chip}
                     onClick={() => setGakukei(isSelected ? "" : k)}
                   >
                     {k}
@@ -116,7 +122,9 @@ export default function ProfileSetup({ onComplete }) {
           <label style={s.label}>学年・教職員 <span style={s.req}>必須</span></label>
           <div style={s.grid}>
             {GAKUNEN.map((g) => (
-              <button key={g} style={{ ...s.chip, ...(gakunen === g ? s.chipActive : {}) }} onClick={() => setGakunen(g)}>{g}</button>
+              <button key={g} className={`tag-tab-btn ${gakunen === g ? "tag-active-tab" : ""}`}
+                style={s.chip}
+                onClick={() => setGakunen(g)}>{g}</button>
             ))}
           </div>
         </div>
@@ -126,14 +134,17 @@ export default function ProfileSetup({ onComplete }) {
           <label style={s.label}>性別 <span style={s.req}>必須</span></label>
           <div style={s.grid}>
             {GENDER.map((g) => (
-              <button key={g} style={{ ...s.chip, ...(gender === g ? s.chipActive : {}) }} onClick={() => setGender(g)}>{g}</button>
+              <button key={g} 
+              className={`tag-tab-btn ${gender === g ? "tag-active-tab" : ""}`}
+              style={s.chip}
+              onClick={() => setGender(g)}>{g}</button>
             ))}
           </div>
         </div>
 
         {error && <p style={s.error}>{error}</p>}
 
-        <button style={s.btn} onClick={handleSubmit} disabled={loading}>
+        <button className="submit-btn" style={s.btn} onClick={handleSubmit} disabled={loading}>
           {loading ? "保存中..." : "次へ →"}
         </button>
       </div>
@@ -153,8 +164,7 @@ const s = {
   req: { background: "#E53935", color: "white", fontSize: 10, fontWeight: 700, padding: "1px 5px", borderRadius: 3, marginLeft: 4 },
   input: { width: "100%", padding: "11px 13px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit" },
   grid: { display: "flex", flexWrap: "wrap", gap: 8 },
-  chip: { padding: "7px 14px", borderRadius: 999, border: "1.5px solid #D0DDD9", background: "white", fontSize: 13, fontWeight: 600, color: "#5A7370", cursor: "pointer" },
-  chipActive: { background: THEME, color: "white", border: `1.5px solid ${THEME}` },
-  btn: { marginTop: 8, padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" },
+  chip: { padding: "7px 14px", borderRadius: 999, fontSize: 13, fontWeight: 600,cursor: "pointer" },
+  btn: { marginTop: 8, padding: 14, borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" },
   error: { color: "#E53935", fontSize: 12, marginBottom: 8 },
 };
