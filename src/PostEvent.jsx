@@ -252,12 +252,12 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <label style={s.label}>イベント日時 <span style={s.required}>必須</span></label>
         <input style={s.input} type="date" value={date} onChange={e => setDate(e.target.value)} onFocus={e => e.target.showPicker()}/>
         <div style={s.timeRow}>
-          <div style={{ flex:1 }}>
+          <div style={{ flex:1, minWidth:0 }}>
             <label style={{ ...s.label, fontSize:11 }}>開始時刻（任意）</label>
             <input style={s.input} type="time" value={startTime} onChange={e => setStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
           </div>
           <div style={s.timeSeparator}>〜</div>
-          <div style={{ flex:1 }}>
+          <div style={{ flex:1, minWidth:0 }}>
             <label style={{ ...s.label, fontSize:11 }}>終了時刻（任意）</label>
             <input style={s.input} type="time" value={endTime} onChange={e => setEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
           </div>
@@ -430,7 +430,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 }
 
 const s = {
-  container: { background:"white", borderRadius:16, padding:"24px 20px", margin:"16px auto", maxWidth:720, boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", gap:0, overflow:"hidden" },
+  container: { background:"white", borderRadius:16, padding:"24px 20px", margin:"16px auto", maxWidth:720, boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", gap:0, overflow:"hidden", boxSizing:"border-box", width:"100%" },
   heading: { fontSize:18, fontWeight:700, color:"#1A2E2B", marginBottom:20 },
   section: { marginBottom:18 },
   label: { display:"block", fontSize:12, fontWeight:700, color:"#5A7370", letterSpacing:"0.05em", marginBottom:6 },
@@ -441,7 +441,7 @@ const s = {
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },
   imagePlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", gap:8 },
   imagePlaceholderText: { fontSize:13, color:"#5A7370", fontWeight:600 },
-  timeRow: { display:"flex", alignItems:"flex-end", gap:8, marginTop:8 },
+  timeRow: { display:"flex", alignItems:"flex-end", gap:8, marginTop:8, width:"100%", minWidth:0 },
   timeSeparator: { fontSize:16, color:"#5A7370", paddingBottom:10, flexShrink:0 },
   attachArea: { width:"100%", padding:"14px", borderRadius:8, border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:BG_COLOR },
   attachList: { marginTop:8, display:"flex", flexDirection:"column", gap:4 },
