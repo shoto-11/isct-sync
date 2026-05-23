@@ -152,7 +152,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
       return;
     }
     // 💡 【新規追加】申し込み締切日がイベント日時を超えていないかチェック
-    if (new Date(deadline) > new Date(date)) {
+    if (new Date(editDeadline) > new Date(editDate)) {
       alert("申し込み締切日はイベント当日、またはそれより前の日付に設定してください。");
       return;
     }
@@ -393,7 +393,10 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           <label style={s.editLabel}>① ジャンル <span style={s.required}>必須</span></label>
           <div style={s.optionGrid}>
             {GENRE_TAGS.map(t => (
-              <button key={t} style={{ ...s.tagBtn, ...(editGenre === t ? s.tagBtnActive : {}) }} onClick={() => setEditGenre(t)}>{t}</button>
+              <button key={t} 
+              className={`tag-tab-btn ${editGenre === t ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
+              onClick={() => setEditGenre(t)}>{t}</button>
             ))}
           </div>
         </div>
@@ -403,7 +406,9 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           <label style={s.editLabel}>② 対象学年 <span style={s.required}>必須・複数選択可</span></label>
           <div style={s.optionGrid}>
             {TARGET_TAGS.map(t => (
-              <button key={t} style={{ ...s.tagBtn, ...(editTargets.includes(t) ? s.tagBtnActive : {}) }}
+              <button key={t} 
+              className={`tag-tab-btn ${editTargets.includes(t) ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
                 onClick={() => setEditTargets(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>{t}</button>
             ))}
           </div>
@@ -416,7 +421,8 @@ export default function EventDetail({ event: initialEvent, onBack }) {
             {Object.keys(GAKUIN).map(g => (
               <button
                 key={g}
-                style={{ ...s.tagBtn, ...(editTargetGakuin.includes(g) ? s.tagBtnActive : {}) }}
+                className={`tag-tab-btn ${editTargetGakuin.includes(g) ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
                 onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
               >
                 {g}
@@ -433,7 +439,8 @@ export default function EventDetail({ event: initialEvent, onBack }) {
               {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
                 <button
                   key={k}
-                  style={{ ...s.tagBtn, ...(editTargetGakukei.includes(k) ? s.tagBtnActive : {}) }}
+                  className={`tag-tab-btn ${editTargetGakukei.includes(k) ? "tag-active-tab" : ""}`}
+                    style={s.tagBtn}
                   onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
                 >
                   {k}
@@ -448,7 +455,10 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           <label style={s.editLabel}>③ キャンパス <span style={s.required}>必須</span></label>
           <div style={s.optionGrid}>
             {CAMPUS_TAGS.map(t => (
-              <button key={t} style={{ ...s.tagBtn, ...(editCampus === t ? s.tagBtnActive : {}) }} onClick={() => setEditCampus(t)}>{t}</button>
+              <button key={t} 
+              className={`tag-tab-btn ${editCampus === t ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
+              onClick={() => setEditCampus(t)}>{t}</button>
             ))}
           </div>
         </div>
@@ -458,7 +468,10 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           <label style={s.editLabel}>④ 参加スタイル（任意）</label>
           <div style={s.optionGrid}>
             {STYLE_TAGS.map(t => (
-              <button key={t} style={{ ...s.tagBtn, ...(editStyle === t ? s.tagBtnActive : {}) }} onClick={() => setEditStyle(prev => prev === t ? "" : t)}>{t}</button>
+              <button key={t} 
+              className={`tag-tab-btn ${editStyle === t ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
+              onClick={() => setEditStyle(prev => prev === t ? "" : t)}>{t}</button>
             ))}
           </div>
         </div>
@@ -468,7 +481,10 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           <label style={s.editLabel}>⑤ 募集者種別（任意）</label>
           <div style={s.optionGrid}>
             {ORGANIZER_TAGS.map(t => (
-              <button key={t} style={{ ...s.tagBtn, ...(editOrganizer === t ? s.tagBtnActive : {}) }} onClick={() => setEditOrganizer(prev => prev === t ? "" : t)}>{t}</button>
+              <button key={t} 
+              className={`tag-tab-btn ${editOrganizer === t ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
+              onClick={() => setEditOrganizer(prev => prev === t ? "" : t)}>{t}</button>
             ))}
           </div>
         </div>
@@ -493,7 +509,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           />
         </div>
 
-        <button style={s.saveBtn} onClick={handleSave} disabled={saving}>
+        <button className="submit-btn" style={s.saveBtn} onClick={handleSave} disabled={saving}>
           {saving ? "保存中..." : "保存する"}
         </button>
       </div>
@@ -754,7 +770,6 @@ const s = {
   timeSep: { fontSize:16, color:"#5A7370", paddingBottom:10, flexShrink:0 },
   optionGrid: { display:"flex", flexWrap:"wrap", gap:8 },
   tagBtn: { padding:"6px 12px", borderRadius:999, border:"1.5px solid #D0DDD9", background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
-  tagBtnActive: { background:THEME, color:"white", border:`1.5px solid ${THEME}` },
   saveBtn: { padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   actionRow: { display:"flex", gap:12 },
   actionBtn: { flex:1, padding:"12px", background:"white", border:"1.5px solid #D0DDD9", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 },

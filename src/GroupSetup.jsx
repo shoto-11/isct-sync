@@ -495,13 +495,9 @@ const [homepageUrl, setHomepageUrl] = useState("");
                   <button 
                     type="button"
                     key={t}
-                    style={{ 
-                      flex: 1, padding: "10px", borderRadius: 8, 
-                      border: `1.5px solid ${groupType === t ? THEME : "#D0DDD9"}`, 
-                      background: groupType === t ? THEME : "white", 
-                      color: groupType === t ? "white" : "#5A7370", 
-                      fontSize: 12, fontWeight: 600, cursor: "pointer" 
-                    }}
+                    className={`tag-tab-btn ${groupType === t ? "tag-active-tab" : ""}`}
+                    style={{ flex: 1, padding: "10px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                    
                     onClick={() => setGroupType(t)}
                     disabled={loading}
                   >
@@ -529,7 +525,9 @@ const [homepageUrl, setHomepageUrl] = useState("");
               <input style={s.input} placeholder="ホームページ URL" value={homepageUrl} onChange={e => setHomepageUrl(e.target.value)} />
             </div>
 
-            <button type="submit" style={{ ...s.btn, marginTop: 8 }} disabled={loading || !groupName.trim()}>
+            <button type="submit" 
+            className="submit-btn"
+            style={{ ...s.btn, marginTop: 8 }} disabled={loading || !groupName.trim()}>
               {loading ? "グループを開設中..." : "グループを新規開設する"}
             </button>
           </form>

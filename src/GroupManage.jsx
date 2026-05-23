@@ -218,7 +218,8 @@ const handleSave = async () => {
           {/* 代表者のみ、カードの右上に絶対配置 */}
           {isLeader && (
             <button 
-              style={editMode ? s.cardCloseBtn : s.cardEditBtn} 
+              className={`imp-tab-btn`}
+              style={s.cardEditBtn}
               onClick={() => editMode ? handleCancelEdit() : setEditMode(true)}
             >
               {editMode ? (
@@ -269,13 +270,10 @@ const handleSave = async () => {
                       <button 
                         type="button"
                         key={t}
+                        className={`tag-tab-btn ${editType === label ? "tag-active-tab" : ""}`}
                         style={{ 
                           padding: "8px 16px", borderRadius: 8, 
-                          border: `1.5px solid ${editType === label ? THEME : "#D0DDD9"}`, 
-                          background: editType === label ? THEME : "white", 
-                          color: editType === label ? "white" : "#5A7370", 
                           fontSize: 12, fontWeight: 600, cursor: "pointer",
-                          transition: "all 0.2s"
                         }}
                         onClick={() => setEditType(label)}
                         disabled={saving}
@@ -591,8 +589,7 @@ const s = {
   card: { background: "white", borderRadius: 12, padding: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
   
   // 💡 【アイコン化】ボタン内部の構成要素を横並びにするためのスタイル調整
-  cardEditBtn: { position: "absolute", top: 16, right: 16, border: `1.5px solid ${THEME}`, color: THEME, background: "white", borderRadius: 6, fontSize: 12, fontWeight: 700, padding: "5px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.2s" },
-  cardCloseBtn: { position: "absolute", top: 16, right: 16, border: "none", color: "#5A7370", background: "#F4F6F5", borderRadius: 6, fontSize: 12, fontWeight: 700, padding: "5px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5 },
+  cardEditBtn: { position: "absolute", top: 16, right: 16,  borderRadius: 6, fontSize: 12, fontWeight: 700, padding: "5px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, transition: "all 0.2s" },
 
   groupInfo: { display: "flex", alignItems: "center", gap: 20 },
   editForm: { display: "flex", flexDirection: "column", gap: 16 },

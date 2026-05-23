@@ -308,7 +308,10 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <label style={s.label}>① ジャンル <span style={s.required}>必須</span></label>
         <div style={s.optionGrid}>
           {GENRE_TAGS.map(t => (
-            <button key={t} style={{ ...s.tagBtn, ...(genreTag === t ? s.tagBtnActive : {}) }} onClick={() => setGenreTag(t)}>{t}</button>
+            <button key={t} 
+            className={`tag-tab-btn ${genreTag === t ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
+                onClick={() => setGenreTag(t)}>{t}</button>
           ))}
         </div>
       </div>
@@ -318,7 +321,9 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <label style={s.label}>② 対象学年 <span style={s.required}>必須・複数選択可</span></label>
         <div style={s.optionGrid}>
           {TARGET_TAGS.map(t => (
-            <button key={t} style={{ ...s.tagBtn, ...(targetTags.includes(t) ? s.tagBtnActive : {}) }}
+            <button key={t} 
+            className={`tag-tab-btn ${targetTags.includes(t) ? "tag-active-tab" : ""}`}
+            style={s.tagBtn}
               onClick={() => setTargetTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
             >
               {t}
@@ -332,7 +337,9 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <label style={s.label}>対象学院（任意・複数選択可）</label>
         <div style={s.optionGrid}>
           {Object.keys(GAKUIN).map(g => (
-            <button key={g} style={{ ...s.tagBtn, ...(targetGakuin.includes(g) ? s.tagBtnActive : {}) }}
+            <button key={g} 
+            className={`tag-tab-btn ${targetGakuin.includes(g) ? "tag-active-tab" : ""}`}
+            style={s.tagBtn}
               onClick={() => setTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
             >
               {g}
@@ -347,7 +354,9 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
           <label style={s.label}>対象学系（任意・複数選択可）</label>
           <div style={s.optionGrid}>
             {targetGakuin.flatMap(g => GAKUIN[g]).map(k => (
-              <button key={k} style={{ ...s.tagBtn, ...(targetGakukei.includes(k) ? s.tagBtnActive : {}) }}
+              <button key={k} 
+              className={`tag-tab-btn ${targetGakukei.includes(k) ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
                 onClick={() => setTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
               >
                 {k}
@@ -362,7 +371,10 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <label style={s.label}>③ キャンパス <span style={s.required}>必須</span></label>
         <div style={s.optionGrid}>
           {CAMPUS_TAGS.map(t => (
-            <button key={t} style={{ ...s.tagBtn, ...(campusTag === t ? s.tagBtnActive : {}) }} onClick={() => setCampusTag(t)}>{t}</button>
+            <button key={t} 
+            className={`tag-tab-btn ${campusTag === t ? "tag-active-tab" : ""}`}
+            style={s.tagBtn}
+            onClick={() => setCampusTag(t)}>{t}</button>
           ))}
         </div>
       </div>
@@ -372,7 +384,10 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <label style={s.label}>④ 参加スタイル（任意）</label>
         <div style={s.optionGrid}>
           {STYLE_TAGS.map(t => (
-            <button key={t} style={{ ...s.tagBtn, ...(styleTag === t ? s.tagBtnActive : {}) }} onClick={() => setStyleTag(prev => prev === t ? "" : t)}>{t}</button>
+            <button key={t} 
+            className={`tag-tab-btn ${styleTag === t ? "tag-active-tab" : ""}`}
+            style={s.tagBtn}
+            onClick={() => setStyleTag(prev => prev === t ? "" : t)}>{t}</button>
           ))}
         </div>
       </div>
@@ -382,7 +397,10 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <label style={s.label}>⑤ 募集者種別（任意）</label>
         <div style={s.optionGrid}>
           {ORGANIZER_TAGS.map(t => (
-            <button key={t} style={{ ...s.tagBtn, ...(organizerTag === t ? s.tagBtnActive : {}) }} onClick={() => setOrganizerTag(prev => prev === t ? "" : t)}>{t}</button>
+            <button key={t} 
+            className={`tag-tab-btn ${organizerTag === t ? "tag-active-tab" : ""}`}
+            style={s.tagBtn}
+            onClick={() => setOrganizerTag(prev => prev === t ? "" : t)}>{t}</button>
           ))}
         </div>
       </div>
@@ -405,7 +423,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <input style={s.input} placeholder="例：example@m.isct.ac.jp / @Twitter" value={contact} onChange={e => setContact(e.target.value)} />
       </div>
 
-      <button style={s.btn} onClick={handleSubmit} disabled={loading}>
+      <button className="submit-btn" style={s.btn} onClick={handleSubmit} disabled={loading}>
         {loading ? "投稿中..." : "イベントを投稿する"}
       </button>
     </div>
@@ -433,7 +451,6 @@ const s = {
   btn: { marginTop:8, padding:14, background: THEME, color: "white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   optionGrid: { display:"flex", flexWrap:"wrap", gap:8 },
   tagBtn: { padding:"6px 12px", borderRadius:999, border:`1.5px solid #D0DDD9`, background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
-  tagBtnActive: { background: THEME, color:"white", border:`1.5px solid ${THEME}` },
   backBtn: { background:"none", border:"none", color: THEME, fontSize:14, fontWeight:700, cursor:"pointer", padding:"0 0 12px", alignSelf:"flex-start", display: "flex", alignItems: "center", gap: 4 },
   cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginTop: 4 },
   organizerCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 8, border: "2px solid #D0DDD9", cursor: "pointer", transition: "all 0.2s" },

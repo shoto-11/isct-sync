@@ -7,6 +7,27 @@ import { BG_COLOR } from "./constants";
 import { Calendar, MapPin } from "lucide-react";
 import "./animations.css";
 
+const TagSection = ({ title, tags, selectedTags, onToggle }) => (
+    <div style={s.tagSection}>
+    <h3 style={s.tagSectionTitle}>{title}</h3>
+    <div style={s.tagGrid}>
+        {tags.map(tag => {
+        const isActive = selectedTags.includes(tag);
+        return (
+            <button
+            key={tag}
+            className={`tag-tab-btn ${isActive ? "tag-active-tab" : ""}`}
+            style={s.tagBtn}
+            onClick={() => onToggle(tag)}
+            >
+            {tag}
+            </button>
+        );
+        })}
+    </div>
+    </div>
+);
+
 export default function Search() {
   const [keyword, setKeyword] = useState("");
   const [selectedTags, setSelectedTags] = useState([]);
@@ -62,33 +83,6 @@ export default function Search() {
     );
   };
 
-  const TagSection = ({ title, tags }) => (
-    <div style={s.tagSection}>
-      <h3 style={s.tagSectionTitle}>{title}</h3>
-      <div style={s.tagGrid}>
-        {tags.map(tag => {
-          const isActive = selectedTags.includes(tag);
-          return (
-            <button
-              key={tag}
-              /* 💡 修正ポイント：これまでマイページやベルマークで大成功した
-                    「rank-active-tab」にクラス名を統一します */
-              className={`tag-tab-btn ${isActive ? "tag-active-tab" : ""}`}
-              style={{ 
-                ...s.tagBtn, 
-                ...(isActive ? s.tagBtnActive : {}),
-                transformOrigin: "center center",
-               }}
-              onClick={() => toggleTag(tag)}
-            >
-              {tag}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
   return (
     <div style={s.container}>
       <div style={s.inner}>
@@ -104,7 +98,7 @@ export default function Search() {
             onKeyDown={e => e.key === "Enter" && handleSearch()}
             autoFocus
           />
-          <button style={s.searchBtn} onClick={handleSearch}>
+          <button className="submit-btn" style={s.searchBtn} onClick={handleSearch}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           </button>
         </div>
@@ -112,13 +106,13 @@ export default function Search() {
         {/* タグ一覧 */}
         {!searched && (
           <div style={s.tagContainer}>
-            <TagSection title="ジャンル" tags={GENRE_TAGS} />
-            <TagSection title="対象者" tags={TARGET_TAGS} />
-            <TagSection title="キャンパス" tags={CAMPUS_TAGS} />
-            <TagSection title="参加スタイル" tags={STYLE_TAGS} />
-            <TagSection title="募集者" tags={ORGANIZER_TAGS} />
+            <TagSection title="ジャンル" tags={GENRE_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
+            <TagSection title="対象者" tags={TARGET_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
+            <TagSection title="キャンパス" tags={CAMPUS_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
+            <TagSection title="参加スタイル" tags={STYLE_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
+            <TagSection title="募集者" tags={ORGANIZER_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
             {selectedTags.length > 0 && (
-              <button style={s.searchBtnFull} onClick={handleSearch}>
+              <button className="submit-btn" style={s.searchBtnFull} onClick={handleSearch}>
                 選択したタグで検索
               </button>
             )}
@@ -188,14 +182,13 @@ const s = {
   heading: { fontSize:22, fontWeight:700, color:"#111", marginBottom:20 },
   searchBar: { display:"flex", gap:8, marginBottom:24 },
   searchInput: { flex:1, padding:"12px 16px", border:"2px solid #88203a", borderRadius:8, fontSize:15, outline:"none", fontFamily:"inherit" },
-  searchBtn: { background:"#88203a", border:"none", borderRadius:8, padding:"0 16px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" },
+  searchBtn: { borderRadius:8, padding:"0 16px", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" },
+  searchBtnFull: { padding:"12px", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   tagContainer: { display:"flex", flexDirection:"column", gap:20 },
   tagSection: { background:"white", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" },
   tagSectionTitle: { fontSize:15, fontWeight:700, color:"#111", marginBottom:12, margin:"0 0 12px" },
   tagGrid: { display:"flex", flexWrap:"wrap", gap:8 },
   tagBtn: { padding:"6px 14px", borderRadius:999, fontSize:13, fontWeight:600, cursor:"pointer" },
-  tagBtnActive: { background:"#88203a", color:"white", border:"1.5px solid #88203a" },
-  searchBtnFull: { padding:"12px", background:"#88203a", color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   resultHeader: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 },
   resultCount: { fontSize:16, fontWeight:700, color:"#111" },
   resetBtn: { background:"none", border:"none", color:"#88203a", fontSize:13, fontWeight:700, cursor:"pointer" },

@@ -216,8 +216,10 @@ const EventCard = ({ event }) => {
               <label style={s.editLabel}>学院</label>
               <div style={s.optionGrid}>
                 {Object.keys(GAKUIN).map((g) => (
-                  <button key={g} style={{ ...s.optionBtn, ...(editGakuin === g ? s.optionBtnActive : {}) }}
-                    onClick={() => { setEditGakuin(g); setEditGakukei(""); }}>{g}</button>
+                  <button key={g}
+                  className={`tag-tab-btn ${editGakuin === g ? "tag-active-tab" : ""}`}
+                  style={s.optionBtn}
+                  onClick={() => { setEditGakuin(g); setEditGakukei(""); }}>{g}</button>
                 ))}
               </div>
             </div>
@@ -227,8 +229,8 @@ const EventCard = ({ event }) => {
                   <label style={s.editLabel}>学系 <span style={{ fontSize: 10, color: "#9AADA8", fontWeight: "normal", marginLeft: 4 }}>(任意)</span></label>
                   {editGakukei && (
                     <button 
-                      type="button"
-                      style={{ background: "none", border: "none", color: "#C62828", fontSize: 11, fontWeight: 700, cursor: "pointer", padding: 0 }}
+                      className="tag-tab-btn"
+                        style={s.optionBtn}
                       onClick={() => setEditGakukei("")}
                     >
                       選択をクリア
@@ -239,7 +241,8 @@ const EventCard = ({ event }) => {
                   {/* 未所属用の明示的なボタン枠 */}
                   <button 
                     type="button" 
-                    style={{ ...s.optionBtn, ...(editGakukei === "" ? s.optionBtnActive : {}) }}
+                    className={`tag-tab-btn ${editGakukei === "" ? "tag-active-tab" : ""}`}
+                    style={s.optionBtn}
                     onClick={() => setEditGakukei("")}
                   >
                     未所属 / その他
@@ -251,7 +254,8 @@ const EventCard = ({ event }) => {
                       <button 
                         type="button"
                         key={k} 
-                        style={{ ...s.optionBtn, ...(isSelected ? s.optionBtnActive : {}) }}
+                        className={`tag-tab-btn ${editGakukei === k ? "tag-active-tab" : ""}`}
+                        style={s.optionBtn}
                         onClick={() => setEditGakukei(isSelected ? "" : k)} // 💡 すでに選択されていれば未選択へトグル
                       >
                         {k}
@@ -265,7 +269,9 @@ const EventCard = ({ event }) => {
               <label style={s.editLabel}>学年・教職員</label>
               <div style={s.optionGrid}>
                 {GAKUNEN.map((g) => (
-                  <button key={g} style={{ ...s.optionBtn, ...(editGakunen === g ? s.optionBtnActive : {}) }}
+                  <button key={g} 
+                  className={`tag-tab-btn ${editGakunen === g ? "tag-active-tab" : ""}`}
+                  style={s.optionBtn}
                     onClick={() => setEditGakunen(g)}>{g}</button>
                 ))}
               </div>
@@ -274,14 +280,16 @@ const EventCard = ({ event }) => {
               <label style={s.editLabel}>性別</label>
               <div style={s.optionGrid}>
                 {GENDER.map((g) => (
-                  <button key={g} style={{ ...s.optionBtn, ...(editGender === g ? s.optionBtnActive : {}) }}
-                    onClick={() => setEditGender(g)}>{g}</button>
+                  <button key={g} 
+                  className={`tag-tab-btn ${editGender === g ? "tag-active-tab" : ""}`}
+                  style={s.optionBtn}
+                  onClick={() => setEditGender(g)}>{g}</button>
                 ))}
               </div>
             </div>
             <div style={s.editBtnRow}>
-              <button style={s.cancelBtn} onClick={() => setEditMode(false)}>キャンセル</button>
-              <button style={s.saveBtn} onClick={handleSaveProfile}>保存する</button>
+              <button className="tag-tab-btn" style={s.cancelBtn} onClick={() => setEditMode(false)}>キャンセル</button>
+              <button className="submit-btn" style={s.saveBtn} onClick={handleSaveProfile}>保存する</button>
             </div>
           </div>
         )}
@@ -306,7 +314,6 @@ const EventCard = ({ event }) => {
           </div>
         )}
 
-        {/* ── グループ一覧 ── */}
         {/* ── グループ一覧 ── */}
         <div style={s.groupSection}>
           <div style={s.groupHeader}>
@@ -465,11 +472,10 @@ const s = {
   editLabel: { fontSize: 12, fontWeight: 700, color: "#5A7370", letterSpacing: "0.05em" },
   editInput: { width: "100%", padding: "10px 12px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit" },
   optionGrid: { display: "flex", flexWrap: "wrap", gap: 8 },
-  optionBtn: { padding: "6px 14px", borderRadius: 999, border: "1.5px solid #D0DDD9", background: "white", fontSize: 12, fontWeight: 600, color: "#5A7370", cursor: "pointer" },
-  optionBtnActive: { background: THEME, color: "white", border: `1.5px solid ${THEME}` },
+  optionBtn: { padding:"6px 14px", borderRadius:999, fontSize:13, fontWeight:600, cursor:"pointer" },
   editBtnRow: { display: "flex", gap: 10, justifyContent: "flex-end" },
-  saveBtn: { padding: "10px 24px", background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
-  cancelBtn: { padding: "10px 24px", background: BG_COLOR, color: "#5A7370", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
+  saveBtn: { padding: "10px 24px", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
+  cancelBtn: { padding: "10px 24px", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" },
   infoBox: { background: "white", margin: "0 14px", borderRadius: 12, padding: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 10 },
   infoRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   infoLabel: { fontSize: 13, color: "#5A7370", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 },
