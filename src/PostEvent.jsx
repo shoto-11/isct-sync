@@ -435,25 +435,38 @@ const s = {
   section: { marginBottom:18 },
   label: { display:"block", fontSize:12, fontWeight:700, color:"#5A7370", letterSpacing:"0.05em", marginBottom:6 },
   required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
-  input: { 
+ input: { 
     width: "100%", 
-    /* 💡 スマホのWebkit系ブラウザ（Safari等）でdate/time要素が親を突き破るのを防ぐお守り */
+    /* 📱 スマホの実機（Webkit）でdateやtimeが画面を突き破るバグを強制終了させるコア設定 */
     maxWidth: "100%", 
-    minWidth: 0, 
+    minWidth: "0px", 
+    /* 横幅の計算ベースを枠線の内側に完全ロック */
+    boxSizing: "border-box", 
     padding: "11px 13px", 
     border: "1.5px solid #D0DDD9", 
     borderRadius: 8, 
     fontSize: 14, 
     outline: "none", 
-    fontFamily: "inherit", 
-    boxSizing: "border-box" 
+    fontFamily: "inherit",
+    /* iOS Safari特有のインプットの余計な影やデフォルト表示をリセット */
+    WebkitAppearance: "none",
+    appearance: "none"
   },
-  textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
-  imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR },
+  textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6, boxSizing: "border-box" },
+  imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR, boxSizing: "border-box" },
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },
   imagePlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", gap:8 },
   imagePlaceholderText: { fontSize:13, color:"#5A7370", fontWeight:600 },
-  timeRow: { display:"flex", alignItems:"flex-end", gap:8, marginTop:8, width:"100%", minWidth:0 },
+  timeRow: { 
+    display: "flex", 
+    alignItems: "flex-end", 
+    gap: 8, 
+    marginTop: 8, 
+    width: "100%", 
+    /* 📱 親要素自体がスマホで右にはみ出るのを完全に禁止するお守り */
+    maxWidth: "100%",
+    boxSizing: "border-box"
+  },
   timeSeparator: { fontSize:16, color:"#5A7370", paddingBottom:10, flexShrink:0 },
   attachArea: { width:"100%", padding:"14px", borderRadius:8, border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8, background:BG_COLOR },
   attachList: { marginTop:8, display:"flex", flexDirection:"column", gap:4 },
