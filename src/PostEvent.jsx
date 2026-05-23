@@ -163,10 +163,10 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
   return (
     <div style={s.container}>
-      <button style={s.backBtn} onClick={() => window.history.back()}>
+      {/*<button style={s.backBtn} onClick={() => window.history.back()}>
         <ArrowLeft size={16} />
         <span>戻る</span>
-      </button>
+      </button>*/}
       <h2 style={s.heading}>イベントを作る</h2>
 
 

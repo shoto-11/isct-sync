@@ -79,7 +79,7 @@ export default function NotificationSettings() {
         zIndex: 100, 
         boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
       }}>
-        {/* 戻るボタン（左端） */}
+        {/* 戻るボタン（左端）
         <button 
           onClick={() => navigate(-1)} // マイページに戻る
           style={{ 
@@ -96,9 +96,9 @@ export default function NotificationSettings() {
             marginRight: 12 
           }}
         >
-          {/* ArrowLeftアイコンを使っていない場合は lucide-react からインポートして使用してください */}
+          // ArrowLeftアイコンを使っていない場合は lucide-react からインポートして使用してください 
           <ArrowLeft size={18} />
-        </button>
+        </button> */}
         {/* タイトル（中央付近） */}
         <h1 style={{ color: "white", fontSize: 17, fontWeight: 900, margin: 0, flex: 1 }}>
           新着通知設定中のリスト

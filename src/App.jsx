@@ -18,6 +18,7 @@ import MyPage from "./MyPage";
 import Contact from "./Contact";
 import AdminPanel from "./AdminPanel";
 import NotificationSettings from "./NotificationSettings";
+import GroupManage from "./GroupManage";
 
 import logo from "./assets/logo.png";
 import { BG_COLOR, GENRE_STYLES, GENRE_EMOJI } from "./constants";
@@ -240,7 +241,7 @@ function MainLayout({
               </div>
             )}
 
-            <button className="header-icon-btn" onClick={() => navigate("/search")}>
+            <button className="header-icon-btn" onClick={() => window.location.href = "/search"}>
               <SearchIcon size={22} />
             </button>
 
@@ -446,7 +447,7 @@ function EventPageWrapper({ user }) {
   if (!user) return (
     <div style={{ background: BG_COLOR, minHeight: "100vh" }}>
       <div style={{ padding: "8px 16px", maxWidth: 720, margin: "0 auto" }}>
-        <button style={s.textBtn} onClick={() => navigate(-1)}>← 戻る</button>
+        {/*<button style={s.textBtn} onClick={() => navigate(-1)}>← 戻る</button>*/}
       </div>
       {event.imageUrl
         ? <img src={event.imageUrl} alt={event.title} style={{ width: "100%", maxWidth: 720, display: "block", margin: "0 auto" }} />
@@ -698,7 +699,16 @@ export default function App() {
       } />
 
       <Route path="/groups/:groupId" element={
-        <MainLayout {...layoutProps}><GroupProfileWrapper /></MainLayout>
+        <MainLayout {...layoutProps}>
+          <GroupProfileWrapper />
+        </MainLayout>
+      } />
+
+      <Route path="/groups/:groupId/manage" element={
+        <MainLayout {...layoutProps}>
+          {/* 💡 マイページから渡されていた navigate 処理をそのまま連動させます */}
+          <GroupManage onEventSelect={(event) => navigate(`/events/${event.id}`)} />
+        </MainLayout>
       } />
 
       <Route path="/admin" element={<AdminPanel user={user} />} />
@@ -709,6 +719,7 @@ export default function App() {
           <NotificationSettings />
         </MainLayout>
       } />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

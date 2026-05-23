@@ -517,7 +517,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   return (
     <div style={s.container}>
       <div style={s.topBar}>
-        <button style={s.backBtn} onClick={onBack}>← 戻る</button>
+        {/*<button style={s.backBtn} onClick={onBack}>← 戻る</button> */}
         {isOwner && (
           <button className="imp-tab-btn" style={s.editEventBtn} onClick={() => setEditMode(true)}><Pencil size={14} />  編集</button>
         )}

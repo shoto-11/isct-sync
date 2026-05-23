@@ -13,14 +13,18 @@ import "./animations.css";
 // コンポーネントの外、または最上部に一度だけインジェクションします
 
 
-function EventCard({ event, onSelect }) {
+function EventCard({ event, onSelect, size = "small" }) {
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+  const cardWidth = size === "large"
+    ? (window.innerWidth > 768 ? 330 : 220)
+    : (window.innerWidth > 768 ? 250 : 180);
   return (
     <div
-      className="event-hover-card" /* 💡 共通アニメーションクラスを適用 */
+      className="event-hover-card"
       style={{
         ...s.card,
+        width: cardWidth,
         background: "white",
         boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
       }}
@@ -86,7 +90,7 @@ function RankItem({ event, rank, count, label, onSelect }) {
   );
 }
 
-function Section({ title, badge, events, onSelect, icon, maxItems = 20 }) {
+function Section({ title, badge, events, onSelect, icon, maxItems = 20, cardSize = "small" }) {
   const [showLeft, setShowLeft] = useState(false);
   const [showRight, setShowRight] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -177,7 +181,7 @@ function Section({ title, badge, events, onSelect, icon, maxItems = 20 }) {
         >
           <div style={s.cardsGrid}>
             {displayEvents.map(event => (
-            <EventCard key={event.id} event={event} onSelect={dragged ? () => {} : onSelect} />
+            <EventCard key={event.id} event={event} onSelect={dragged ? () => {} : onSelect} size={cardSize} />
             ))}
           </div>
         </div>
@@ -627,7 +631,7 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
 {carouselEvents.length > 0 && <Carousel events={carouselEvents} onSelect={handleSelect} />}
 
   <div style={{ maxWidth:1200, margin:"0 auto", padding: window.innerWidth > 768 ? "0 24px" : "0", overflow:"hidden", width:"100%", boxSizing:"border-box" }}>
-    {user && <Section title="あなたへのおすすめ" icon={<Target size={20} color="#88203a" />} events={recommendedEvents} onSelect={handleSelect} />}
+    {user && <Section title="あなたへのおすすめ" icon={<Target size={20} color="#88203a" />} events={recommendedEvents} onSelect={handleSelect} cardSize="large" />}
       <Section title="新着イベント" icon={<Calendar size={20} color="#88203a" />} events={events} onSelect={handleSelect} />
         <Section title="サークルイベント" icon={<Users size={20} color="#88203a" />} events={circleEvents} onSelect={handleSelect} />
         <Section title="今日が締め切り" icon={<Clock size={20} color="#88203a" />} events={todayDeadlineEvents} onSelect={handleSelect} />

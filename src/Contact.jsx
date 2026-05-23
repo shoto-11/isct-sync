@@ -38,7 +38,7 @@ export default function Contact({ onBack }) {
   return (
     <div style={s.container}>
       <div style={s.header}>
-        <button style={s.backBtn} onClick={onBack}>← 戻る</button>
+        {/* <button style={s.backBtn} onClick={onBack}>← 戻る</button> */}
         <h1 style={s.title}>お問い合わせ</h1>
       </div>
       <div style={s.body}>
@@ -47,7 +47,7 @@ export default function Contact({ onBack }) {
             <div style={{ fontSize:48 }}>✅</div>
             <h2 style={s.doneTitle}>送信完了しました</h2>
             <p style={s.doneText}>お問い合わせありがとうございます。内容を確認の上、ご連絡いたします。</p>
-            <button style={s.submitBtn} onClick={onBack}>戻る</button>
+            {/* <button style={s.submitBtn} onClick={onBack}>戻る</button> */}
           </div>
         ) : (
           <>

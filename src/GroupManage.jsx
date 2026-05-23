@@ -7,9 +7,9 @@
  * - 代表者権限の他のメンバーへの譲渡機能
  * - グループから脱退
  */
-
+import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { db, storage } from "./firebase";
+import { auth, db, storage } from "./firebase"; // 💡 auth を追加インポート
 import { doc, getDoc, updateDoc, arrayRemove, collection, query, where, getDocs } from "firebase/firestore"; // 💡 collection群を追加
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { THEME, GENRE_STYLES, GENRE_EMOJI, BG_COLOR } from "./constants"; // 💡 THEMEなどを constants から統合// 💡 「Instagram」の最後のTは大文字ではなく小文字の「t」にします
@@ -17,77 +17,114 @@ import { User, Camera, LogOut, UserMinus, Award, Users, Edit2, X, Crown, Info, C
 import { FaXTwitter, FaInstagram } from "react-icons/fa6"; // X(Twitter) と Instagram
 import { FaGlobe } from "react-icons/fa"; // 地球儀（ホームページ用）
 import "./animations.css";
+export default function GroupManage({ onEventSelect }) {
+  const { groupId } = useParams();
+  const navigate = useNavigate();
+  const currentUserId = auth.currentUser?.uid;
 
-export default function GroupManage({ group, currentUserId, onBack, onChanged, onEventSelect }) {
+  const [group, setGroup] = useState(null);
+  const [loadingGroup, setLoadingGroup] = useState(true);
   const [members, setMembers] = useState([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
   const [editMode, setEditMode] = useState(false);
 
-  // 編集用ステート
-  const [editName, setEditName] = useState(group.displayName || "");
-  const [editType, setEditType] = useState(group.groupType || "サークル");
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("サークル");
   const [avatarFile, setAvatarFile] = useState(null);
-  const [avatarPreview, setAvatarPreview] = useState(group.avatarUrl || null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-
-  // 脱退・操作確認用
   const [confirmLeave, setConfirmLeave] = useState(false);
-
-  // 💡 権限チェック：現在のユーザーがこのグループの「代表者」かどうか
-  const isLeader = group.createdBy === currentUserId;
-
-  const [editDescription, setEditDescription] = useState(group.description || "");
+  const [editDescription, setEditDescription] = useState("");
   const [groupEvents, setGroupEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [eventTab, setEventTab] = useState("active");
+  const [editTwitter, setEditTwitter] = useState("");
+  const [editInstagram, setEditInstagram] = useState("");
+  const [editHomepage, setEditHomepage] = useState("");
 
-  const [editTwitter, setEditTwitter] = useState(group.twitterUrl || "");
-  const [editInstagram, setEditInstagram] = useState(group.instagramUrl || "");
-  const [editHomepage, setEditHomepage] = useState(group.homepageUrl || "");
+  // isLeader は group が取得できてから計算
+  const isLeader = group?.createdBy === currentUserId;
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [group.id]);
+  }, [groupId]);
 
+  // グループ情報をFirestoreから取得
   useEffect(() => {
-    setEditName(group.displayName || "");
-    setEditType(group.groupType || "サークル");
-    setEditDescription(group.description || "");
-    setAvatarPreview(group.avatarUrl || null);
-    setAvatarFile(null);
+    const fetch = async () => {
+      if (!groupId) return;
+      try {
+        const snap = await getDoc(doc(db, "groups", groupId));
+        if (snap.exists()) {
+          const data = { id: snap.id, ...snap.data() };
+          setGroup(data);
+          setEditName(data.displayName || "");
+          setEditType(data.groupType || "サークル");
+          setEditDescription(data.description || "");
+          setEditTwitter(data.twitterUrl || "");
+          setEditInstagram(data.instagramUrl || "");
+          setEditHomepage(data.homepageUrl || "");
+          setAvatarPreview(data.avatarUrl || null);
+        } else {
+          alert("グループが見つかりませんでした。");
+          navigate("/mypage");
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingGroup(false);
+      }
+    };
+    fetch();
+  }, [groupId]);
+
+  // メンバー取得
+  useEffect(() => {
+    if (!group?.members?.length) {
+      setMembers([]);
+      setLoadingMembers(false);
+      return;
+    }
+    const fetch = async () => {
+      try {
+        const q = query(collection(db, "users"), where("__name__", "in", group.members));
+        const snap = await getDocs(q);
+        setMembers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+    fetch();
   }, [group]);
 
+  // イベント取得
   useEffect(() => {
-    const fetchMembers = async () => {
-      const ids = group.members || [];
-      const snaps = await Promise.all(ids.map((id) => getDoc(doc(db, "users", id))));
-      setMembers(snaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() })));
-      setLoadingMembers(false);
-    };
-    fetchMembers();
-  }, [group.id, group.members]);
-
-  useEffect(() => {
-    const fetchGroupEvents = async () => {
-      if (!group.id) return;
+    if (!group?.id) return;
+    const fetch = async () => {
       setLoadingEvents(true);
       try {
         const q = query(collection(db, "events"), where("organizerId", "==", group.id));
         const snap = await getDocs(q);
         const fetched = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        // 開催日が新しい順にソート
         fetched.sort((a, b) => new Date(b.date) - new Date(a.date));
         setGroupEvents(fetched);
       } catch (err) {
-        console.error("グループイベントの取得に失敗しました:", err);
+        console.error(err);
       } finally {
         setLoadingEvents(false);
       }
     };
-    fetchGroupEvents();
-  }, [group.id]);
+    fetch();
+  }, [group?.id]);
 
+  if (loadingGroup) return <div style={{ background: BG_COLOR, minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#5A7370" }}>読み込み中...</div>;
+  if (!group) return null;
+
+  if (!currentUserId) { navigate("/login"); return null; }
+if (!group.members?.includes(currentUserId)) { navigate("/"); return null; }
 
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
@@ -205,7 +242,7 @@ const handleSave = async () => {
     <div style={s.container}>
       {/* ヘッダー */}
       <div style={s.header}>
-        <button style={s.backBtn} onClick={onBack}>← 戻る</button>
+        {/* <button style={s.backBtn} onClick={onBack}>← 戻る</button> */}
         <h1 style={s.headerTitle}>グループ管理</h1>
         <div style={{ width: 44 }} />
       </div>

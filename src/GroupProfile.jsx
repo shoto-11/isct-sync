@@ -85,7 +85,7 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
   if (!group) return (
     <div style={{ padding: 40, textAlign: "center", background: BG_COLOR, minHeight: "100vh" }}>
       <p>サークルが見つかりませんでした。</p>
-      <button style={s.backBtn} onClick={onBack}>← 戻る</button>
+      {/*<button style={s.backBtn} onClick={onBack}>← 戻る</button>*/}
     </div>
   );
 
@@ -93,7 +93,7 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
     <div style={s.container}>
       {/* ヘッダーナビ */}
       <div style={s.navBar}>
-        <button style={s.navBackBtn} onClick={onBack}>← 戻る</button>
+        {/*<button style={s.navBackBtn} onClick={onBack}>← 戻る</button>*/}
         </div>
 
       <div style={s.mainContent}>

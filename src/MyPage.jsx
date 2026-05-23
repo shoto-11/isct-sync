@@ -110,15 +110,6 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
 
   if (loading) return <p style={{ padding: 24, color: "#5A7370" }}>読み込み中...</p>;
 
-  if (selectedGroup) return (
-    <GroupManage
-      group={selectedGroup}
-      currentUserId={uid}
-      onBack={() => setSelectedGroup(null)}
-      onChanged={() => { setSelectedGroup(null); onGroupsChanged?.(); }}
-      onEventSelect={onEventSelect}
-    />
-  );
 const EventCard = ({ event }) => {
     const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
     const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
@@ -339,7 +330,7 @@ const EventCard = ({ event }) => {
                   /* 💡 イベントカードと全く同じ共通ホバー・クリックアニメーションクラスを適用！ */
                   className="event-hover-card" 
                   style={s.groupItem} 
-                  onClick={() => setSelectedGroup(group)}
+                  onClick={() => navigate(`/groups/${group.id}/manage`)}
                 >
                   {/* アイコン画像エリア */}
                   <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#F4F6F5", border: "1px solid #E0E8E7", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>

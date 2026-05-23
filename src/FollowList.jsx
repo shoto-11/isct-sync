@@ -77,7 +77,7 @@ export default function FollowList({ userId, type, onBack }) {
   return (
     <div style={s.container}>
       <div style={s.header}>
-        <button style={s.backBtn} onClick={onBack}>← 戻る</button>
+        {/*<button style={s.backBtn} onClick={onBack}>← 戻る</button> */}
         {/* 💡 より自然な通知管理用のタイトルに統一 */}
         <h1 style={s.title}>{type === "follows" ? "通知オンにしているユーザー" : "あなたのお知らせ通知を受け取っているユーザー"}</h1>
       </div>
