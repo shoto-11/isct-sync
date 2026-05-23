@@ -36,16 +36,31 @@
     }
 
     
-      /* ─── ② 【新規統合】ランキングタブボタン用のホバー＆クリック効果 ─── */
-    .tag-tab-btn {
-      transition: background-color 0.3s ease, color 0.3s ease, transform 0.15s ease !important;
-    }
-    /* 選択されていない（アクティブじゃない）ボタンをホバーした時だけ薄グレーにする */
-    .tag-tab-btn:not(.tag-active-tab):hover {
-      background-color: rgb(142, 64, 84) !important;
-      color: rgb(255, 255, 255) !important;
-    }
-    /* ボタンを押し込んだ瞬間、キュッと小さく沈むリッチな手応え */
-    .tag-tab-btn:active {
+    /* 未選択ボタンの通常スタイルを明示（これがないとインラインと競合） */
+.tag-tab-btn:not(.tag-active-tab) {
+  background-color: white !important;
+  color: #8e3e52 !important;
+  border: 1.5px solid #8e3e52 !important;
+}
+
+/* ↓ 既存のホバールールはそのまま。border-color だけ追加 */
+.tag-tab-btn:not(.tag-active-tab):hover {
+  background-color: rgb(142, 64, 84) !important;
+  color: rgb(255, 255, 255) !important;
+  border-color: rgb(142, 64, 84) !important; /* ← これだけ追加 */
+}
+
+/* ↓ 以下2ルールを新規追加 */
+.tag-tab-btn.tag-active-tab {
+  background-color: #88203a !important;
+  color: white !important;
+  border: 1.5px solid #88203a !important;
+}
+.tag-tab-btn.tag-active-tab:hover {
+  background-color: #88203a !important; /* ホバーしても変化させない */
+  color: white !important;
+  border-color: #88203a !important;
+}
+   .tag-tab-btn:active {
       transform: scale(0.95) !important;
     }

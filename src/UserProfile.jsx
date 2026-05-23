@@ -108,18 +108,18 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
             {!isOwn && auth.currentUser && (
                 <button
                     /* 💡 共通ホバー・クリックアニメーションクラスを適用！ */
-                    /* 💡 フォロー中（isFollowing）なら rank-active-tab クラスを付与してホバー色変化をスキップさせます */
-                    className={`tag-tab-btn ${isFollowing ? "rank-active-tab" : ""}`}
+                    /* 💡 フォロー中（isFollowing）なら クラスを付与してホバー色変化をスキップさせます */
+                    className={`tag-tab-btn ${isFollowing ? "" : "tag-active-tab"}`}
                     style={{ 
-                    ...s.followBtn, 
-                    ...(isFollowing ? s.followingBtn : {}),
                     display: "flex", 
                     alignItems: "center", 
                     gap: 6,
-                    /* 💡 初期色は元のスタイル（s.followBtn、s.followingBtn）通りになるよう、CSS変数で安全に渡します */
-                    "--normal-bg": isFollowing ? (s.followingBtn?.background || "#E0E8E7") : (s.followBtn?.background || "white"),
-                    "--normal-color": isFollowing ? (s.followingBtn?.color || "#5A7370") : (s.followBtn?.color || "#88203a"),
-                    "--normal-border": isFollowing ? (s.followingBtn?.border || "none") : (s.followBtn?.border || `1.5px solid #88203a`)
+                    padding: "8px 20px",
+                    borderRadius: 999,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    flexShrink: 0,
                     }}
                     onClick={handleFollow}
                 >
@@ -129,7 +129,7 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
                     </>
                     ) : (
                     <>
-                        <Bell size={17} />
+                        <Bell size={14} />
                     </>
                     )}
                 </button>

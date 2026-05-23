@@ -66,15 +66,25 @@ export default function Search() {
     <div style={s.tagSection}>
       <h3 style={s.tagSectionTitle}>{title}</h3>
       <div style={s.tagGrid}>
-        {tags.map(tag => (
-          <button
-            key={tag}
-            style={{ ...s.tagBtn, ...(selectedTags.includes(tag) ? s.tagBtnActive : {}) }}
-            onClick={() => toggleTag(tag)}
-          >
-            {tag}
-          </button>
-        ))}
+        {tags.map(tag => {
+          const isActive = selectedTags.includes(tag);
+          return (
+            <button
+              key={tag}
+              /* 💡 修正ポイント：これまでマイページやベルマークで大成功した
+                    「rank-active-tab」にクラス名を統一します */
+              className={`tag-tab-btn ${isActive ? "tag-active-tab" : ""}`}
+              style={{ 
+                ...s.tagBtn, 
+                ...(isActive ? s.tagBtnActive : {}),
+                transformOrigin: "center center",
+               }}
+              onClick={() => toggleTag(tag)}
+            >
+              {tag}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -183,7 +193,7 @@ const s = {
   tagSection: { background:"white", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.06)" },
   tagSectionTitle: { fontSize:15, fontWeight:700, color:"#111", marginBottom:12, margin:"0 0 12px" },
   tagGrid: { display:"flex", flexWrap:"wrap", gap:8 },
-  tagBtn: { padding:"6px 14px", borderRadius:999, border:"1.5px solid #D0DDD9", background:"white", fontSize:13, fontWeight:600, color:"#5A7370", cursor:"pointer" },
+  tagBtn: { padding:"6px 14px", borderRadius:999, fontSize:13, fontWeight:600, cursor:"pointer" },
   tagBtnActive: { background:"#88203a", color:"white", border:"1.5px solid #88203a" },
   searchBtnFull: { padding:"12px", background:"#88203a", color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
   resultHeader: { display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16 },
