@@ -370,10 +370,28 @@ const EventCard = ({ event }) => {
             { id: "liked", label: "いいね" },
             { id: "joined", label: "参加予定" },
             { id: "history", label: "閲覧履歴" },
-          ].map((t) => (
-            <button key={t.id} style={{ ...s.tab, ...(activeTab === t.id ? s.tabActive : {}) }}
-              onClick={() => setActiveTab(t.id)}>{t.label}</button>
-          ))}
+          ].map((t) => {
+            const isActive = activeTab === t.id;
+            return (
+              <button 
+                key={t.id} 
+                /* 💡 共通アニメーションクラスを追加！ */
+                /* 💡 選択中のタブには tag-active-tab を付与してホバー色（ピンク）をスキップさせます */
+                className={`tag-tab-btn ${isActive ? "tag-active-tab" : ""}`}
+                /* 💡 初期色は元のスタイル（s.tab、s.tabActive）通りに動くよう、CSS変数で安全に渡します */
+                style={{ 
+                  ...s.tab, 
+                  ...(isActive ? s.tabActive : {}),
+                  "--normal-bg": "none",
+                  "--normal-color": isActive ? THEME : "#5A7370",
+                  "--normal-border": "none"
+                }}
+                onClick={() => setActiveTab(t.id)}
+              >
+                {t.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* ── タブコンテンツ ── */}

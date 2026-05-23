@@ -12,6 +12,7 @@ import { GENRE_STYLES, GENRE_EMOJI, THEME, BG_COLOR } from "./constants";
 import { Users, Calendar, MapPin, ChevronLeft, Info, Bell, BellOff } from "lucide-react"; // 💡 Bell, BellOff を追加
 import { FaXTwitter, FaInstagram } from "react-icons/fa6";
 import { FaGlobe } from "react-icons/fa";
+import "./animations.css";
 
 export default function GroupProfile({ groupId, onBack, onEventSelect }) {
   const [group, setGroup] = useState(null);
@@ -254,16 +255,24 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
               const style = GENRE_STYLES[event.tags?.genre] || { bg: "#F5F5F5", color: "#5A7370" };
               const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
               return (
-                <div key={event.id} style={s.eventItem} onClick={() => onEventSelect(event)}>
+                <div 
+                  key={event.id} 
+                  /* 💡 animations.css の共通ホバー・クリックアニメーションクラスを適用！ */
+                  className="event-hover-card"
+                  style={s.eventItem} 
+                  onClick={() => onEventSelect(event)}
+                >
                   {event.imageUrl ? (
                     <img src={event.imageUrl} alt="" style={s.eventThumb} />
                   ) : (
-                    <div style={{ ...s.eventThumb, background: style.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24 }}>
+                    /* 💡 画像がない場合の枠。ホバー時に連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
+                    <div style={{ ...s.eventThumb, background: style.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, aspectRatio: "1/1" }}>
                       {emoji}
                     </div>
                   )}
                   <div style={s.eventInfo}>
-                    <div style={s.eventTitle}>{event.title}</div>
+                    {/* 💡 イベントタイトルにホバー時下線連動クラスを追加 */}
+                    <div className="hover-title-underline" style={s.eventTitle}>{event.title}</div>
                     <div style={s.eventMeta}>
                       <div style={s.metaItem}><Calendar size={11} /> {event.date}</div>
                       <div style={s.metaItem}><MapPin size={11} /> {event.location}</div>

@@ -34,6 +34,8 @@
     .event-hover-card:active div[style*="aspectRatio"] {
       filter: brightness(0.83) !important;
     }
+
+    
       /* ─── ② 【新規統合】ランキングタブボタン用のホバー＆クリック効果 ─── */
     .tag-tab-btn {
       transition: background-color 0.3s ease, color 0.3s ease, transform 0.15s ease !important;

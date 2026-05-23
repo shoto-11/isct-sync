@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from "./constants";
 import { BG_COLOR } from "./constants";
 import { Calendar, MapPin } from "lucide-react";
+import "./animations.css";
 
 export default function Search() {
   const [keyword, setKeyword] = useState("");

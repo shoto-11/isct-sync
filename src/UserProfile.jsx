@@ -5,6 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { BG_COLOR, COMMON_BACK_BTN_STYLE  } from "./constants";
 import { User, Building2, Calendar, MapPin, Bell, BellOff,ArrowLeft } from "lucide-react";
+import "./animations.css";
+
+
 export default function UserProfile({ userId, onBack, onEventSelect }) {
   const [profile, setProfile] = useState(null);
   const [myEvents, setMyEvents] = useState([]);
@@ -104,12 +107,19 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
 
             {!isOwn && auth.currentUser && (
                 <button
+                    /* 💡 共通ホバー・クリックアニメーションクラスを適用！ */
+                    /* 💡 フォロー中（isFollowing）なら rank-active-tab クラスを付与してホバー色変化をスキップさせます */
+                    className={`tag-tab-btn ${isFollowing ? "rank-active-tab" : ""}`}
                     style={{ 
                     ...s.followBtn, 
                     ...(isFollowing ? s.followingBtn : {}),
                     display: "flex", 
                     alignItems: "center", 
-                    gap: 6 
+                    gap: 6,
+                    /* 💡 初期色は元のスタイル（s.followBtn、s.followingBtn）通りになるよう、CSS変数で安全に渡します */
+                    "--normal-bg": isFollowing ? (s.followingBtn?.background || "#E0E8E7") : (s.followBtn?.background || "white"),
+                    "--normal-color": isFollowing ? (s.followingBtn?.color || "#5A7370") : (s.followBtn?.color || "#88203a"),
+                    "--normal-border": isFollowing ? (s.followingBtn?.border || "none") : (s.followBtn?.border || `1.5px solid #88203a`)
                     }}
                     onClick={handleFollow}
                 >
@@ -119,7 +129,7 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
                     </>
                     ) : (
                     <>
-                        <Bell size={14} />
+                        <Bell size={17} />
                     </>
                     )}
                 </button>
@@ -131,8 +141,7 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
         <span style={s.sectionTitle}>募集中のイベント</span>
         <span style={s.sectionBadge}>全{myEvents.length}件</span>
         </div>
-
-        {myEvents.length === 0 ? (
+{myEvents.length === 0 ? (
             <p style={s.empty}>募集中のイベントはありません</p>
         ) : (
             <div style={s.eventList}>
@@ -140,16 +149,24 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
                 const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
                 const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
                 return (
-                <div key={event.id} style={s.eventItem} onClick={() => onEventSelect(event)}>
+                <div 
+                    key={event.id} 
+                    /* 💡 animations.css の共通ホバー・クリックアニメーションクラスを適用！ */
+                    className="event-hover-card"
+                    style={s.eventItem} 
+                    onClick={() => onEventSelect(event)}
+                >
                     {event.imageUrl ? (
                     <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
                     ) : (
-                    <div style={{ ...s.eventThumb, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>
+                    /* 💡 画像がない場合の枠。ホバー時に連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
+                    <div style={{ ...s.eventThumb, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, aspectRatio: "1/1" }}>
                         {emoji}
                     </div>
                     )}
                     <div style={s.eventInfo}>
-                    <div style={s.eventTitle}>{event.title}</div>
+                    {/* 💡 イベントタイトルにホバー時下線連動クラスを追加 */}
+                    <div className="hover-title-underline" style={s.eventTitle}>{event.title}</div>
                     <div style={{ ...s.eventMeta, display:"flex", alignItems:"center", gap:6 }}>
                     <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
                     </div>
