@@ -365,6 +365,7 @@ const [carouselStartX, setCarouselStartX] = useState(0);
 const [carouselEvents, setCarouselEvents] = useState([]);
 const [todayEvents, setTodayEvents] = useState([]);
 const [popularWeekEvents, setPopularWeekEvents] = useState([]);
+const [recruitEvents, setRecruitEvents] = useState([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -504,6 +505,7 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
             })
             .slice(0, 20);
             setPopularWeekEvents(popularThisWeek);
+            setRecruitEvents(list.filter(e => e.tags?.recruit));
       setLoading(false);
     };
     fetch();
@@ -637,6 +639,7 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
         <Section title="今日が締め切り" icon={<Clock size={20} color="#88203a" />} events={todayDeadlineEvents} onSelect={handleSelect} />
         <Section title="今日参加できるイベント" icon={<Zap size={20} color="#88203a" />} events={todayEvents} onSelect={handleSelect} />
         <Section title="今週の人気イベント" icon={<TrendingUp size={20} color="#88203a" />} events={popularWeekEvents} onSelect={handleSelect} />
+        <Section title="長期メンバー募集中" icon={<Users size={20} color="#88203a" />} events={recruitEvents} onSelect={handleSelect} />
 
       {/* CTA */}
       <div style={s.ctaBanner}>
@@ -702,20 +705,22 @@ const [popularWeekEvents, setPopularWeekEvents] = useState([]);
 }
 const s = {
     // ─── 💡 ここからお知らせバー用のCSSを追加 ───
-  noticeBar: { 
-    background: "white", 
-    borderLeft: `4px solid ${THEME}`, // ← 左側のテーマカラー太線
-    margin: window.innerWidth > 768 ? "12px 100px" : "12px 14px", 
-    borderRadius: 6, 
-    padding: "10px 14px", 
-    display: "flex", 
-    alignItems: "center", 
-    gap: 10, 
-    boxShadow: "0 1px 4px rgba(0,0,0,0.07)", 
-    overflow: "hidden", 
-    height: 48,
-    boxSizing: "border-box" // 高さが崩れないように安全策
-  },
+noticeBar: { 
+  background: "white", 
+  borderLeft: `4px solid ${THEME}`,
+  margin: "12px auto",
+  maxWidth: 1000,
+  width: window.innerWidth > 768 ? "calc(100% - 200px)" : "calc(100% - 28px)",
+  borderRadius: 6, 
+  padding: "10px 14px", 
+  display: "flex", 
+  alignItems: "center", 
+  gap: 10, 
+  boxShadow: "0 1px 4px rgba(0,0,0,0.07)", 
+  overflow: "hidden", 
+  height: 48,
+  boxSizing: "border-box"
+},
   noticeIcon: { 
     background: "#F9EAED", // ← 薄いピンクの円形背景
     borderRadius: "50%", 

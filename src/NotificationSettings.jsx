@@ -69,16 +69,6 @@ export default function NotificationSettings() {
   return (
     <div style={{ background: BG_COLOR, minHeight: "100vh" }}>
       {/* ── 💡 ヘッダーの全面的書き換え（EventDetailと統一） ── */}
-      <div style={{
-        background: THEME, // THEME="#88203a" の前提
-        padding: "12px 16px", 
-        display: "flex", 
-        alignItems: "center", 
-        position: "sticky", 
-        top: 0, 
-        zIndex: 100, 
-        boxShadow: "0 2px 8px rgba(0,0,0,0.15)"
-      }}>
         {/* 戻るボタン（左端）
         <button 
           onClick={() => navigate(-1)} // マイページに戻る
@@ -100,9 +90,10 @@ export default function NotificationSettings() {
           <ArrowLeft size={18} />
         </button> */}
         {/* タイトル（中央付近） */}
-        <h1 style={{ color: "white", fontSize: 17, fontWeight: 900, margin: 0, flex: 1 }}>
-          新着通知設定中のリスト
-        </h1>
+        <div style={s.header}>
+        {/* <button style={s.backBtn} onClick={onBack}>← 戻る</button> */}
+        <h1 style={s.headerTitle}>新着通知設定中のリスト</h1>
+        <div style={{ width: 44 }} />
       </div>
 
       <div style={{ padding: "12px 16px", display: "flex", flexDirection: "column", gap: 8, maxWidth: 720, margin: "0 auto" }}>
@@ -112,7 +103,7 @@ export default function NotificationSettings() {
           items.map((item) => (
             <div
               key={item.id}
-              class="event-hover-card"
+              className="event-hover-card"
               style={{
                 borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
                 background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.06)"
@@ -155,4 +146,11 @@ export default function NotificationSettings() {
       </div>
     </div>
   );
+}
+
+const s={
+    container: { background: BG_COLOR, minHeight: "100vh" },
+    header: { background: THEME, padding: "14px 20px", display: "flex", alignItems: "center", justifyItems: "center" },
+    headerTitle: { flex: 1, color: "white", fontSize: 17, fontWeight: 700, margin: 0, textAlign: "center" },
+      
 }

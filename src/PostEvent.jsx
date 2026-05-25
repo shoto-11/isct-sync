@@ -10,7 +10,8 @@ import {
   STYLE_TAGS, 
   ORGANIZER_TAGS, 
   BG_COLOR, 
-  GAKUIN 
+  GAKUIN ,
+  RECRUIT_TAGS
 } from "./constants";
 import { MapPin, Calendar, Clock, Users, User, Plus, ImageIcon, Paperclip, X, ArrowLeft } from "lucide-react";
 
@@ -41,6 +42,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
   const [organizerType, setOrganizerType] = useState(userGroups.length > 0 ? "group" : "personal");
   const [selectedGroupId, setSelectedGroupId] = useState(userGroups.length > 0 ? userGroups[0].id : null);
   const [userProfile, setUserProfile] = useState(null);
+  const [recruitTag, setRecruitTag] = useState("");
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -134,7 +136,8 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
           targets: targetTags,
           campus: campusTag,
           style: styleTag,
-          organizer: organizerTag, // 💡 修正
+          organizer: organizerTag,
+          recruit: recruitTag// 💡 修正
         },
         imageUrl,
         attachments: attachmentUrls,
@@ -315,9 +318,22 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         </div>
       </div>
 
+      <div style={s.section}>
+        <label style={s.label}>② 募集種別（任意）</label>
+        <div style={s.optionGrid}>
+            {RECRUIT_TAGS.map(t => (
+            <button key={t}
+                className={`tag-tab-btn ${recruitTag === t ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
+                onClick={() => setRecruitTag(prev => prev === t ? "" : t)}
+            >{t}</button>
+            ))}
+        </div>
+        </div>
+
       {/* ② 対象学年（必須） */}
       <div style={s.section}>
-        <label style={s.label}>② 対象学年 <span style={s.required}>必須・複数選択可</span></label>
+        <label style={s.label}>③ 対象学年 <span style={s.required}>必須・複数選択可</span></label>
         <div style={s.optionGrid}>
           {TARGET_TAGS.map(t => (
             <button key={t} 
@@ -333,7 +349,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* 対象学院（任意） */}
       <div style={s.section}>
-        <label style={s.label}>対象学院（任意・複数選択可）</label>
+        <label style={s.label}>④ 対象学院（任意・複数選択可）</label>
         <div style={s.optionGrid}>
           {Object.keys(GAKUIN).map(g => (
             <button key={g} 
@@ -350,7 +366,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       {/* 対象学系（任意） */}
       {targetGakuin.length > 0 && (
         <div style={s.section}>
-          <label style={s.label}>対象学系（任意・複数選択可）</label>
+          <label style={s.label}>⑤ 対象学系（任意・複数選択可）</label>
           <div style={s.optionGrid}>
             {targetGakuin.flatMap(g => GAKUIN[g]).map(k => (
               <button key={k} 
@@ -367,7 +383,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* ③ キャンパス（必須） */}
       <div style={s.section}>
-        <label style={s.label}>③ キャンパス <span style={s.required}>必須</span></label>
+        <label style={s.label}>⑥ キャンパス <span style={s.required}>必須</span></label>
         <div style={s.optionGrid}>
           {CAMPUS_TAGS.map(t => (
             <button key={t} 
@@ -380,7 +396,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* ④ 参加スタイル（任意） */}
       <div style={s.section}>
-        <label style={s.label}>④ 参加スタイル（任意）</label>
+        <label style={s.label}>⑦ 参加スタイル（任意）</label>
         <div style={s.optionGrid}>
           {STYLE_TAGS.map(t => (
             <button key={t} 
@@ -393,7 +409,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* ⑤ 募集者種別（任意） */}
       <div style={s.section}>
-        <label style={s.label}>⑤ 募集者種別（任意）</label>
+        <label style={s.label}>⑧ 募集者種別（任意）</label>
         <div style={s.optionGrid}>
           {ORGANIZER_TAGS.map(t => (
             <button key={t} 

@@ -12,6 +12,7 @@ import {
   STYLE_TAGS, 
   ORGANIZER_TAGS, 
   BG_COLOR, 
+  RECRUIT_TAGS,
   GAKUIN 
 } from "./constants"; // 💡 constantsから定数を一括読込
 
@@ -792,10 +793,22 @@ export default function AdminPanel({ user }) {
                       ))}
                     </div>
                   </div>
+                  {/* ⑥ 募集種別 */}
+                  <div style={adS.fieldRow}>
+                    <label style={adS.formLabel}>② 募集種別（任意）</label>
+                    <div style={adS.optionGrid}>
+                      {RECRUIT_TAGS.map(t => (
+                        <button key={t} type="button"
+                          className={`tag-tab-btn ${editOrganizerTag === t ? "tag-active-tab" : ""}`}
+                          style={adS.tagBtn}
+                          onClick={() => setEditOrganizerTag(prev => prev === t ? "" : t)}>{t}</button>
+                      ))}
+                    </div>
+                  </div>
 
                   {/* ② 対象学年マルチトグル */}
                   <div style={adS.fieldRow}>
-                    <label style={adS.formLabel}>② 対象学年 <span style={adS.required}>必須・複数選択可</span></label>
+                    <label style={adS.formLabel}>③ 対象学年 <span style={adS.required}>必須・複数選択可</span></label>
                     <div style={adS.optionGrid}>
                       {TARGET_TAGS.map(t => (
                         <button key={t} type="button" 
@@ -808,7 +821,7 @@ export default function AdminPanel({ user }) {
 
                   {/* 対象学院選択 */}
                   <div style={adS.fieldRow}>
-                    <label style={adS.formLabel}>対象学院（任意・複数可）</label>
+                    <label style={adS.formLabel}>④ 対象学院（任意・複数可）</label>
                     <div style={adS.optionGrid}>
                       {Object.keys(GAKUIN).map(g => (
                         <button key={g} type="button" 
@@ -822,7 +835,7 @@ export default function AdminPanel({ user }) {
                   {/* 対象学系選択 */}
                   {editTargetGakuin.length > 0 && (
                     <div style={adS.fieldRow}>
-                      <label style={adS.formLabel}>対象学系（任意・複数可）</label>
+                      <label style={adS.formLabel}>⑤ 対象学系（任意・複数可）</label>
                       <div style={adS.optionGrid}>
                         {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
                           <button key={k} type="button" 
@@ -836,7 +849,7 @@ export default function AdminPanel({ user }) {
 
                   {/* ③ キャンパス選択 */}
                   <div style={adS.fieldRow}>
-                    <label style={adS.formLabel}>③ キャンパス <span style={adS.required}>必須</span></label>
+                    <label style={adS.formLabel}>⑥ キャンパス <span style={adS.required}>必須</span></label>
                     <div style={adS.optionGrid}>
                       {CAMPUS_TAGS.map(t => (
                         <button key={t} type="button" 
@@ -850,7 +863,7 @@ export default function AdminPanel({ user }) {
 
                   {/* ④ 参加スタイル */}
                   <div style={adS.fieldRow}>
-                    <label style={adS.formLabel}>④ 参加スタイル（任意）</label>
+                    <label style={adS.formLabel}>⑦ 参加スタイル（任意）</label>
                     <div style={adS.optionGrid}>
                       {STYLE_TAGS.map(t => (
                         <button key={t} type="button" 
@@ -863,7 +876,7 @@ export default function AdminPanel({ user }) {
 
                   {/* ⑤ 募集者種別 */}
                   <div style={adS.fieldRow}>
-                    <label style={adS.formLabel}>⑤ 募集者種別（任意）</label>
+                    <label style={adS.formLabel}>⑧ 募集者種別（任意）</label>
                     <div style={adS.optionGrid}>
                       {ORGANIZER_TAGS.map(t => (
                         <button 
@@ -1060,10 +1073,22 @@ export default function AdminPanel({ user }) {
                 ))}
               </div>
             </div>
+              {/* ⑥ 募集種別 */}
+              <div style={adS.fieldRow}>
+                <label style={adS.formLabel}>② 募集種別（任意）</label>
+                <div style={adS.optionGrid}>
+                  {RECRUIT_TAGS.map(t => (
+                    <button key={t} type="button"
+                      className={`tag-tab-btn ${proxyOrganizerTag === t ? "tag-active-tab" : ""}`}
+                      style={adS.tagBtn}
+                      onClick={() => setProxyOrganizerTag(prev => prev === t ? "" : t)}>{t}</button>
+                  ))}
+                </div>
+              </div>
 
             {/* ② 対象学年 */}
             <div style={adS.fieldRow}>
-              <label style={adS.formLabel}>② 対象学年 <span style={adS.required}>必須・複数選択可</span></label>
+              <label style={adS.formLabel}>③ 対象学年 <span style={adS.required}>必須・複数選択可</span></label>
               <div style={adS.optionGrid}>
                 {TARGET_TAGS.map(t => (
                   <button key={t} 
@@ -1077,7 +1102,7 @@ export default function AdminPanel({ user }) {
 
             {/* 対象学院 */}
             <div style={adS.fieldRow}>
-              <label style={adS.formLabel}>対象学院（任意・複数選択可）</label>
+              <label style={adS.formLabel}>④ 対象学院（任意・複数選択可）</label>
               <div style={adS.optionGrid}>
                 {Object.keys(GAKUIN).map(g => (
                   <button key={g} type="button" 
@@ -1091,7 +1116,7 @@ export default function AdminPanel({ user }) {
             {/* 対象学系 */}
             {proxyTargetGakuin.length > 0 && (
               <div style={adS.fieldRow}>
-                <label style={adS.formLabel}>対象学系（任意・複数選択可）</label>
+                <label style={adS.formLabel}>⑤ 対象学系（任意・複数選択可）</label>
                 <div style={adS.optionGrid}>
                   {proxyTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
                     <button key={k} type="button" 
@@ -1105,7 +1130,7 @@ export default function AdminPanel({ user }) {
 
             {/* ③ キャンパス */}
             <div style={adS.fieldRow}>
-              <label style={adS.formLabel}>③ キャンパス <span style={adS.required}>必須</span></label>
+              <label style={adS.formLabel}>⑥ キャンパス <span style={adS.required}>必須</span></label>
               <div style={adS.optionGrid}>
                 {CAMPUS_TAGS.map(t => (
                   <button key={t} type="button" 
@@ -1118,7 +1143,7 @@ export default function AdminPanel({ user }) {
 
             {/* ④ 参加スタイル */}
             <div style={adS.fieldRow}>
-              <label style={adS.formLabel}>④ 参加スタイル（任意）</label>
+              <label style={adS.formLabel}>⑦ 参加スタイル（任意）</label>
               <div style={adS.optionGrid}>
                 {STYLE_TAGS.map(t => (
                   <button key={t} type="button" 
@@ -1131,7 +1156,7 @@ export default function AdminPanel({ user }) {
 
             {/* ⑤ 募集者種別 */}
             <div style={adS.fieldRow}>
-              <label style={adS.formLabel}>⑤ 募集者種別（任意）</label>
+              <label style={adS.formLabel}>⑧ 募集者種別（任意）</label>
               <div style={adS.optionGrid}>
                 {ORGANIZER_TAGS.map(t => (
                   <button key={t} type="button" 

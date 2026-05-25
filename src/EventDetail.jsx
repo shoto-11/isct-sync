@@ -1,4 +1,4 @@
-import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, BG_COLOR, GAKUIN } from "./constants";
+import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, BG_COLOR, GAKUIN,RECRUIT_TAGS } from "./constants";
 import { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
@@ -29,6 +29,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [editTargets, setEditTargets] = useState(event.tags?.targets || []);
   const [editCampus, setEditCampus] = useState(event.tags?.campus || "");
   const [editStyle, setEditStyle] = useState(event.tags?.style || "");
+  const [editRecruit, setEditRecruit] = useState(event.tags?.recruit || "");
   const [editOrganizer, setEditOrganizer] = useState(event.tags?.organizer || "");
   const [liked, setLiked] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -192,7 +193,8 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           targets: editTargets,
           campus: editCampus,
           style: editStyle,
-          organizer: editOrganizer, // ⑤の募集者種別タグ
+          organizer: editOrganizer, 
+          recruit: editRecruit,// ⑤の募集者種別タグ
         },
         targetGakuin: editTargetGakuin,
         targetGakukei: editTargetGakukei,
@@ -395,10 +397,22 @@ export default function EventDetail({ event: initialEvent, onBack }) {
             ))}
           </div>
         </div>
+        {/* 募集種別 */}
+        <div style={s.editSection}>
+        <label style={s.editLabel}>② 募集系統（任意）</label>
+        <div style={s.optionGrid}>
+            {RECRUIT_TAGS.map(t => (
+            <button key={t}
+                className={`tag-tab-btn ${editRecruit === t ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
+                onClick={() => setEditRecruit(prev => prev === t ? "" : t)}>{t}</button>
+            ))}
+        </div>
+        </div>
 
         {/* 対象者 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>② 対象学年 <span style={s.required}>必須・複数選択可</span></label>
+          <label style={s.editLabel}>③ 対象学年 <span style={s.required}>必須・複数選択可</span></label>
           <div style={s.optionGrid}>
             {TARGET_TAGS.map(t => (
               <button key={t} 
@@ -411,7 +425,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         
         {/* 対象学院 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>対象学院（任意・複数選択可）</label>
+          <label style={s.editLabel}>④ 対象学院（任意・複数選択可）</label>
           <div style={s.optionGrid}>
             {Object.keys(GAKUIN).map(g => (
               <button
@@ -429,7 +443,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         {/* 対象学系 */}
         {editTargetGakuin.length > 0 && (
           <div style={s.editSection}>
-            <label style={s.editLabel}>対象学系（任意・複数選択可）</label>
+            <label style={s.editLabel}>⑤ 対象学系（任意・複数選択可）</label>
             <div style={s.optionGrid}>
               {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
                 <button
@@ -447,7 +461,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
 
         {/* キャンパス */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>③ キャンパス <span style={s.required}>必須</span></label>
+          <label style={s.editLabel}>⑥ キャンパス <span style={s.required}>必須</span></label>
           <div style={s.optionGrid}>
             {CAMPUS_TAGS.map(t => (
               <button key={t} 
@@ -460,7 +474,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
 
         {/* 参加スタイル */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>④ 参加スタイル（任意）</label>
+          <label style={s.editLabel}>⑤ 参加スタイル（任意）</label>
           <div style={s.optionGrid}>
             {STYLE_TAGS.map(t => (
               <button key={t} 
@@ -473,7 +487,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
 
         {/* 募集者 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>⑤ 募集者種別（任意）</label>
+          <label style={s.editLabel}>⑦ 募集者種別（任意）</label>
           <div style={s.optionGrid}>
             {ORGANIZER_TAGS.map(t => (
               <button key={t} 

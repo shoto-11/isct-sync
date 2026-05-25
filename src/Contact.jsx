@@ -52,7 +52,7 @@ export default function Contact({ onBack }) {
         ) : (
           <>
             <p style={s.desc}>
-              ISCT Syncに関するご質問・ご意見・不具合報告などはこちらからお送りください。
+              ISCT SYNCに関するご質問・ご意見・不具合報告などはこちらからお送りください。
             </p>
             <form style={s.form} onSubmit={handleSubmit}>
               <div style={s.formGroup}>

@@ -110,7 +110,7 @@ export default function Search() {
             <TagSection title="対象者" tags={TARGET_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
             <TagSection title="キャンパス" tags={CAMPUS_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
             <TagSection title="参加スタイル" tags={STYLE_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
-            <TagSection title="募集者" tags={ORGANIZER_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
+            <TagSection title="募集者種別" tags={ORGANIZER_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
             {selectedTags.length > 0 && (
               <button className="submit-btn" style={s.searchBtnFull} onClick={handleSearch}>
                 選択したタグで検索
