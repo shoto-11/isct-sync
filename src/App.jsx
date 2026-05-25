@@ -19,12 +19,13 @@ import Contact from "./Contact";
 import AdminPanel from "./AdminPanel";
 import NotificationSettings from "./NotificationSettings";
 import GroupManage from "./GroupManage";
+import Guide from "./Guide"; // 💡 追加
 
 import logo from "./assets/logo.png";
 import { BG_COLOR, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import {
   Search as SearchIcon, User, Menu, Home, PenLine,
-  Mail, LogOut, LogIn, Settings, ChevronRight,Bell,Megaphone, LockKeyhole
+  Mail, LogOut, LogIn, Settings, ChevronRight, Bell, Megaphone, LockKeyhole, HelpCircle
 } from "lucide-react";
 import GroupProfile from "./GroupProfile";
 
@@ -409,6 +410,12 @@ function MainLayout({
               <ChevronRight size={16} color="#B0BEC5" />
             </button>
           )}
+
+          <button className="menu-drawer-btn" onClick={() => { navigate("/guide"); setMenuOpen(false); }}>
+  <span style={s.menuItemLeft}><HelpCircle size={18} />&nbsp; 使い方ガイド</span>
+  <ChevronRight size={16} color="#B0BEC5" />
+</button>
+
         </div>
       </div>
     </div>
@@ -726,6 +733,7 @@ export default function App() {
           <Contact onBack={() => navigate(-1)} />
         </MainLayout>
       } />
+      <Route path="/guide" element={<MainLayout {...layoutProps}><Guide /></MainLayout>} />
 
     </Routes>
   );
