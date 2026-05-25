@@ -36,7 +36,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [likeCount, setLikeCount] = useState(0);
   const [joinCount, setJoinCount] = useState(0);
 
-  // 💡 募集者（詳細表示用 ＆ 編集時のカード選択用）
+  // 💡 主催者（詳細表示用 ＆ 編集時のカード選択用）
   const [organizer, setOrganizer] = useState(null);
   const [editOrganizerType, setEditOrganizerType] = useState(event.organizerType || "personal");
   const [editOrganizerId, setEditOrganizerId] = useState(event.organizerId || event.createdBy);
@@ -96,7 +96,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     recordView();
   }, [event.id]);
 
-  // 詳細表示用の募集者データを動的にフェッチ
+  // 詳細表示用の主催者データを動的にフェッチ
   useEffect(() => {
     const fetchOrganizer = async () => {
       const type = event.organizerType || "personal";
@@ -194,7 +194,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           campus: editCampus,
           style: editStyle,
           organizer: editOrganizer, 
-          recruit: editRecruit,// ⑤の募集者種別タグ
+          recruit: editRecruit,
         },
         targetGakuin: editTargetGakuin,
         targetGakukei: editTargetGakukei,
@@ -277,7 +277,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
 
         {/* 募集者選択カードセクション（必須） */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>募集者を変更 <span style={s.required}>必須</span></label>
+          <label style={s.editLabel}>主催者を変更 <span style={s.required}>必須</span></label>
           <div style={s.cardGrid}>
             <button
                 className={`organizer-card ${editOrganizerType === "personal" ? "organizer-selected" : ""}`}
@@ -485,9 +485,9 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           </div>
         </div>
 
-        {/* 募集者 */}
+        {/* 主催者 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>⑦ 募集者種別（任意）</label>
+          <label style={s.editLabel}>⑦ 主催者種別（任意）</label>
           <div style={s.optionGrid}>
             {ORGANIZER_TAGS.map(t => (
               <button key={t} 
@@ -630,7 +630,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         )}
         {organizer && (
           <div style={s.section}>
-            <h2 style={s.sectionTitle}>募集者</h2>
+            <h2 style={s.sectionTitle}>主催者</h2>
             <div
               /* 💡 animations.css の共通ホバー・クリックアニメーションクラスを適用！ */
               className="event-hover-card"
@@ -673,7 +673,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
                 </div>
               )}
               <div style={{ flex: 1 }}>
-                {/* 💡 募集者名にホバー時下線連動クラスを追加 */}
+                {/* 💡 主催者名にホバー時下線連動クラスを追加 */}
                 <div className="hover-title-underline" style={{ fontSize:15, fontWeight:700, color:"#111" }}>
                   {organizer.displayName}
                 </div>

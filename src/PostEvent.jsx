@@ -173,9 +173,9 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       <h2 style={s.heading}>イベントを作る</h2>
 
 
-{/* 募集者選択（必須） */}
+{/* 主催者選択（必須） */}
       <div style={s.section}>
-        <label style={s.label}>募集者を選択 <span style={s.required}>必須</span></label>
+        <label style={s.label}>主催者を選択 <span style={s.required}>必須</span></label>
         <div style={s.cardGrid}>
           <button
             className={`organizer-card ${organizerType === "personal" ? "organizer-selected" : ""}`}
@@ -407,9 +407,9 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         </div>
       </div>
 
-      {/* ⑤ 募集者種別（任意） */}
+      {/* ⑤ 主催者種別（任意） */}
       <div style={s.section}>
-        <label style={s.label}>⑧ 募集者種別（任意）</label>
+        <label style={s.label}>⑧ 主催者種別（任意）</label>
         <div style={s.optionGrid}>
           {ORGANIZER_TAGS.map(t => (
             <button key={t} 

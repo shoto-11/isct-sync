@@ -186,7 +186,7 @@
 
 
 
-/* ─── 募集者選択カード ─── */
+/* ─── 主催者選択カード ─── */
 .organizer-card {
   transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
   background-color: white;

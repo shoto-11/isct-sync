@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
-import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS } from "./constants";
+import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS,RECRUIT_TAGS } from "./constants";
 import { BG_COLOR } from "./constants";
 import { Calendar, MapPin } from "lucide-react";
 import "./animations.css";
@@ -69,7 +69,8 @@ export default function Search() {
         event.tags?.targets?.includes(tag) ||
         event.tags?.campus === tag ||
         event.tags?.style === tag ||
-        event.tags?.organizer === tag
+        event.tags?.organizer === tag ||
+        event.tags?.recruit === tag
       );
 
       return matchKeyword && matchTags;
@@ -92,7 +93,7 @@ export default function Search() {
         <div style={s.searchBar}>
           <input
             style={s.searchInput}
-            placeholder="イベント名・場所・募集者名で検索"
+            placeholder="イベント名・場所・主催者名で検索"
             value={keyword}
             onChange={e => setKeyword(e.target.value)}
             onKeyDown={e => e.key === "Enter" && handleSearch()}
@@ -107,10 +108,11 @@ export default function Search() {
         {!searched && (
           <div style={s.tagContainer}>
             <TagSection title="ジャンル" tags={GENRE_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
+            <TagSection title="募集種別" tags={RECRUIT_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
             <TagSection title="対象者" tags={TARGET_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
             <TagSection title="キャンパス" tags={CAMPUS_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
             <TagSection title="参加スタイル" tags={STYLE_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
-            <TagSection title="募集者種別" tags={ORGANIZER_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
+            <TagSection title="主催者種別" tags={ORGANIZER_TAGS} selectedTags={selectedTags} onToggle={toggleTag} />
             {selectedTags.length > 0 && (
               <button className="submit-btn" style={s.searchBtnFull} onClick={handleSearch}>
                 選択したタグで検索

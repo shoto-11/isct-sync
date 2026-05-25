@@ -263,17 +263,17 @@ export default function AdminPanel({ user }) {
   // 💡 【新規追加】管理者によるイベント代打投稿の登録処理
   const handleProxySubmitEvent = async () => {
     if (!proxyOrganizerId) {
-      alert("イベントの募集者（主催者）を先に選択してください。");
+      alert("イベントの主催者を先に選択してください。");
       return;
     }
     if (!proxyTitle.trim() || !proxyDetail.trim() || !proxyDate || !proxyLocation.trim() || !proxyDeadline || !proxyGenre || !proxyTargets.length || !proxyCampus) {
-      alert("必須項目（募集者、イベント名、詳細、日時、場所、締切日、ジャンル、対象学年、キャンパス）を全て入力・選択してください。");
+      alert("必須項目（主催者、イベント名、詳細、日時、場所、締切日、ジャンル、対象学年、キャンパス）を全て入力・選択してください。");
       return;
     }
 
     setSaving(true);
     try {
-      // 選択された募集者の情報を全データから特定
+      // 選択された主催者の情報を全データから特定
       const targetGroup = proxyIsGroup ? groups.find(g => g.id === proxyOrganizerId) : null;
       const targetUser = !proxyIsGroup ? users.find(u => u.id === proxyOrganizerId) : null;
 
@@ -585,7 +585,7 @@ export default function AdminPanel({ user }) {
 
             <div style={{ height: 1, background: "#E0E8E7", margin: "12px 0" }}></div>
 
-            <input style={adS.input} placeholder="イベント名・募集者名で検索..." value={carouselSearch} onChange={(e) => setCarouselSearch(e.target.value)} />
+            <input style={adS.input} placeholder="イベント名・主催者名で検索..." value={carouselSearch} onChange={(e) => setCarouselSearch(e.target.value)} />
             {events.filter((e) => !carouselSearch || e.title?.includes(carouselSearch) || e.organizerName?.includes(carouselSearch)).map((event) => (
               <div key={event.id} className="event-hover-card" style={adS.listItem}>
                 {event.imageUrl ? <img src={event.imageUrl} alt="" style={{ width: 60, height: 34, objectFit: "cover", borderRadius: 6, flexShrink: 0 }} /> : <div style={{ width: 60, height: 34, background: "#F4F6F5", borderRadius: 6, flexShrink: 0 }} />}
@@ -610,7 +610,7 @@ export default function AdminPanel({ user }) {
         {activeTab === "events" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <h2 style={{ fontSize: 16, fontWeight: 700 }}>全イベント一覧（{events.length}件）</h2>
-            <input style={adS.input} placeholder="イベント名・募集者名で検索..." value={eventSearch} onChange={(e) => setEventSearch(e.target.value)} />
+            <input style={adS.input} placeholder="イベント名・主催者名で検索..." value={eventSearch} onChange={(e) => setEventSearch(e.target.value)} />
             
             {events.filter((e) => !eventSearch || e.title?.includes(eventSearch) || e.organizerName?.includes(eventSearch)).map((event) => (
               <div key={event.id} className="event-hover-card"  style={adS.listItem}>
@@ -694,15 +694,15 @@ export default function AdminPanel({ user }) {
                     <input style={adS.input} value={editLocation} onChange={e => setEditLocation(e.target.value)} />
                   </div>
 
-                  {/* 💡 【新規追加】管理者用：募集者（主催者）の完全変更グリッド */}
-                  {/* 💡 募集者（主催者）の完全変更グリッド（検索欄付き） */}
+                  {/* 💡 【新規追加】管理者用：主催者の完全変更グリッド */}
+                  {/* 💡 主催者の完全変更グリッド（検索欄付き） */}
                   <div style={adS.fieldRow}>
-                    <label style={adS.formLabel}>募集者（主催者）の変更 <span style={adS.required}>必須</span></label>
+                    <label style={adS.formLabel}>主催者の変更 <span style={adS.required}>必須</span></label>
                     
                     {/* 💡 【新規追加】名前・メールアドレスでのリアルタイム検索インポート */}
                     <input 
                       style={{ ...adS.input, marginTop: 2, marginBottom: 8, padding: "8px 12px", fontSize: 13 }}
-                      placeholder="募集者の名前、またはメールアドレスで絞り込み..." 
+                      placeholder="主催者の名前、またはメールアドレスで絞り込み..." 
                       value={orgSearchQuery} 
                       onChange={(e) => setOrgSearchQuery(e.target.value)} 
                     />
@@ -874,9 +874,9 @@ export default function AdminPanel({ user }) {
                     </div>
                   </div>
 
-                  {/* ⑤ 募集者種別 */}
+                  {/* ⑤ 主催者種別 */}
                   <div style={adS.fieldRow}>
-                    <label style={adS.formLabel}>⑧ 募集者種別（任意）</label>
+                    <label style={adS.formLabel}>⑧ 主催者種別（任意）</label>
                     <div style={adS.optionGrid}>
                       {ORGANIZER_TAGS.map(t => (
                         <button 
@@ -927,9 +927,9 @@ export default function AdminPanel({ user }) {
             <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>イベント代打投稿 (管理者専用)</h2>
             <p style={{ fontSize: 12, color: "#5A7370", margin: 0 }}>学内の特定のユーザーやサークルに代わってイベントを新規作成・代理公開します。</p>
 
-            {/* 1. 募集者選択（検索欄付きハイブリッドグリッド） */}
+            {/* 1. 主催者選択（検索欄付きハイブリッドグリッド） */}
             <div style={adS.fieldRow}>
-              <label style={adS.formLabel}>イベントの本当の募集者（主催者）を選択 <span style={adS.required}>必須</span></label>
+              <label style={adS.formLabel}>イベントの本当の主催者を選択 <span style={adS.required}>必須</span></label>
               <input 
                 style={{ ...adS.input, marginTop: 4, marginBottom: 8 }}
                 placeholder="主催する個人名、またはサークル名・メールアドレスで検索..." 
@@ -1154,9 +1154,9 @@ export default function AdminPanel({ user }) {
               </div>
             </div>
 
-            {/* ⑤ 募集者種別 */}
+            {/* ⑤ 主催者種別 */}
             <div style={adS.fieldRow}>
-              <label style={adS.formLabel}>⑧ 募集者種別（任意）</label>
+              <label style={adS.formLabel}>⑧ 主催者種別（任意）</label>
               <div style={adS.optionGrid}>
                 {ORGANIZER_TAGS.map(t => (
                   <button key={t} type="button" 
