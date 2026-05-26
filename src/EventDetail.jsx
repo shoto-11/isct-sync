@@ -624,10 +624,36 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         )}
 
         {event.applyLink && (
-          <a href={event.applyLink} target="_blank" rel="noreferrer" className="submit-btn" style={s.applyBtn}>
-            {event.applyLabel || "参加を申し込む"} →
-          </a>
-        )}
+          <a href={event.applyLink}
+              target="_blank"
+              rel="noreferrer"
+              className="submit-btn"
+              style={s.applyBtn}
+              onClick={async () => {
+                if (!event.id) return;
+                try {
+                  const viewRef = doc(db, "eventStats", event.id);
+                  const snap = await getDoc(viewRef);
+                  if (snap.exists()) {
+                    await updateDoc(viewRef, { applyCount: (snap.data().applyCount || 0) + 1 });
+                  } else {
+                    await setDoc(viewRef, {
+                      eventId: event.id,
+                      deadline: event.deadline || null,
+                      views: [],
+                      likes: [],
+                      joins: [],
+                      applyCount: 1,
+                    });
+                  }
+                } catch (err) {
+                  console.error("申し込みカウントの記録に失敗:", err);
+                }
+              }}
+            >
+              {event.applyLabel || "参加を申し込む"} →
+            </a>
+          )}
         {organizer && (
           <div style={s.section}>
             <h2 style={s.sectionTitle}>主催者</h2>

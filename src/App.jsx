@@ -16,7 +16,16 @@ import UserProfile from "./UserProfile";
 import Search from "./Search";
 import MyPage from "./MyPage";
 import Contact from "./Contact";
-import AdminPanel from "./AdminPanel";
+
+import AdminLayout from "./admin/AdminLayout";
+import AdminNotice from "./admin/AdminNotice";
+import AdminCarousel from "./admin/AdminCarousel";
+import AdminEvents from "./admin/AdminEvents";
+import AdminProxyPost from "./admin/AdminProxyPost";
+import AdminUsers from "./admin/AdminUsers";
+import AdminGroups from "./admin/AdminGroups";
+
+
 import NotificationSettings from "./NotificationSettings";
 import GroupManage from "./GroupManage";
 import Guide from "./Guide"; // 💡 追加
@@ -719,8 +728,13 @@ export default function App() {
         </MainLayout>
       } />
 
-      <Route path="/admin" element={<AdminPanel user={user} />} />
-      <Route path="/admin/:tab" element={<AdminPanel user={user} />} />
+      <Route path="/admin" element={<Navigate to="/admin/notice" replace />} />
+      <Route path="/admin/notice" element={<AdminLayout user={user}><AdminNotice /></AdminLayout>} />
+      <Route path="/admin/carousel" element={<AdminLayout user={user}><AdminCarousel /></AdminLayout>} />
+      <Route path="/admin/events" element={<AdminLayout user={user}><AdminEvents /></AdminLayout>} />
+      <Route path="/admin/proxy_post" element={<AdminLayout user={user}><AdminProxyPost /></AdminLayout>} />
+      <Route path="/admin/users" element={<AdminLayout user={user}><AdminUsers /></AdminLayout>} />
+      <Route path="/admin/groups" element={<AdminLayout user={user}><AdminGroups /></AdminLayout>} />
       <Route path="*" element={<Navigate to="/" replace />} />
       <Route path="/notification-settings/:userId" element={
         <MainLayout {...layoutProps}>
