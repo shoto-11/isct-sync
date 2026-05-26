@@ -2,22 +2,21 @@
       transition: background-color 0.3s ease, transform 0.15s ease !important;
       cursor: pointer;
     }
-    
-    /* 💡 カード自体のホバー：背景を薄グレーにし、タイトルに下線を入れる */
-    .event-hover-card:hover {
-      background-color: rgb(227, 227, 227) !important;
-    }
-    .event-hover-card:hover .hover-title-underline {
-      text-decoration: underline !important;
-      text-decoration-color: #000000 !important;
-    }
 
-    /* 💡 【新規追加】カードがホバーされたとき、中の画像とプレースホルダー画像も連動して少し暗くする */
-    .event-hover-card:hover img,
-    .event-hover-card:hover div[style*="aspectRatio"] {
-      filter: brightness(0.87) !important; /* 明るさを少し落としてグレー感を連動 */
-      transition: filter 0.3s ease !important;
-    }
+    @media (hover: hover) {
+  .event-hover-card:hover {
+    background-color: rgb(227, 227, 227) !important;
+  }
+  .event-hover-card:hover .hover-title-underline {
+    text-decoration: underline !important;
+    text-decoration-color: #000000 !important;
+  }
+  .event-hover-card:hover img,
+  .event-hover-card:hover div[style*="aspectRatio"] {
+    filter: brightness(0.87) !important;
+    transition: filter 0.3s ease !important;
+  }
+}
     
     /* 通常時の画像のトランジションも滑らかに */
     .event-hover-card img,
@@ -44,10 +43,17 @@
 }
 
 /* ↓ 既存のホバールールはそのまま。border-color だけ追加 */
-.tag-tab-btn:not(.tag-active-tab):hover {
-  background-color: rgb(142, 64, 84) !important;
-  color: rgb(255, 255, 255) !important;
-  border-color: rgb(142, 64, 84) !important; /* ← これだけ追加 */
+@media (hover: hover) {
+  .tag-tab-btn:not(.tag-active-tab):hover {
+    background-color: rgb(142, 64, 84) !important;
+    color: rgb(255, 255, 255) !important;
+    border-color: rgb(142, 64, 84) !important;
+  }
+  .tag-tab-btn.tag-active-tab:hover {
+    background-color: #88203a !important;
+    color: white !important;
+    border-color: #88203a !important;
+  }
 }
 
 /* ↓ 以下2ルールを新規追加 */
@@ -56,11 +62,7 @@
   color: white !important;
   border: 1.5px solid #88203a !important;
 }
-.tag-tab-btn.tag-active-tab:hover {
-  background-color: #88203a !important; /* ホバーしても変化させない */
-  color: white !important;
-  border-color: #88203a !important;
-}
+
    .tag-tab-btn:active {
       transform: scale(0.95) !important;
     }
@@ -78,10 +80,17 @@
 }
 
 /* ↓ 既存のホバールールはそのまま。border-color だけ追加 */
-.imp-tab-btn:not(.imp-active-tab):hover {
-  background-color: rgb(142, 64, 84) !important;
-  color: rgb(255, 255, 255) !important;
-  border-color: rgb(142, 64, 84) !important; /* ← これだけ追加 */
+@media (hover: hover) {
+  .imp-tab-btn:not(.imp-active-tab):hover {
+    background-color: rgb(142, 64, 84) !important;
+    color: rgb(255, 255, 255) !important;
+    border-color: rgb(142, 64, 84) !important;
+  }
+  .imp-tab-btn.imp-active-tab:hover {
+    background-color: #88203a !important;
+    color: white !important;
+    border-color: #88203a !important;
+  }
 }
 
 /* ↓ 以下2ルールを新規追加 */
@@ -89,11 +98,6 @@
   background-color: #88203a !important;
   color: white !important;
   border: 1.5px solid #88203a !important;
-}
-.imp-tab-btn.imp-active-tab:hover {
-  background-color: #88203a !important; /* ホバーしても変化させない */
-  color: white !important;
-  border-color: #88203a !important;
 }
    .imp-tab-btn:active {
       transform: scale(0.95) !important;
@@ -115,11 +119,12 @@
   border: 1.5px solid #88203a !important;
 }
 
-.submit-btn:not(:disabled):hover {
-  background-color: #b02a4a !important;
-  border-color: #b02a4a !important;
+@media (hover: hover) {
+  .submit-btn:not(:disabled):hover {
+    background-color: #b02a4a !important;
+    border-color: #b02a4a !important;
+  }
 }
-
 .submit-btn:not(:disabled):active {
   background-color: #6b1830 !important;
   border-color: #6b1830 !important;
@@ -144,9 +149,11 @@
   transition: transform 0.15s ease, box-shadow 0.15s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
-.reaction-btn:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+@media (hover: hover) {
+  .reaction-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  }
 }
 
 .reaction-btn:active {
@@ -193,9 +200,11 @@
   border: 1.5px solid #D0DDD9;
 }
 
-.organizer-card:hover {
-  background-color: #FFF5F7;
-  border-color: #88203a;
+@media (hover: hover) {
+  .organizer-card:hover {
+    background-color: #FFF5F7;
+    border-color: #88203a;
+  }
 }
 
 .organizer-card:active {
@@ -212,10 +221,13 @@
   cursor: pointer;
   transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
 }
-.banner-hover:hover {
-  transform: translateY(-3px) scale(1.01);
-  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
-  filter: brightness(1.06);
+
+@media (hover: hover) {
+  .banner-hover:hover {
+    transform: translateY(-3px) scale(1.01);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    filter: brightness(1.06);
+  }
 }
 .banner-hover:active {
   transform: translateY(0) scale(0.99);
