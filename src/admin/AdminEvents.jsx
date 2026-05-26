@@ -306,13 +306,11 @@ const handleSave = async () => {
               </div>
             </div>
 
+            {/* ── 💡 代打投稿画面と完全に統一したナンバリングと並び順に修正 ── */}
             {[
               { label: "① ジャンル", tags: GENRE_TAGS, value: editGenre, setValue: setEditGenre, multi: false, required: true },
               { label: "② 募集種別", tags: RECRUIT_TAGS, value: editRecruitTag, setValue: setEditRecruitTag, multi: false },
               { label: "③ 対象学年", tags: TARGET_TAGS, value: editTargets, setValue: setEditTargets, multi: true, required: true },
-              { label: "④ キャンパス", tags: CAMPUS_TAGS, value: editCampus, setValue: setEditCampus, multi: false, required: true },
-              { label: "⑤ 参加スタイル", tags: STYLE_TAGS, value: editStyle, setValue: setEditStyle, multi: false },
-              { label: "⑥ 主催者種別", tags: ORGANIZER_TAGS, value: editOrganizerTag, setValue: setEditOrganizerTag, multi: false },
             ].map(({ label, tags, value, setValue, multi, required }) => (
               <div key={label} style={s.fieldRow}>
                 <label style={s.formLabel}>{label} {required && <span style={s.required}>必須</span>}</label>
@@ -329,9 +327,9 @@ const handleSave = async () => {
               </div>
             ))}
 
-            {/* 対象学院 */}
+            {/* ④ 対象学院（任意） */}
             <div style={s.fieldRow}>
-              <label style={s.formLabel}>対象学院（任意）</label>
+              <label style={s.formLabel}>④ 対象学院（任意・複数選択可）</label>
               <div style={s.optionGrid}>
                 {Object.keys(GAKUIN).map(g => (
                   <button key={g} type="button" className={`tag-tab-btn ${editTargetGakuin.includes(g) ? "tag-active-tab" : ""}`} style={s.tagBtn}
@@ -339,6 +337,41 @@ const handleSave = async () => {
                 ))}
               </div>
             </div>
+
+            {/* ⑤ 対象学系（任意）※ ④が選択された時だけ連動してここに差し込まれます */}
+            {editTargetGakuin.length > 0 && (
+              <div style={s.fieldRow}>
+                <label style={s.formLabel}>⑤ 対象学系（任意・複数選択可）</label>
+                <div style={s.optionGrid}>
+                  {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
+                    <button key={k} type="button" className={`tag-tab-btn ${editTargetGakukei.includes(k) ? "tag-active-tab" : ""}`} style={s.tagBtn}
+                      onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}>{k}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ⑥ キャンパス、⑦ 参加スタイル、⑧ 主催者種別 の並び替え */}
+            {[
+              { label: "⑥ キャンパス", tags: CAMPUS_TAGS, value: editCampus, setValue: setEditCampus, multi: false, required: true },
+              { label: "⑦ 参加スタイル", tags: STYLE_TAGS, value: editStyle, setValue: setEditStyle, multi: false },
+              { label: "⑧ 主催者種別", tags: ORGANIZER_TAGS, value: editOrganizerTag, setValue: setEditOrganizerTag, multi: false },
+            ].map(({ label, tags, value, setValue, multi, required }) => (
+              <div key={label} style={s.fieldRow}>
+                <label style={s.formLabel}>{label} {required && <span style={s.required}>必須</span>}</label>
+                <div style={s.optionGrid}>
+                  {tags.map(t => (
+                    <button key={t} type="button"
+                      className={`tag-tab-btn ${multi ? (value.includes(t) ? "tag-active-tab" : "") : (value === t ? "tag-active-tab" : "")}`}
+                      style={s.tagBtn}
+                      onClick={() => multi ? setValue(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]) : setValue(prev => prev === t ? "" : t)}>
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            
             {/* 添付ファイル */}
             <div style={s.fieldRow}>
               <label style={s.formLabel}>添付画像・資料（任意）</label>

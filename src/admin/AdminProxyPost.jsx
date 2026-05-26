@@ -190,14 +190,10 @@ export default function AdminProxyPost({ user }) {
         <div style={s.fieldRow}><label style={s.formLabel}>申し込み締切日 <span style={s.required}>必須</span></label><input style={s.input} type="date" value={proxyDeadline} onChange={e => setProxyDeadline(e.target.value)} onFocus={e => e.target.showPicker()} /></div>
         <div style={s.fieldRow}><label style={s.formLabel}>締め切り時間（任意）</label><input style={s.input} type="time" value={proxyDeadlineTime} onChange={e => setProxyDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} /></div>
       </div>
-
-      {[
+{[
         { label: "① ジャンル", tags: GENRE_TAGS, value: proxyGenre, setValue: setProxyGenre, multi: false, required: true },
         { label: "② 募集種別", tags: RECRUIT_TAGS, value: proxyRecruitTag, setValue: setProxyRecruitTag, multi: false },
         { label: "③ 対象学年", tags: TARGET_TAGS, value: proxyTargets, setValue: setProxyTargets, multi: true, required: true },
-        { label: "④ キャンパス", tags: CAMPUS_TAGS, value: proxyCampus, setValue: setProxyCampus, multi: false, required: true },
-        { label: "⑤ 参加スタイル", tags: STYLE_TAGS, value: proxyStyle, setValue: setProxyStyle, multi: false },
-        { label: "⑥ 主催者種別", tags: ORGANIZER_TAGS, value: proxyOrganizerTag, setValue: setProxyOrganizerTag, multi: false },
       ].map(({ label, tags, value, setValue, multi, required }) => (
         <div key={label} style={s.fieldRow}>
           <label style={s.formLabel}>{label} {required && <span style={s.required}>必須</span>}</label>
@@ -214,9 +210,9 @@ export default function AdminProxyPost({ user }) {
         </div>
       ))}
 
-      {/* 対象学院 */}
+      {/* ④ 対象学院（任意・複数選択可） */}
       <div style={s.fieldRow}>
-        <label style={s.formLabel}>対象学院（任意）</label>
+        <label style={s.formLabel}>④ 対象学院（任意・複数選択可）</label>
         <div style={s.optionGrid}>
           {Object.keys(GAKUIN).map(g => (
             <button key={g} type="button" className={`tag-tab-btn ${proxyTargetGakuin.includes(g) ? "tag-active-tab" : ""}`} style={s.tagBtn}
@@ -224,9 +220,11 @@ export default function AdminProxyPost({ user }) {
           ))}
         </div>
       </div>
+
+      {/* ⑤ 対象学系（任意）※ ④が選択された時だけ連動してここに差し込まれます */}
       {proxyTargetGakuin.length > 0 && (
         <div style={s.fieldRow}>
-          <label style={s.formLabel}>対象学系（任意）</label>
+          <label style={s.formLabel}>⑤ 対象学系（任意・複数選択可）</label>
           <div style={s.optionGrid}>
             {proxyTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
               <button key={k} type="button" className={`tag-tab-btn ${proxyTargetGakukei.includes(k) ? "tag-active-tab" : ""}`} style={s.tagBtn}
@@ -235,6 +233,27 @@ export default function AdminProxyPost({ user }) {
           </div>
         </div>
       )}
+
+      {/* ⑥ キャンパス、⑦ 参加スタイル、⑧ 主催者種別 の並び替え */}
+      {[
+        { label: "⑥ キャンパス", tags: CAMPUS_TAGS, value: proxyCampus, setValue: setProxyCampus, multi: false, required: true },
+        { label: "⑦ 参加スタイル", tags: STYLE_TAGS, value: proxyStyle, setValue: setProxyStyle, multi: false },
+        { label: "⑧ 主催者種別", tags: ORGANIZER_TAGS, value: proxyOrganizerTag, setValue: setProxyOrganizerTag, multi: false },
+      ].map(({ label, tags, value, setValue, multi, required }) => (
+        <div key={label} style={s.fieldRow}>
+          <label style={s.formLabel}>{label} {required && <span style={s.required}>必須</span>}</label>
+          <div style={s.optionGrid}>
+            {tags.map(t => (
+              <button key={t} type="button"
+                className={`tag-tab-btn ${multi ? (value.includes(t) ? "tag-active-tab" : "") : (value === t ? "tag-active-tab" : "")}`}
+                style={s.tagBtn}
+                onClick={() => multi ? setValue(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]) : setValue(prev => prev === t ? "" : t)}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      ))}
 
       <div style={s.fieldRow}>
   <label style={s.formLabel}>添付画像・資料（任意）</label>
