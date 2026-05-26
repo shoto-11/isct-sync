@@ -1,9 +1,9 @@
 import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, BG_COLOR, GAKUIN,RECRUIT_TAGS } from "./constants";
 import { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
-import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { MapPin,  Pencil,Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon } from "lucide-react";
+import { MapPin,  Pencil,Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon,Trash2 } from "lucide-react";
 import "./animations.css";
 
 
@@ -265,6 +265,16 @@ export default function EventDetail({ event: initialEvent, onBack }) {
       window.location.href = "/mypage";
     }
   };
+
+const handleDelete = async () => {
+  if (!window.confirm("このイベントを削除しますか？この操作は取り消せません。")) return;
+  try {
+    await deleteDoc(doc(db, "events", event.id));
+    window.location.href = "/";
+  } catch (err) {
+    alert("削除に失敗しました: " + err.message);
+  }
+};
 
   // ─── 編集モード画面 ───
   if (editMode) return (
@@ -531,11 +541,21 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   return (
     <div style={s.container}>
       <div style={s.topBar}>
-        {/*<button style={s.backBtn} onClick={onBack}>← 戻る</button> */}
-        {isOwner && (
-          <button className="imp-tab-btn" style={s.editEventBtn} onClick={() => setEditMode(true)}><Pencil size={14} />  編集</button>
-        )}
-      </div>
+  {isOwner && (
+    <button className="imp-tab-btn" style={s.editEventBtn} onClick={() => setEditMode(true)}>
+      <Pencil size={14} /> 編集
+    </button>
+  )}
+  {isOwner && (
+    <button
+    className="imp-tab-btn"
+      style={{ background:THEME, borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+      onClick={handleDelete}
+    >
+      <Trash2 size={14} />削除
+    </button>
+  )}
+</div>
 
       {event.imageUrl ? (
         <img src={event.imageUrl} alt={event.title} style={s.heroImg} />

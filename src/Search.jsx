@@ -64,14 +64,25 @@ export default function Search() {
         event.location?.toLowerCase().includes(keyword.toLowerCase()) ||
         event.organizerName?.toLowerCase().includes(keyword.toLowerCase());
 
-      const matchTags = selectedTags.length === 0 || selectedTags.every(tag =>
-        event.tags?.genre === tag ||
-        event.tags?.targets?.includes(tag) ||
-        event.tags?.campus === tag ||
-        event.tags?.style === tag ||
-        event.tags?.organizer === tag ||
-        event.tags?.recruit === tag
-      );
+      const matchTags = selectedTags.length === 0 || (() => {
+        // 選択タグをカテゴリ別に分類
+        const selectedGenre = selectedTags.filter(t => GENRE_TAGS.includes(t));
+        const selectedRecruit = selectedTags.filter(t => RECRUIT_TAGS.includes(t));
+        const selectedTarget = selectedTags.filter(t => TARGET_TAGS.includes(t));
+        const selectedCampus = selectedTags.filter(t => CAMPUS_TAGS.includes(t));
+        const selectedStyle = selectedTags.filter(t => STYLE_TAGS.includes(t));
+        const selectedOrganizer = selectedTags.filter(t => ORGANIZER_TAGS.includes(t));
+
+        // カテゴリ内はOR、カテゴリ間はAND
+        if (selectedGenre.length > 0 && !selectedGenre.some(t => event.tags?.genre === t)) return false;
+        if (selectedRecruit.length > 0 && !selectedRecruit.some(t => event.tags?.recruit === t)) return false;
+        if (selectedTarget.length > 0 && !selectedTarget.some(t => event.tags?.targets?.includes(t))) return false;
+        if (selectedCampus.length > 0 && !selectedCampus.some(t => event.tags?.campus === t)) return false;
+        if (selectedStyle.length > 0 && !selectedStyle.some(t => event.tags?.style === t)) return false;
+        if (selectedOrganizer.length > 0 && !selectedOrganizer.some(t => event.tags?.organizer === t)) return false;
+
+        return true;
+      })();
 
       return matchKeyword && matchTags;
     });
@@ -79,10 +90,42 @@ export default function Search() {
   };
 
   const toggleTag = (tag) => {
-    setSelectedTags(prev =>
-      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-    );
-  };
+  setSelectedTags(prev => {
+    const next = prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag];
+    
+    // 検索済みの場合は自動で再検索
+    if (searched) {
+      const filtered = allEvents.filter(event => {
+        const matchKeyword = keyword === "" ||
+          event.title?.toLowerCase().includes(keyword.toLowerCase()) ||
+          event.detail?.toLowerCase().includes(keyword.toLowerCase()) ||
+          event.location?.toLowerCase().includes(keyword.toLowerCase()) ||
+          event.organizerName?.toLowerCase().includes(keyword.toLowerCase());
+
+        const selectedGenre = next.filter(t => GENRE_TAGS.includes(t));
+        const selectedRecruit = next.filter(t => RECRUIT_TAGS.includes(t));
+        const selectedTarget = next.filter(t => TARGET_TAGS.includes(t));
+        const selectedCampus = next.filter(t => CAMPUS_TAGS.includes(t));
+        const selectedStyle = next.filter(t => STYLE_TAGS.includes(t));
+        const selectedOrganizer = next.filter(t => ORGANIZER_TAGS.includes(t));
+
+        const matchTags = next.length === 0 || (() => {
+          if (selectedGenre.length > 0 && !selectedGenre.some(t => event.tags?.genre === t)) return false;
+          if (selectedRecruit.length > 0 && !selectedRecruit.some(t => event.tags?.recruit === t)) return false;
+          if (selectedTarget.length > 0 && !selectedTarget.some(t => event.tags?.targets?.includes(t))) return false;
+          if (selectedCampus.length > 0 && !selectedCampus.some(t => event.tags?.campus === t)) return false;
+          if (selectedStyle.length > 0 && !selectedStyle.some(t => event.tags?.style === t)) return false;
+          if (selectedOrganizer.length > 0 && !selectedOrganizer.some(t => event.tags?.organizer === t)) return false;
+          return true;
+        })();
+
+        return matchKeyword && matchTags;
+      });
+      setResults(filtered);
+    }
+    return next;
+  });
+};
 
   return (
     <div style={s.container}>
@@ -126,10 +169,27 @@ export default function Search() {
           <div>
             <div style={s.resultHeader}>
               <span style={s.resultCount}>{results.length}件</span>
-              <button style={s.resetBtn} onClick={() => { setSearched(false); setKeyword(""); setSelectedTags([]); }}>
-                ← 検索条件をリセット
+              <button style={s.resetBtn} onClick={() => { setSearched(false); }}>
+                ← 検索条件に戻る
               </button>
             </div>
+            {/* 選択中タグ */}
+            {selectedTags.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+                {[...GENRE_TAGS, ...RECRUIT_TAGS, ...TARGET_TAGS, ...CAMPUS_TAGS, ...STYLE_TAGS, ...ORGANIZER_TAGS]
+                  .filter(tag => selectedTags.includes(tag))
+                  .map(tag => (
+                    <span
+                      key={tag}
+                      className="tag-tab-btn tag-active-tab"
+                      style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                      onClick={() => toggleTag(tag)}
+                    >
+                      {tag} ✕
+                    </span>
+                  ))}
+              </div>
+            )}
 
             {results.length === 0 ? (
               <p style={s.empty}>該当するイベントが見つかりませんでした</p>
