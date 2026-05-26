@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { User, Ban, ShieldOff } from "lucide-react";
 import { THEME } from "../constants";
 import "../animations.css";
+import heic2any from "heic2any";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -160,16 +161,22 @@ export default function AdminUsers() {
                 <label style={{ padding: "6px 12px", background: "white", border: "1.5px solid #D0DDD9", borderRadius: 6, fontSize: 12, fontWeight: 700, color: "#5A7370", cursor: "pointer" }}>
                   画像をアップロード
                   <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
-                    const file = e.target.files?.[0]; if (!file) return;
-                    try {
-                      alert("アップロード中...");
-                      const storageRef = ref(storage, `avatars/${selectedUser.id}/${file.name}`);
-                      await uploadBytes(storageRef, file);
-                      const url = await getDownloadURL(storageRef);
-                      setEditingUser({ ...(editingUser || selectedUser), avatarUrl: url });
-                      alert("完了！（保存するで確定します）");
-                    } catch (err) { alert("失敗しました"); }
-                  }} />
+                      let file = e.target.files?.[0]; if (!file) return;
+                      if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+                        try {
+                          const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+                          file = new File([converted], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+                        } catch { alert("画像の変換に失敗しました。"); return; }
+                      }
+                      try {
+                        alert("アップロード中...");
+                        const storageRef = ref(storage, `avatars/${selectedUser.id}/${file.name}`);
+                        await uploadBytes(storageRef, file);
+                        const url = await getDownloadURL(storageRef);
+                        setEditingUser({ ...(editingUser || selectedUser), avatarUrl: url });
+                        alert("完了！（保存するで確定します）");
+                      } catch (err) { alert("失敗しました"); }
+                    }} />
                 </label>
                 {(editingUser?.avatarUrl ?? selectedUser.avatarUrl) && (
                   <button type="button" style={{ padding: "6px 12px", background: "#FFEBEE", border: "none", borderRadius: 6, color: "#C62828", fontSize: 12, fontWeight: 700, cursor: "pointer" }} onClick={() => setEditingUser({ ...(editingUser || selectedUser), avatarUrl: "" })}>画像をクリア</button>

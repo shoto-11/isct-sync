@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Users, User, Crown } from "lucide-react";
 import { THEME } from "../constants";
 import "../animations.css";
+import heic2any from "heic2any";
 
 export default function AdminGroups() {
   const [groups, setGroups] = useState([]);
@@ -115,16 +116,22 @@ export default function AdminGroups() {
               <div style={{ display: "flex", gap: 8 }}>
                 <label style={{ padding: "5px 12px", background: "white", border: "1.5px solid #D0DDD9", borderRadius: 6, fontSize: 11, fontWeight: 700, color: "#5A7370", cursor: "pointer" }}>
                   アバターをアップロード
-                  <input type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
-                    const file = e.target.files?.[0]; if (!file) return;
+                  <input type="file" accept="image/*,image/heic,image/heif" style={{ display: "none" }} onChange={async e => {
+                    let file = e.target.files?.[0]; if (!file) return;
+                    if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+                        try {
+                        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+                        file = new File([converted], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+                        } catch { alert("画像の変換に失敗しました。"); return; }
+                    }
                     try {
-                      alert("アップロード中...");
-                      const storageRef = ref(storage, `groups/${selectedGroup.id}/avatar.png`);
-                      await uploadBytes(storageRef, file);
-                      setEditGroupAvatar(await getDownloadURL(storageRef));
-                      alert("完了！（保存で確定）");
+                        alert("アップロード中...");
+                        const storageRef = ref(storage, `groups/${selectedGroup.id}/avatar.png`);
+                        await uploadBytes(storageRef, file);
+                        setEditGroupAvatar(await getDownloadURL(storageRef));
+                        alert("完了！（保存で確定）");
                     } catch { alert("失敗しました"); }
-                  }} />
+                    }} />
                 </label>
                 {editGroupAvatar && <button type="button" style={{ padding: "5px 12px", background: "#FFEBEE", border: "none", borderRadius: 6, color: "#C62828", fontSize: 11, fontWeight: 700, cursor: "pointer" }} onClick={() => setEditGroupAvatar("")}>画像をクリア</button>}
               </div>

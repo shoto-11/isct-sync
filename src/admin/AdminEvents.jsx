@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { User, Users, ImageIcon, Eye, Heart, CalendarCheck, Send } from "lucide-react";
 import { THEME, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, RECRUIT_TAGS, GAKUIN } from "../constants";
 import "../animations.css";
-
+import heic2any from "heic2any";
 export default function AdminEvents() {
   const navigate = useNavigate();
   const [events, setEvents] = useState([]);
@@ -45,6 +45,8 @@ export default function AdminEvents() {
   const [editOrganizerId, setEditOrganizerId] = useState("");
   const [editIsGroup, setEditIsGroup] = useState(false);
   const [orgSearchQuery, setOrgSearchQuery] = useState("");
+  const [editAttachments, setEditAttachments] = useState([]);
+const [existingAttachments, setExistingAttachments] = useState([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -102,41 +104,53 @@ export default function AdminEvents() {
     setEditOrganizerId(event.organizerId || event.createdBy || "");
     setEditIsGroup(event.organizerType === "group" || event.isGroup === true);
     setOrgSearchQuery("");
+    setExistingAttachments(event.attachments || []);
+setEditAttachments([]);
   };
-
-  const handleSave = async () => {
-    if (!editTitle.trim() || !editDetail.trim() || !editDate || !editLocation.trim() || !editDeadline || !editGenre || !editTargets.length || !editCampus) {
-      alert("必須項目が入力・選択されていません。"); return;
+const handleSave = async () => {
+  if (!editTitle.trim() || !editDetail.trim() || !editDate || !editLocation.trim() || !editDeadline || !editGenre || !editTargets.length || !editCampus) {
+    alert("必須項目が入力・選択されていません。"); return;
+  }
+  setSaving(true);
+  try {
+    let finalImageUrl = selectedEvent.imageUrl || null;
+    if (editImageFile) {
+      const storageRef = ref(storage, `events/${Date.now()}_${editImageFile.name}`);
+      await uploadBytes(storageRef, editImageFile);
+      finalImageUrl = await getDownloadURL(storageRef);
     }
-    setSaving(true);
-    try {
-      let finalImageUrl = selectedEvent.imageUrl || null;
-      if (editImageFile) {
-        const storageRef = ref(storage, `events/${Date.now()}_${editImageFile.name}`);
-        await uploadBytes(storageRef, editImageFile);
-        finalImageUrl = await getDownloadURL(storageRef);
-      }
-      const updatedFields = {
-        title: editTitle.trim(), detail: editDetail.trim(), date: editDate,
-        startTime: editStartTime, endTime: editEndTime, location: editLocation.trim(),
-        deadline: editDeadline, deadlineTime: editDeadlineTime,
-        applyLabel: editApplyLabel, applyLink: editApplyLink, contact: editContact,
-        organizerName: editOrganizerName.trim(), imageUrl: finalImageUrl,
-        tags: { genre: editGenre, targets: editTargets, campus: editCampus, style: editStyle, organizer: editOrganizerTag, recruit: editRecruitTag },
-        targetGakuin: editTargetGakuin, targetGakukei: editTargetGakukei,
-        organizerId: editOrganizerId,
-        organizerType: editIsGroup ? "group" : "personal",
-        createdBy: editOrganizerId, isGroup: editIsGroup,
-        organizerAvatar: editIsGroup ? (groups.find(g => g.id === editOrganizerId)?.avatarUrl || "") : (users.find(u => u.id === editOrganizerId)?.avatarUrl || "")
-      };
-      await updateDoc(doc(db, "events", selectedEvent.id), updatedFields);
-      setEvents(prev => prev.map(e => e.id === selectedEvent.id ? { ...e, ...updatedFields } : e));
-      setSelectedEvent(null);
-      alert("更新しました！");
-    } catch (err) {
-      alert("保存に失敗しました: " + err.message);
-    } finally { setSaving(false); }
-  };
+
+    // ← ifの外に出す
+    const newAttachmentUrls = [];
+    for (const file of editAttachments) {
+      const storageRef = ref(storage, `attachments/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      newAttachmentUrls.push({ name: file.name, url });
+    }
+
+    const updatedFields = {
+      title: editTitle.trim(), detail: editDetail.trim(), date: editDate,
+      startTime: editStartTime, endTime: editEndTime, location: editLocation.trim(),
+      deadline: editDeadline, deadlineTime: editDeadlineTime,
+      applyLabel: editApplyLabel, applyLink: editApplyLink, contact: editContact,
+      organizerName: editOrganizerName.trim(), imageUrl: finalImageUrl,
+      tags: { genre: editGenre, targets: editTargets, campus: editCampus, style: editStyle, organizer: editOrganizerTag, recruit: editRecruitTag },
+      targetGakuin: editTargetGakuin, targetGakukei: editTargetGakukei,
+      organizerId: editOrganizerId,
+      organizerType: editIsGroup ? "group" : "personal",
+      createdBy: editOrganizerId, isGroup: editIsGroup,
+      organizerAvatar: editIsGroup ? (groups.find(g => g.id === editOrganizerId)?.avatarUrl || "") : (users.find(u => u.id === editOrganizerId)?.avatarUrl || ""),
+      attachments: [...existingAttachments, ...newAttachmentUrls],
+    };
+    await updateDoc(doc(db, "events", selectedEvent.id), updatedFields);
+    setEvents(prev => prev.map(e => e.id === selectedEvent.id ? { ...e, ...updatedFields } : e));
+    setSelectedEvent(null);
+    alert("更新しました！");
+  } catch (err) {
+    alert("保存に失敗しました: " + err.message);
+  } finally { setSaving(false); }
+};
 
   const handleDelete = async (eventId, title) => {
     if (!window.confirm(`「${title}」を削除しますか？`)) return;
@@ -237,7 +251,21 @@ export default function AdminEvents() {
               <div style={s.imageArea} onClick={() => document.getElementById("adminEventFile").click()}>
                 {editPreview ? <img src={editPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }} /> : <div style={{ textAlign: "center", color: "#BACFCB" }}><ImageIcon size={28} /><div style={{ fontSize: 11, marginTop: 4 }}>タップして変更</div></div>}
               </div>
-              <input id="adminEventFile" type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) { setEditImageFile(f); setEditPreview(URL.createObjectURL(f)); } }} />
+              <input id="adminEventFile" type="file" accept="image/*,image/heic,image/heif" style={{ display: "none" }} onChange={async e => {
+                  let f = e.target.files[0];
+                  if (!f) return;
+                  if (f.type === "image/heic" || f.type === "image/heif" || f.name.toLowerCase().endsWith(".heic") || f.name.toLowerCase().endsWith(".heif")) {
+                    try {
+                      const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.85 });
+                      f = new File([converted], f.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+                    } catch (err) {
+                      alert("画像の変換に失敗しました。別の形式でお試しください。");
+                      return;
+                    }
+                  }
+                  setEditImageFile(f);
+                  setEditPreview(URL.createObjectURL(f));
+                }} />
             </div>
 
             <div style={s.fieldRow}><label style={s.formLabel}>イベント名 <span style={s.required}>必須</span></label><input style={s.input} value={editTitle} onChange={e => setEditTitle(e.target.value)} /></div>
@@ -310,6 +338,40 @@ export default function AdminEvents() {
                     onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}>{g}</button>
                 ))}
               </div>
+            </div>
+            {/* 添付ファイル */}
+            <div style={s.fieldRow}>
+              <label style={s.formLabel}>添付画像・資料（任意）</label>
+              {existingAttachments.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
+                  {existingAttachments.map((a, i) => (
+                    <div key={i} style={{ fontSize: 12, color: "#5A7370", padding: "6px 10px", background: "#F4F6F5", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>📎 {a.name}</span>
+                      <button style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer" }}
+                        onClick={() => setExistingAttachments(prev => prev.filter((_, j) => j !== i))}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div style={{ padding: "10px", borderRadius: 8, border: "2px dashed #D0DDD9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#FAFDFC" }}
+                onClick={() => document.getElementById("adminAttachInput").click()}>
+                <span style={{ fontSize: 12, color: "#5A7370", fontWeight: 600 }}>
+                  {editAttachments.length > 0 ? `${editAttachments.length}件追加済み` : "📎 ファイルを追加"}
+                </span>
+                <input id="adminAttachInput" type="file" multiple style={{ display: "none" }}
+                  onChange={e => setEditAttachments(prev => [...prev, ...Array.from(e.target.files)])} />
+              </div>
+              {editAttachments.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
+                  {editAttachments.map((f, i) => (
+                    <div key={i} style={{ fontSize: 12, color: "#5A7370", padding: "6px 10px", background: "#F4F6F5", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span>📎 {f.name}</span>
+                      <button style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer" }}
+                        onClick={() => setEditAttachments(prev => prev.filter((_, j) => j !== i))}>✕</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>

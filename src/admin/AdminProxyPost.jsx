@@ -3,9 +3,10 @@ import { db, storage } from "../firebase";
 import { collection, getDocs, addDoc, serverTimestamp } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { useNavigate } from "react-router-dom";
-import { User, Users, ImageIcon } from "lucide-react";
+import { User, Users, ImageIcon,Paperclip, X } from "lucide-react";
 import { THEME, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, RECRUIT_TAGS, GAKUIN } from "../constants";
 import "../animations.css";
+import heic2any from "heic2any";
 
 export default function AdminProxyPost({ user }) {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ export default function AdminProxyPost({ user }) {
   const [proxyContact, setProxyContact] = useState("");
   const [proxyPreview, setProxyPreview] = useState(null);
   const [proxyImageFile, setProxyImageFile] = useState(null);
+  const [proxyAttachments, setProxyAttachments] = useState([]);
 
   useEffect(() => {
     const fetch = async () => {
@@ -70,13 +72,20 @@ export default function AdminProxyPost({ user }) {
         await uploadBytes(storageRef, proxyImageFile);
         imageUrl = await getDownloadURL(storageRef);
       }
+      const attachmentUrls = [];
+      for (const file of proxyAttachments) {
+        const storageRef = ref(storage, `attachments/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        attachmentUrls.push({ name: file.name, url });
+      }
 
       await addDoc(collection(db, "events"), {
         title: proxyTitle.trim(), detail: proxyDetail.trim(),
         date: proxyDate, startTime: proxyStartTime, endTime: proxyEndTime,
         location: proxyLocation.trim(), deadline: proxyDeadline, deadlineTime: proxyDeadlineTime,
         tags: { genre: proxyGenre, targets: proxyTargets, campus: proxyCampus, style: proxyStyle, organizer: proxyOrganizerTag, recruit: proxyRecruitTag },
-        imageUrl, attachments: [],
+        imageUrl, 
         applyLabel: proxyApplyLabel || "参加を申し込む", applyLink: proxyApplyLink,
         participants: [],
         organizerType: proxyIsGroup ? "group" : "user",
@@ -86,6 +95,7 @@ export default function AdminProxyPost({ user }) {
         organizerName: finalOrganizerName, organizerAvatar: finalOrganizerAvatar,
         isGroup: proxyIsGroup, contact: proxyContact,
         targetGakuin: proxyTargetGakuin, targetGakukei: proxyTargetGakukei,
+        attachments: attachmentUrls,
       });
 
       // リセット
@@ -97,6 +107,7 @@ export default function AdminProxyPost({ user }) {
       setProxyCampus(""); setProxyStyle(""); setProxyOrganizerTag(""); setProxyRecruitTag("");
       setProxyApplyLabel(""); setProxyApplyLink(""); setProxyContact("");
       setProxyPreview(null); setProxyImageFile(null);
+      setProxyAttachments([]); 
 
       alert(`「${finalOrganizerName}」名義での代打投稿が完了しました！`);
       navigate("/admin/events");
@@ -143,7 +154,21 @@ export default function AdminProxyPost({ user }) {
         <div style={{ ...s.imageArea, height: 160 }} onClick={() => document.getElementById("proxyEventFile").click()}>
           {proxyPreview ? <img src={proxyPreview} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ textAlign: "center", color: "#BACFCB" }}><ImageIcon size={32} /><div style={{ fontSize: 12, marginTop: 4, fontWeight: 600 }}>タップして画像を追加</div></div>}
         </div>
-        <input id="proxyEventFile" type="file" accept="image/*" style={{ display: "none" }} onChange={e => { const f = e.target.files[0]; if (f) { setProxyImageFile(f); setProxyPreview(URL.createObjectURL(f)); } }} />
+        <input id="proxyEventFile" type="file" accept="image/*,image/heic,image/heif" style={{ display: "none" }} onChange={async e => {
+            let f = e.target.files[0];
+            if (!f) return;
+            if (f.type === "image/heic" || f.type === "image/heif" || f.name.toLowerCase().endsWith(".heic") || f.name.toLowerCase().endsWith(".heif")) {
+              try {
+                const converted = await heic2any({ blob: f, toType: "image/jpeg", quality: 0.85 });
+                f = new File([converted], f.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+              } catch (err) {
+                alert("画像の変換に失敗しました。別の形式でお試しください。");
+                return;
+              }
+            }
+            setProxyImageFile(f);
+            setProxyPreview(URL.createObjectURL(f));
+          }} />
       </div>
 
       <div style={s.fieldRow}><label style={s.formLabel}>イベント名 <span style={s.required}>必須</span></label><input style={s.input} value={proxyTitle} onChange={e => setProxyTitle(e.target.value)} /></div>
@@ -210,6 +235,32 @@ export default function AdminProxyPost({ user }) {
           </div>
         </div>
       )}
+
+      <div style={s.fieldRow}>
+  <label style={s.formLabel}>添付画像・資料（任意）</label>
+  <div style={{ padding: "12px", borderRadius: 8, border: "2px dashed #D0DDD9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#FAFDFC" }}
+    onClick={() => document.getElementById("proxyAttachInput").click()}>
+    <Paperclip size={16} color="#5A7370" />
+    <span style={{ fontSize: 12, color: "#5A7370", fontWeight: 600 }}>
+      {proxyAttachments.length > 0 ? `${proxyAttachments.length}件追加済み` : "ファイルを追加"}
+    </span>
+    <input id="proxyAttachInput" type="file" multiple style={{ display: "none" }}
+      onChange={e => setProxyAttachments(prev => [...prev, ...Array.from(e.target.files)])} />
+  </div>
+  {proxyAttachments.length > 0 && (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
+      {proxyAttachments.map((f, i) => (
+        <div key={i} style={{ fontSize: 12, color: "#5A7370", padding: "6px 10px", background: "#F4F6F5", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Paperclip size={12} />{f.name}</span>
+          <button style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", display: "flex", alignItems: "center" }}
+            onClick={() => setProxyAttachments(prev => prev.filter((_, j) => j !== i))}>
+            <X size={14} />
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <div style={s.fieldRow}><label style={s.formLabel}>申し込みボタン名</label><input style={s.input} placeholder="参加を申し込む" value={proxyApplyLabel} onChange={e => setProxyApplyLabel(e.target.value)} /></div>

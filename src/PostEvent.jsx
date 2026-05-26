@@ -14,6 +14,7 @@ import {
   RECRUIT_TAGS
 } from "./constants";
 import { MapPin, Calendar, Clock, Users, User, Plus, ImageIcon, Paperclip, X, ArrowLeft } from "lucide-react";
+import heic2any from "heic2any";
 
 export default function PostEvent({ onPosted, userGroups = [] }) {
   const [title, setTitle] = useState("");
@@ -63,12 +64,26 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
     fetchUserProfile();
   }, []);
 
-  const handleImage = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImage(file);
-    setPreview(URL.createObjectURL(file));
-  };
+  const handleImage = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  let finalFile = file;
+
+  // HEICの場合はJPEGに変換
+  if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+    try {
+      const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+      finalFile = new File([converted], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+    } catch (err) {
+      alert("画像の変換に失敗しました。別の形式でお試しください。");
+      return;
+    }
+  }
+
+  setImage(finalFile);
+  setPreview(URL.createObjectURL(finalFile));
+};
 
   const handleAttachments = (e) => {
     const newFiles = Array.from(e.target.files);
@@ -283,28 +298,6 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <input style={{ ...s.input, maxWidth: "100%", minWidth: 0 }} type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
       </div>
 
-      {/* 添付画像・資料（任意） */}
-      <div style={s.section}>
-        <label style={s.label}>添付画像・資料（任意）</label>
-        <div style={s.attachArea} onClick={() => document.getElementById("attachInput").click()}>
-          <Paperclip size={18} color="#5A7370" />
-          <span style={s.imagePlaceholderText}>
-            {attachments.length > 0 ? `${attachments.length}件選択済み` : "ファイルを追加"}
-          </span>
-          <input id="attachInput" type="file" multiple style={{ display:"none" }} onChange={handleAttachments} />
-        </div>
-        {attachments.length > 0 && (
-          <div style={s.attachList}>
-            {attachments.map((f, i) => (
-              <div key={i} style={s.attachItem}>
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Paperclip size={12} />{f.name}</span>
-                <button style={s.removeBtn} onClick={(e) => { e.stopPropagation(); removeAttachment(i); }}><X size={14} /></button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* ① ジャンル（必須） */}
       <div style={s.section}>
         <label style={s.label}>① ジャンル <span style={s.required}>必須</span></label>
@@ -420,6 +413,29 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         </div>
       </div>
 
+
+      {/* 添付画像・資料（任意） */}
+      <div style={s.section}>
+        <label style={s.label}>添付画像・資料（任意）</label>
+        <div style={s.attachArea} onClick={() => document.getElementById("attachInput").click()}>
+          <Paperclip size={18} color="#5A7370" />
+          <span style={s.imagePlaceholderText}>
+            {attachments.length > 0 ? `${attachments.length}件選択済み` : "ファイルを追加"}
+          </span>
+          <input id="attachInput" type="file" multiple style={{ display:"none" }} onChange={handleAttachments} />
+        </div>
+        {attachments.length > 0 && (
+          <div style={s.attachList}>
+            {attachments.map((f, i) => (
+              <div key={i} style={s.attachItem}>
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Paperclip size={12} />{f.name}</span>
+                <button style={s.removeBtn} onClick={(e) => { e.stopPropagation(); removeAttachment(i); }}><X size={14} /></button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
       {/* 申し込みボタン名（任意） */}
       <div style={s.section}>
         <label style={s.label}>申し込みボタンの名前（任意）</label>

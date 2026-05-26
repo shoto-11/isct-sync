@@ -3,9 +3,9 @@ import { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { MapPin,  Pencil,Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon,Trash2 } from "lucide-react";
+import { MapPin,  Pencil,Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon,Trash2,X  } from "lucide-react";
 import "./animations.css";
-
+import heic2any from "heic2any";
 
 export default function EventDetail({ event: initialEvent, onBack }) {
   const [event, setEvent] = useState(initialEvent);
@@ -47,6 +47,8 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [editTargetGakukei, setEditTargetGakukei] = useState(event.targetGakukei || []);
   const [editContact, setEditContact] = useState(event.contact || "");
 
+  const [editAttachments, setEditAttachments] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState(event.attachments || []);
   // 💡 権限判定に createdByPersonal（個人UID）も考慮するように修正
   const isOwner = 
   auth.currentUser?.uid === event.createdByPersonal || 
@@ -139,12 +141,26 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     fetchEditContextData();
   }, [editMode]);
 
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setEditImage(file);
-    setEditPreview(URL.createObjectURL(file));
-  };
+  const handleImageChange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  let finalFile = file;
+
+  if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+    try {
+      const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+      finalFile = new File([converted], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+    } catch (err) {
+      alert("画像の変換に失敗しました。別の形式でお試しください。");
+      return;
+    }
+  }
+
+  setEditImage(finalFile);
+  setEditPreview(URL.createObjectURL(finalFile));
+};
+
 
   const handleSave = async () => {
     // 💡 必須バリデーションの条件を作成画面（PostEvent）と完全に統一
@@ -156,64 +172,73 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     if (new Date(editDeadline) > new Date(editDate)) {
       alert("申し込み締切日はイベント当日、またはそれより前の日付に設定してください。");
       return;
-    }
+          }
+      setSaving(true);
+      try {
+        let imageUrl = event.imageUrl;
+        if (editImage) {
+          const storageRef = ref(storage, `events/${Date.now()}_${editImage.name}`);
+          await uploadBytes(storageRef, editImage);
+          imageUrl = await getDownloadURL(storageRef);
+        }
 
-    setSaving(true);
-    try {
-      let imageUrl = event.imageUrl;
-      if (editImage) {
-        const storageRef = ref(storage, `events/${Date.now()}_${editImage.name}`);
-        await uploadBytes(storageRef, editImage);
-        imageUrl = await getDownloadURL(storageRef);
+        // ← 追加：新規添付ファイルをアップロード
+        const newAttachmentUrls = [];
+        for (const file of editAttachments) {
+          const storageRef = ref(storage, `attachments/${Date.now()}_${file.name}`);
+          await uploadBytes(storageRef, file);
+          const url = await getDownloadURL(storageRef);
+          newAttachmentUrls.push({ name: file.name, url });
+        }
+
+        const currentUid = auth.currentUser.uid;
+        const selectedGroup = userGroups.find(g => g.id === editOrganizerId);
+        const finalOrganizerType = editOrganizerType === "group" ? "group" : "personal";
+        const finalOrganizerId = editOrganizerType === "group" && selectedGroup ? selectedGroup.id : currentUid;
+        const organizerName = editOrganizerType === "group" && selectedGroup ? selectedGroup.displayName : (userProfile?.displayName || auth.currentUser.email);
+        const organizerAvatar = editOrganizerType === "group" && selectedGroup ? (selectedGroup.avatarUrl || "") : (userProfile?.avatarUrl || "");
+
+        const updated = {
+          title: editTitle.trim(),
+          detail: editDetail.trim(),
+          date: editDate,
+          startTime: editStartTime,
+          endTime: editEndTime,
+          location: editLocation.trim(),
+          deadline: editDeadline,
+          deadlineTime: editDeadlineTime,
+          applyLabel: editApplyLabel || "参加を申し込む",
+          applyLink: editApplyLink,
+          imageUrl,
+          tags: {
+            genre: editGenre,
+            targets: editTargets,
+            campus: editCampus,
+            style: editStyle,
+            organizer: editOrganizer,
+            recruit: editRecruit,
+          },
+          targetGakuin: editTargetGakuin,
+          targetGakukei: editTargetGakukei,
+          contact: editContact,
+          organizerType: finalOrganizerType,
+          organizerId: finalOrganizerId,
+          createdBy: finalOrganizerId,
+          organizerName,
+          organizerAvatar,
+          attachments: [...existingAttachments, ...newAttachmentUrls], // ← ここで使う
+        };
+
+        await updateDoc(doc(db, "events", event.id), updated);
+        setEvent(prev => ({ ...prev, ...updated }));
+        setExistingAttachments([...existingAttachments, ...newAttachmentUrls]); // ← state更新
+        setEditAttachments([]); // ← リセット
+        setEditMode(false);
+        alert("イベント情報を更新しました！");
+      } catch (err) {
+        alert("保存に失敗しました: " + err.message);
       }
-
-      const currentUid = auth.currentUser.uid;
-      const selectedGroup = userGroups.find(g => g.id === editOrganizerId);
-
-      // 💡 変更された選択カードに基づく情報の更新
-      const finalOrganizerType = editOrganizerType === "group" ? "group" : "personal";
-      const finalOrganizerId = editOrganizerType === "group" && selectedGroup ? selectedGroup.id : currentUid;
-      const organizerName = editOrganizerType === "group" && selectedGroup ? selectedGroup.displayName : (userProfile?.displayName || auth.currentUser.email);
-      const organizerAvatar = editOrganizerType === "group" && selectedGroup ? (selectedGroup.avatarUrl || "") : (userProfile?.avatarUrl || "");
-
-      const updated = {
-        title: editTitle.trim(),
-        detail: editDetail.trim(),
-        date: editDate,
-        startTime: editStartTime,
-        endTime: editEndTime,
-        location: editLocation.trim(),
-        deadline: editDeadline,
-        deadlineTime: editDeadlineTime,
-        applyLabel: editApplyLabel || "参加を申し込む",
-        applyLink: editApplyLink,
-        imageUrl,
-        tags: {
-          genre: editGenre,
-          targets: editTargets,
-          campus: editCampus,
-          style: editStyle,
-          organizer: editOrganizer, 
-          recruit: editRecruit,
-        },
-        targetGakuin: editTargetGakuin,
-        targetGakukei: editTargetGakukei,
-        contact: editContact,
-        organizerType: finalOrganizerType,
-        organizerId: finalOrganizerId,
-        createdBy: finalOrganizerId, // 互換性維持
-        organizerName,
-        organizerAvatar,
-      };
-
-      await updateDoc(doc(db, "events", event.id), updated);
-      setEvent(prev => ({ ...prev, ...updated }));
-      setEditMode(false);
-      alert("イベント情報を更新しました！");
-    } catch (err) {
-      alert("保存に失敗しました: " + err.message);
-    }
-    setSaving(false);
+      setSaving(false);
   };
   
   const handleLike = async () => {
@@ -484,7 +509,7 @@ const handleDelete = async () => {
 
         {/* 参加スタイル */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>⑤ 参加スタイル（任意）</label>
+          <label style={s.editLabel}>⑦ 参加スタイル（任意）</label>
           <div style={s.optionGrid}>
             {STYLE_TAGS.map(t => (
               <button key={t} 
@@ -497,7 +522,7 @@ const handleDelete = async () => {
 
         {/* 主催者 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>⑦ 主催者種別（任意）</label>
+          <label style={s.editLabel}>⑧ 主催者種別（任意）</label>
           <div style={s.optionGrid}>
             {ORGANIZER_TAGS.map(t => (
               <button key={t} 
@@ -507,6 +532,49 @@ const handleDelete = async () => {
             ))}
           </div>
         </div>
+
+        {/* 添付画像・資料 */}
+          <div style={s.editSection}>
+            <label style={s.editLabel}>添付画像・資料（任意）</label>
+
+            {existingAttachments.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
+                {existingAttachments.map((a, i) => (
+                  <div key={i} style={{ fontSize: 12, color: "#5A7370", padding: "6px 10px", background: "#F4F6F5", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Paperclip size={12} />{a.name}</span>
+                    <button style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", display: "flex", alignItems: "center" }}
+                      onClick={() => setExistingAttachments(prev => prev.filter((_, j) => j !== i))}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ width: "100%", padding: "12px", borderRadius: 8, border: "2px dashed #D0DDD9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#F9FAFA" }}
+              onClick={() => document.getElementById("editAttachInput").click()}>
+              <Paperclip size={16} color="#5A7370" />
+              <span style={{ fontSize: 13, color: "#5A7370", fontWeight: 600 }}>
+                {editAttachments.length > 0 ? `${editAttachments.length}件追加済み` : "ファイルを追加"}
+              </span>
+              <input id="editAttachInput" type="file" multiple style={{ display: "none" }}
+                onChange={e => setEditAttachments(prev => [...prev, ...Array.from(e.target.files)])} />
+            </div>
+
+            {editAttachments.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
+                {editAttachments.map((f, i) => (
+                  <div key={i} style={{ fontSize: 12, color: "#5A7370", padding: "6px 10px", background: "#F4F6F5", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Paperclip size={12} />{f.name}</span>
+                    <button style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", display: "flex", alignItems: "center" }}
+                      onClick={() => setEditAttachments(prev => prev.filter((_, j) => j !== i))}>
+                      <X size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
         {/* 申し込み */}
         <div style={s.editSection}>
