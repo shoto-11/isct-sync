@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { db } from "./firebase";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { collection, getDocs, orderBy, query, getDoc, doc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS,RECRUIT_TAGS } from "./constants";
 import { BG_COLOR } from "./constants";
@@ -35,6 +35,8 @@ export default function Search() {
   const [results, setResults] = useState([]);
   const [searched, setSearched] = useState(false);
   const navigate = useNavigate();
+  const [sortMode, setSortMode] = useState("newest");
+const [statsMap, setStatsMap] = useState({});
 
   useEffect(() => {
     const fetch = async () => {
@@ -51,12 +53,29 @@ export default function Search() {
           return new Date(deadlineStr) > now;
         });
       setAllEvents(list);
+      const statsSnap = await getDocs(collection(db, "eventStats"));
+      const map = {};
+      statsSnap.docs.forEach(d => {
+        const data = d.data();
+        const key = data.eventId || d.id;
+        map[key] = {
+          views: (data.views || []).length,
+          likes: (data.likes || []).length,
+          joins: (data.joins || []).length,
+          applies: data.applyCount || 0,
+        };
+      });
+      setStatsMap(map);
     };
     fetch();
   }, []);
 
-  const handleSearch = () => {
-    setSearched(true);
+  useEffect(() => {
+    if (searched) setResults(prev => sortResults(prev, sortMode));
+  }, [sortMode]);
+
+    const handleSearch = () => {
+    setSearched(true);  // ← これも抜けていたので追加
     const filtered = allEvents.filter(event => {
       const matchKeyword = keyword === "" ||
         event.title?.toLowerCase().includes(keyword.toLowerCase()) ||
@@ -65,7 +84,6 @@ export default function Search() {
         event.organizerName?.toLowerCase().includes(keyword.toLowerCase());
 
       const matchTags = selectedTags.length === 0 || (() => {
-        // 選択タグをカテゴリ別に分類
         const selectedGenre = selectedTags.filter(t => GENRE_TAGS.includes(t));
         const selectedRecruit = selectedTags.filter(t => RECRUIT_TAGS.includes(t));
         const selectedTarget = selectedTags.filter(t => TARGET_TAGS.includes(t));
@@ -73,21 +91,33 @@ export default function Search() {
         const selectedStyle = selectedTags.filter(t => STYLE_TAGS.includes(t));
         const selectedOrganizer = selectedTags.filter(t => ORGANIZER_TAGS.includes(t));
 
-        // カテゴリ内はOR、カテゴリ間はAND
         if (selectedGenre.length > 0 && !selectedGenre.some(t => event.tags?.genre === t)) return false;
         if (selectedRecruit.length > 0 && !selectedRecruit.some(t => event.tags?.recruit === t)) return false;
         if (selectedTarget.length > 0 && !selectedTarget.some(t => event.tags?.targets?.includes(t))) return false;
         if (selectedCampus.length > 0 && !selectedCampus.some(t => event.tags?.campus === t)) return false;
         if (selectedStyle.length > 0 && !selectedStyle.some(t => event.tags?.style === t)) return false;
         if (selectedOrganizer.length > 0 && !selectedOrganizer.some(t => event.tags?.organizer === t)) return false;
-
         return true;
       })();
 
       return matchKeyword && matchTags;
     });
-    setResults(filtered);
+    setResults(sortResults(filtered, sortMode)); // ← filtered定義の後に移動
   };
+
+const sortResults = (list, mode) => {
+  return [...list].sort((a, b) => {
+    const sa = statsMap[a.id] || {};
+    const sb = statsMap[b.id] || {};
+    if (mode === "views") return (sb.views || 0) - (sa.views || 0);
+    if (mode === "likes") return (sb.likes || 0) - (sa.likes || 0);
+    if (mode === "joins") return (sb.joins || 0) - (sa.joins || 0);
+    if (mode === "applies") return (sb.applies || 0) - (sa.applies || 0);
+    const ta = a.createdAt?.toMillis ? a.createdAt.toMillis() : 0;
+    const tb = b.createdAt?.toMillis ? b.createdAt.toMillis() : 0;
+    return tb - ta;
+  });
+};
 
   const toggleTag = (tag) => {
   setSelectedTags(prev => {
@@ -121,7 +151,7 @@ export default function Search() {
 
         return matchKeyword && matchTags;
       });
-      setResults(filtered);
+      setResults(sortResults(filtered, sortMode));
     }
     return next;
   });
@@ -166,30 +196,46 @@ export default function Search() {
 
         {/* 検索結果 */}
         {searched && (
-          <div>
-            <div style={s.resultHeader}>
-              <span style={s.resultCount}>{results.length}件</span>
-              <button style={s.resetBtn} onClick={() => { setSearched(false); }}>
-                ← 検索条件に戻る
-              </button>
-            </div>
-            {/* 選択中タグ */}
-            {selectedTags.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-                {[...GENRE_TAGS, ...RECRUIT_TAGS, ...TARGET_TAGS, ...CAMPUS_TAGS, ...STYLE_TAGS, ...ORGANIZER_TAGS]
-                  .filter(tag => selectedTags.includes(tag))
-                  .map(tag => (
-                    <span
-                      key={tag}
-                      className="tag-tab-btn tag-active-tab"
-                      style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
-                      onClick={() => toggleTag(tag)}
-                    >
-                      {tag} ✕
-                    </span>
-                  ))}
-              </div>
-            )}
+  <div>
+    {/* 検索条件に戻る＋ソート */}
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <button style={s.resetBtn} onClick={() => { setSearched(false); }}>
+        ← 検索条件に戻る
+      </button>
+      <select
+        style={{ padding: "6px 12px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 12, fontWeight: 600, color: "#5A7370", background: "white", cursor: "pointer", outline: "none" }}
+        value={sortMode} onChange={e => setSortMode(e.target.value)}
+      >
+        <option value="newest">新着順</option>
+        <option value="views">閲覧数順</option>
+        <option value="likes">いいね数順</option>
+        <option value="joins">参加予定数順</option>
+        <option value="applies">申し込み数順</option>
+      </select>
+    </div>
+
+        {/* 選択中タグ */}
+        {selectedTags.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+            {[...GENRE_TAGS, ...RECRUIT_TAGS, ...TARGET_TAGS, ...CAMPUS_TAGS, ...STYLE_TAGS, ...ORGANIZER_TAGS]
+              .filter(tag => selectedTags.includes(tag))
+              .map(tag => (
+                <span
+                  key={tag}
+                  className="tag-tab-btn tag-active-tab"
+                  style={{ padding: "4px 12px", borderRadius: 999, fontSize: 12, fontWeight: 600, cursor: "pointer" }}
+                  onClick={() => toggleTag(tag)}
+                >
+                  {tag} ✕
+                </span>
+              ))}
+          </div>
+        )}
+
+        {/* 件数 */}
+        <div style={{ marginBottom: 12 }}>
+          <span style={s.resultCount}>{results.length}件</span>
+        </div>
 
             {results.length === 0 ? (
               <p style={s.empty}>該当するイベントが見つかりませんでした</p>
