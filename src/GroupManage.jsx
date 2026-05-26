@@ -10,7 +10,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { auth, db, storage } from "./firebase"; // 💡 auth を追加インポート
-import { doc, getDoc, updateDoc, arrayRemove, collection, query, where, getDocs } from "firebase/firestore"; // 💡 collection群を追加
+import { doc, getDoc, updateDoc, arrayRemove, collection, query, where, getDocs} from "firebase/firestore";// 💡 collection群を追加
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { THEME, GENRE_STYLES, GENRE_EMOJI, BG_COLOR } from "./constants"; // 💡 THEMEなどを constants から統合// 💡 「Instagram」の最後のTは大文字ではなく小文字の「t」にします
 import { User, Camera, LogOut, UserMinus, Award, Users, Edit2, X, Crown, Info, Calendar, MapPin, Mail } from "lucide-react";
@@ -158,7 +158,7 @@ const handleSave = async () => {
 
       setEditMode(false);
       setAvatarFile(null);
-      onChanged();
+      navigate("/mypage"); 
     } catch (err) {
       console.error(err);
       setError("保存に失敗しました: " + err.message);
@@ -207,26 +207,28 @@ const handleSave = async () => {
       setError("権限の譲渡に失敗しました: " + err.message);
     }
   };
+const handleLeave = async () => {
+  if (isLeader && group.members.length > 1) {
+    alert("あなたは代表者です。グループを脱退する前に、他のメンバーに代表者権限を譲渡してください。");
+    setConfirmLeave(false);
+    return;
+  }
+  try {
+    await updateDoc(doc(db, "groups", group.id), {
+      members: arrayRemove(currentUserId),
+    });
+    await updateDoc(doc(db, "users", currentUserId), {
+      groups: arrayRemove(group.id),
+    });
+    navigate("/mypage");
+  } catch (err) {
+    setError("脱退に失敗しました: " + err.message);
+  }
+};
 
-  const handleLeave = async () => {
-    if (isLeader && group.members.length > 1) {
-      alert("あなたは代表者です。グループを脱退する前に、他のメンバーに代表者権限を譲渡してください。");
-      setConfirmLeave(false);
-      return;
-    }
-    try {
-      await updateDoc(doc(db, "groups", group.id), {
-        members: arrayRemove(currentUserId),
-      });
-      await updateDoc(doc(db, "users", currentUserId), {
-        groups: arrayRemove(group.id),
-      });
-      onChanged();
-    } catch (err) {
-      setError("脱退に失敗しました: " + err.message);
-    }
-  };
-  // 📄 ⭐【ここを新規追加】メンバーの非同期読み込みが終わるまで、画面の描画を完全にブロック！
+
+
+  // メンバーの非同期読み込みが終わるまで、画面の描画を完全にブロック！
   if (loadingMembers) {
     return (
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", background: "#F4F6F5" }}>

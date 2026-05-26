@@ -206,3 +206,19 @@
   background-color: #FFF5F7;
   border-color: #88203a;
 }
+
+/* ─── ホームのバナー ─── */
+.banner-hover {
+  cursor: pointer;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, filter 0.25s ease;
+}
+.banner-hover:hover {
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+  filter: brightness(1.06);
+}
+.banner-hover:active {
+  transform: translateY(0) scale(0.99);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  filter: brightness(0.98);
+}

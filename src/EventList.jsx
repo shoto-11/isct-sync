@@ -586,8 +586,8 @@ const [recruitEvents, setRecruitEvents] = useState([]);
             {noticeItems.map((item, i) => {
               const total = noticeItems.length;
               const isCurrent = i === noticeIndex;
-              const isNext = i === (noticeIndex + 1) % total;
-              const isPrev = i === (noticeIndex - 1 + total) % total;
+              const isNext = !isCurrent && i === (noticeIndex + 1) % total;
+              const isPrev = !isCurrent && !isNext && i === (noticeIndex - 1 + total) % total;
 
               let translateY = "100%";
               let opacity = 0;
@@ -597,23 +597,22 @@ const [recruitEvents, setRecruitEvents] = useState([]);
                 translateY = "0";
                 opacity = 1;
                 hasTransition = true;
-              } else if (isPrev) {
-                translateY = "-100%";
-                opacity = 0;
-                hasTransition = true;
               } else if (isNext) {
                 translateY = "100%";
                 opacity = 0;
                 hasTransition = false;
+              } else if (isPrev) {
+                translateY = "-100%";
+                opacity = 0;
+                hasTransition = true;
               }
-
               return (
                 <div key={i} style={{
                   position: "absolute",
                   width: "100%",
                   opacity: opacity,
                   transform: `translateY(${translateY})`,
-                  transition: hasTransition ? "transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.5s ease" : "none",
+                  transition: hasTransition ? "transform 0.8s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease" : "none",
                   fontSize: 13,
                   fontWeight: 600,
                   color: "#1A2E2B",
@@ -642,20 +641,28 @@ const [recruitEvents, setRecruitEvents] = useState([]);
         <Section title="長期メンバー募集中" icon={<Users size={20} color="#88203a" />} events={recruitEvents} onSelect={handleSelect} />
 
       {/* CTA */}
-      <div style={s.ctaBanner}>
-        <div>
-          <div style={s.ctaText}>現在募集中のイベントを見る</div>
-          <div style={s.ctaSub}>全{events.length}件のイベントが掲載中</div>
-        </div>
-        <div style={s.ctaArrow}>›</div>
-      </div>
+      <div
+  className="banner-hover"
+  style={s.ctaBanner}
+  onClick={() => window.open("https://www.youtube.com/", "_blank")}
+>
+  <div>
+    <div style={s.ctaText}>現在募集中のイベントを見る</div>
+    <div style={s.ctaSub}>全{events.length}件のイベントが掲載中</div>
+  </div>
+  <div style={s.ctaArrow}>›</div>
+</div>
 
-      {/* Survey */}
-      <div style={s.surveyBanner}>
-        <div style={s.surveyLabel}>在学生限定</div>
-        <div style={s.surveyTitle}>2026春イベント<br />リクエスト＆アンケート実施中！！</div>
-        <div style={s.surveyDeadline}>📅 5/22 まで</div>
-      </div>
+{/* Survey */}
+<div
+  className="banner-hover"
+  style={s.surveyBanner}
+  onClick={() => window.open("https://www.youtube.com/", "_blank")}
+>
+  <div style={s.surveyLabel}>在学生限定</div>
+  <div style={s.surveyTitle}>2026春イベント<br />リクエスト＆アンケート実施中！！</div>
+  <div style={s.surveyDeadline}>📅 5/22 まで</div>
+</div>
 
       {/* ランキング */}
       <div style={s.rankingHeader}>

@@ -191,7 +191,7 @@ const EventCard = ({ event }) => {
             onClick={() => navigate(`/notification-settings/${uid}`)} 
             style={{ ...s.outlineBtn, padding: "6px 14px", fontSize: 12, "--normal-bg": "white", "--normal-color": THEME, "--normal-border": `1.5px solid ${THEME}` }}
           >
-            一覧を見る ({followCount}人)
+            一覧を見る
           </button>
         </div>
 
