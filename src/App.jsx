@@ -556,7 +556,25 @@ export default function App() {
         } catch (checkErr) {
           console.error("App.jsx group account check failed:", checkErr);
         }
-
+        try {
+          const bannedSnap = await getDoc(doc(db, "bannedUsers", u.uid));
+          if (bannedSnap.exists()) {
+            await signOut(auth);
+            window.sessionStorage.setItem(
+              "login_error",
+              "このアカウントは利用停止中です。詳細は管理者にお問い合わせください。"
+            );
+            setUser(null);
+            setProfileDone(false);
+            setMenuProfile(null);
+            setUserGroups([]);
+            setLoading(false);
+            navigate("/login");
+            return;
+          }
+        } catch (banErr) {
+          console.error("App.jsx ban check failed:", banErr);
+        }
         // ⭕ 正常な個人ユーザー（学籍メール等）のみ、以下の既存処理を進める
         setUser(u);
         const snap = await getDoc(doc(db, "users", u.uid));

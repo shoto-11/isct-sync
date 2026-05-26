@@ -631,17 +631,38 @@ const handleDelete = async () => {
         )}
 
         {event.attachments?.length > 0 && (
-          <div style={s.section}>
-            <h2 style={s.sectionTitle}>添付資料</h2>
-            <div style={s.attachList}>
-              {event.attachments.map((a, i) => (
-                <a key={i} href={a.url} target="_blank" rel="noreferrer" style={s.attachItem}>
-                  <Paperclip size={14} style={{ marginRight:4 }} /> {a.name}
+        <div style={s.section}>
+          <h2 style={s.sectionTitle}>添付資料</h2>
+          <div style={s.attachList}>
+            {event.attachments.map((a, i) => {
+              const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.name) || a.type?.startsWith("image/");
+              const isPdf = /\.pdf$/i.test(a.name) || a.type === "application/pdf";
+
+              return (
+                <a key={i} href={a.url} target="_blank" rel="noreferrer" style={{ ...s.attachItem, display: "flex", flexDirection: "column", gap: 8, padding: 0, overflow: "hidden" }}>
+                  {isImage && (
+                    <img
+                      src={a.url}
+                      alt={a.name}
+                      style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: "8px 8px 0 0" }}
+                    />
+                  )}
+                  {isPdf && (
+                    <iframe
+                      src={`${a.url}#page=1&toolbar=0&navpanes=0`}
+                      style={{ width: "100%", height: 200, border: "none", borderRadius: "8px 8px 0 0", pointerEvents: "none" }}
+                      title={a.name}
+                    />
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 12px" }}>
+                    <Paperclip size={14} /> {a.name}
+                  </div>
                 </a>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+        </div>
+      )}
 
         {event.applyLink && (
           <a href={event.applyLink}

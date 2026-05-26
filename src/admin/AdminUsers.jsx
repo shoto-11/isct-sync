@@ -1,50 +1,153 @@
 import { useState, useEffect } from "react";
 import { db, storage } from "../firebase";
-import { doc, updateDoc, collection, getDocs } from "firebase/firestore";
+import { doc, updateDoc, collection, getDocs, setDoc, deleteDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { User } from "lucide-react";
+import { User, Ban, ShieldOff } from "lucide-react";
 import { THEME } from "../constants";
 import "../animations.css";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
+  const [bannedUsers, setBannedUsers] = useState([]);
   const [userSearch, setUserSearch] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("all"); // "all" | "banned"
+  const [banReason, setBanReason] = useState("");
+  const [showBanConfirm, setShowBanConfirm] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
-      const snap = await getDocs(collection(db, "users"));
-      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const [usersSnap, bannedSnap] = await Promise.all([
+        getDocs(collection(db, "users")),
+        getDocs(collection(db, "bannedUsers")),
+      ]);
+      setUsers(usersSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setBannedUsers(bannedSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       setLoading(false);
     };
     fetch();
   }, []);
 
+  const handleBan = async () => {
+    if (!selectedUser) return;
+    try {
+      await setDoc(doc(db, "bannedUsers", selectedUser.id), {
+        uid: selectedUser.id,
+        email: selectedUser.email || "",
+        displayName: selectedUser.displayName || "",
+        reason: banReason.trim() || "理由なし",
+        bannedAt: new Date().toISOString(),
+      });
+      setBannedUsers(prev => [...prev, {
+        id: selectedUser.id,
+        uid: selectedUser.id,
+        email: selectedUser.email || "",
+        displayName: selectedUser.displayName || "",
+        reason: banReason.trim() || "理由なし",
+        bannedAt: new Date().toISOString(),
+      }]);
+      setBanReason("");
+      setShowBanConfirm(false);
+      setSelectedUser(null);
+      setEditingUser(null);
+      alert(`「${selectedUser.displayName}」の利用を停止しました。`);
+    } catch (err) {
+      alert("利用停止に失敗しました: " + err.message);
+    }
+  };
+
+  const handleUnban = async (bannedUser) => {
+    if (!window.confirm(`「${bannedUser.displayName}」の利用停止を解除しますか？`)) return;
+    try {
+      await deleteDoc(doc(db, "bannedUsers", bannedUser.id));
+      setBannedUsers(prev => prev.filter(b => b.id !== bannedUser.id));
+      alert("利用停止を解除しました。");
+    } catch (err) {
+      alert("解除に失敗しました: " + err.message);
+    }
+  };
+
+  const isBanned = (userId) => bannedUsers.some(b => b.id === userId);
+
   if (loading) return <p style={{ padding: 24 }}>読み込み中...</p>;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <h2 style={{ fontSize: 16, fontWeight: 700 }}>登録者一覧（{users.length}人）</h2>
-      <input style={s.input} placeholder="名前・メールアドレスで検索..." value={userSearch} onChange={e => setUserSearch(e.target.value)} />
+      <h2 style={{ fontSize: 16, fontWeight: 700 }}>登録者一覧</h2>
 
-      {users.filter(u => !userSearch || u.displayName?.includes(userSearch) || u.email?.includes(userSearch)).map(u => (
-        <div key={u.id} className="event-hover-card" style={{ ...s.listItem, cursor: "pointer" }} onClick={() => setSelectedUser(u)}>
-          {u.avatarUrl ? <img src={u.avatarUrl} alt="avatar" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} /> : <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#F9EAED", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><User size={20} color={THEME} /></div>}
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 14, fontWeight: 700 }}>{u.displayName}</div>
-            <div style={{ fontSize: 11, color: "#5A7370" }}>{u.email} · {u.gakuin} {u.gakukei} · {u.gakunen}</div>
-          </div>
-        </div>
-      ))}
+      {/* タブ */}
+      <div style={{ display: "flex", gap: 8 }}>
+        <button
+          className={`tag-tab-btn ${activeTab === "all" ? "tag-active-tab" : ""}`}
+          style={{ padding: "7px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          onClick={() => setActiveTab("all")}
+        >
+          全ユーザー（{users.length}人）
+        </button>
+        <button
+          className={`tag-tab-btn ${activeTab === "banned" ? "tag-active-tab" : ""}`}
+          style={{ padding: "7px 18px", borderRadius: 999, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+          onClick={() => setActiveTab("banned")}
+        >
+          ブラックリスト（{bannedUsers.length}人）
+        </button>
+      </div>
 
+      {/* 全ユーザータブ */}
+      {activeTab === "all" && (
+        <>
+          <input style={s.input} placeholder="名前・メールアドレスで検索..." value={userSearch} onChange={e => setUserSearch(e.target.value)} />
+          {users.filter(u => !userSearch || u.displayName?.includes(userSearch) || u.email?.includes(userSearch)).map(u => (
+            <div key={u.id} className="event-hover-card" style={{ ...s.listItem, cursor: "pointer", opacity: isBanned(u.id) ? 0.5 : 1 }} onClick={() => { setSelectedUser(u); setShowBanConfirm(false); setBanReason(""); }}>
+              {u.avatarUrl ? <img src={u.avatarUrl} alt="avatar" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} /> : <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#F9EAED", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><User size={20} color={THEME} /></div>}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                  {u.displayName}
+                  {isBanned(u.id) && <span style={{ fontSize: 10, background: "#FFEBEE", color: "#C62828", fontWeight: 700, padding: "2px 6px", borderRadius: 4 }}>利用停止中</span>}
+                </div>
+                <div style={{ fontSize: 11, color: "#5A7370" }}>{u.email} · {u.gakuin} {u.gakukei} · {u.gakunen}</div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* ブラックリストタブ */}
+      {activeTab === "banned" && (
+        <>
+          {bannedUsers.length === 0 ? (
+            <p style={{ color: "#5A7370", fontSize: 14, textAlign: "center", padding: "32px 0" }}>ブラックリストは空です</p>
+          ) : bannedUsers.map(b => (
+            <div key={b.id} style={{ ...s.listItem, border: "1.5px solid #FFCDD2" }}>
+              <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#FFEBEE", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Ban size={20} color="#C62828" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#C62828" }}>{b.displayName}</div>
+                <div style={{ fontSize: 11, color: "#5A7370" }}>{b.email}</div>
+                <div style={{ fontSize: 11, color: "#E53935", marginTop: 2 }}>理由：{b.reason}</div>
+                <div style={{ fontSize: 10, color: "#9AADA8", marginTop: 1 }}>停止日：{new Date(b.bannedAt).toLocaleDateString("ja-JP")}</div>
+              </div>
+              <button
+                style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "1.5px solid #5A7370", color: "#5A7370", borderRadius: 6, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                onClick={() => handleUnban(b)}
+              >
+                <ShieldOff size={13} /> 停止解除
+              </button>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* ユーザー編集モーダル */}
       {selectedUser && (
         <div style={s.modal}>
           <div style={{ ...s.modalCard, maxHeight: "90vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <h3 style={{ fontSize: 16, fontWeight: 700 }}>ユーザー情報の編集</h3>
-              <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20 }} onClick={() => { setSelectedUser(null); setEditingUser(null); }}>✕</button>
+              <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20 }} onClick={() => { setSelectedUser(null); setEditingUser(null); setShowBanConfirm(false); setBanReason(""); }}>✕</button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10, background: "#F4F6F5", padding: 16, borderRadius: 12, alignItems: "center" }}>
@@ -94,7 +197,7 @@ export default function AdminUsers() {
             ))}
 
             <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-              <button className="tag-tab-btn" style={{ flex: 1, padding: 12, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => { setSelectedUser(null); setEditingUser(null); }}>キャンセル</button>
+              <button className="tag-tab-btn" style={{ flex: 1, padding: 12, borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={() => { setSelectedUser(null); setEditingUser(null); setShowBanConfirm(false); }}>キャンセル</button>
               <button className="submit-btn" style={{ flex: 1, padding: 12, border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }} onClick={async () => {
                 if (!editingUser) { setSelectedUser(null); setEditingUser(null); return; }
                 await updateDoc(doc(db, "users", selectedUser.id), editingUser);
@@ -102,6 +205,40 @@ export default function AdminUsers() {
                 setSelectedUser(null); setEditingUser(null);
                 alert("保存しました！");
               }}>保存する</button>
+            </div>
+
+            {/* 利用停止セクション */}
+            <div style={{ borderTop: "1px solid #F0F0F0", paddingTop: 16, marginTop: 4 }}>
+              {isBanned(selectedUser.id) ? (
+                <button
+                  type="button"
+                  style={{ width: "100%", padding: "10px", background: "none", border: "1.5px solid #5A7370", color: "#5A7370", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                  onClick={() => handleUnban(bannedUsers.find(b => b.id === selectedUser.id))}
+                >
+                  <ShieldOff size={14} /> 利用停止を解除する
+                </button>
+              ) : (
+                <>
+                  {!showBanConfirm ? (
+                    <button
+                      type="button"
+                      style={{ width: "100%", padding: "10px", background: "none", border: "1.5px solid #E53935", color: "#E53935", borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                      onClick={() => setShowBanConfirm(true)}
+                    >
+                      <Ban size={14} /> このユーザーを利用停止にする
+                    </button>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <label style={s.formLabel}>停止理由（任意）</label>
+                      <input style={s.input} placeholder="例：規約違反、不適切な投稿など" value={banReason} onChange={e => setBanReason(e.target.value)} />
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button type="button" className="tag-tab-btn" style={{ flex: 1, padding: 10, borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={() => setShowBanConfirm(false)}>キャンセル</button>
+                        <button type="button" style={{ flex: 1, padding: 10, background: "#E53935", color: "white", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }} onClick={handleBan}>利用停止にする</button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
