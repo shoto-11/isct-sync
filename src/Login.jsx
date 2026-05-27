@@ -126,42 +126,36 @@ export default function Login() {
   // Googleログイン
   // Googleログイン
   const handleGoogleLogin = async () => {
-    setError("");
-    setLoading(true);
+  setError("");
+  setLoading(true);
+  try {
+    const provider = new GoogleAuthProvider();
+    const res = await signInWithPopup(auth, provider);
+    
     try {
-      const provider = new GoogleAuthProvider();
-      const res = await signInWithPopup(auth, provider);
-      
-      // 💡 1. まずはグループ用アカウントか、または未登録アドレスかを厳格にチェック
-      try {
-        const allowed = await checkAllowed(res.user.email);
-        if (!allowed) {
-          setError("本学の学籍メールアドレス、または事前登録されたアドレスのみログイン可能です。");
-          await auth.signOut(); // 認証を即座に取り消す
-          setLoading(false);
-          return;
-        }
-        
-        // 💡 2. 許可されたアドレスであれば、ここで初めて次の画面（またはホーム）へ進む
-        await handleLoginSuccess(res.user.uid);
-
-      } catch (checkErr) {
-        // ⭐ グループアカウントだと判定されてエラー（isGroupEmail === true）がスローされた場合
-        // App.jsxの監視リスナーがホームに飛ばしてしまうのを防ぐため、即座にサインアウトして状態を固定する
-        await auth.signOut(); 
-        setError(checkErr.message || "ログインに失敗しました。");
+      const allowed = await checkAllowed(res.user.email);
+      if (!allowed) {
+        setError("本学の学籍メールアドレス、または事前登録されたアドレスのみログイン可能です。");
+        await signOut(auth);
         setLoading(false);
-        return; // リダイレクト処理を完全に遮断
+        return;
       }
-
-    } catch (err) {
-      console.error(err);
-      setError("Googleログインに失敗しました。");
-      await auth.signOut();
-    } finally {
+      await handleLoginSuccess(res.user.uid);
+    } catch (checkErr) {
+      await signOut(auth);
+      setError(checkErr.message || "ログインに失敗しました。");
       setLoading(false);
+      return;
     }
-  };
+  } catch (err) {
+    if (err.code !== "auth/popup-closed-by-user") {
+      setError("Googleログインに失敗しました。");
+    }
+    await signOut(auth);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={s.container}>

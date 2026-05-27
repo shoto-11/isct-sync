@@ -21,8 +21,8 @@ async function sendEmailViaYourProvider(email, code) {
     port: 587,        // 💡 587 に変更
     secure: false,    // 💡 false に変更（STARTTLSという方式で後から暗号化するため）
     auth: {
-      user: "sikimori1508@gmail.com", 
-      pass: "zddy aleb rrvw llrz", 
+      user: "noreply.isct.sync@gmail.com", 
+      pass: "vrsr abej iaed yyzj", 
     },
   });
 

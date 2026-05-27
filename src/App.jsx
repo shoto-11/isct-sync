@@ -527,88 +527,82 @@ export default function App() {
   const processingEmailLink = useRef(false);
 // 認証状態監視
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        // 💡 【新規追加】グループ用アカウント（一般Gmail等）の個人ログインを大元で完全遮断する
-        try {
-          const emailClean = u.email ? u.email.toLowerCase() : "";
+  let isProcessing = false; // ← 追加
+
+  const unsubscribe = onAuthStateChanged(auth, async (u) => {
+    if (u) {
+      if (isProcessing) return; // ← 追加
+      isProcessing = true; // ← 追加
+
+      // App.jsx の onAuthStateChanged 内
+      try {
+        const emailClean = u.email ? u.email.toLowerCase() : "";
+        const domain = emailClean.split("@")[1];
+        
+        // 学籍メール（m.isct.ac.jp）はチェック不要
+        if (domain !== "m.isct.ac.jp") {
           const allowedSnap = await getDoc(doc(db, "allowedEmails", emailClean));
-          
           if (allowedSnap.exists() && allowedSnap.data().isGroupEmail === true) {
-            // 🛑 グループアカウントの侵入を検知した場合、即座にサインアウト
             await signOut(auth);
-            
-            // ログイン画面（Login.jsx）側にエラーメッセージを伝える
-            window.sessionStorage.setItem(
-              "login_error", 
-              "このアドレスはグループ用として登録されています。個人の学籍メール（m.isct.ac.jp）でログインしてください。"
-            );
-            
-            // 各Stateを初期化して強制的にログイン画面へ送還
-            setUser(null);
-            setProfileDone(false);
-            setMenuProfile(null);
-            setUserGroups([]);
-            setLoading(false);
-            navigate("/login");
-            return; // 侵入をここで完全に食い止める
-          }
-        } catch (checkErr) {
-          console.error("App.jsx group account check failed:", checkErr);
-        }
-        try {
-          const bannedSnap = await getDoc(doc(db, "bannedUsers", u.uid));
-          if (bannedSnap.exists()) {
-            await signOut(auth);
-            window.sessionStorage.setItem(
-              "login_error",
-              "このアカウントは利用停止中です。詳細は管理者にお問い合わせください。"
-            );
-            setUser(null);
-            setProfileDone(false);
-            setMenuProfile(null);
-            setUserGroups([]);
-            setLoading(false);
-            navigate("/login");
+            window.sessionStorage.setItem("login_error", "このアドレスはグループ用として登録されています。個人の学籍メール（m.isct.ac.jp）でログインしてください。");
+            setUser(null); setProfileDone(false); setMenuProfile(null); setUserGroups([]);
+            setLoading(false); navigate("/login");
             return;
           }
-        } catch (banErr) {
-          console.error("App.jsx ban check failed:", banErr);
         }
-        // ⭕ 正常な個人ユーザー（学籍メール等）のみ、以下の既存処理を進める
-        setUser(u);
-        const snap = await getDoc(doc(db, "users", u.uid));
-        const done = snap.exists() && !!snap.data().displayName;
-        setProfileDone(done);
-        if (snap.exists()) {
-          const data = snap.data();
-          setMenuProfile(data);
-          const groupIds = data.groups || [];
-          if (groupIds.length > 0) {
-            const groupSnaps = await Promise.all(groupIds.map((id) => getDoc(doc(db, "groups", id))));
-            setUserGroups(groupSnaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() })));
-          } else {
-            setUserGroups([]);
-          }
-        }
-        try {
-          const configSnap = await getDoc(doc(db, "adminSettings", "config"));
-          if (configSnap.exists()) {
-            setIsAdmin((configSnap.data().adminUids || []).includes(u.uid));
-          }
-        } catch (_) {}
-      } else {
-        // メールリンク処理中は null が来ても無視する
-        if (processingEmailLink.current) return;
-        setProfileDone(false);
-        setMenuProfile(null);
-        setUserGroups([]);
+      } catch (checkErr) {
+        console.error("App.jsx group account check failed:", checkErr);
       }
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, [navigate]); // 💡 安全のために依存配列にnavigateを追加
-  
+
+      try {
+        const bannedSnap = await getDoc(doc(db, "bannedUsers", u.uid));
+        if (bannedSnap.exists()) {
+          await signOut(auth);
+          window.sessionStorage.setItem("login_error", "このアカウントは利用停止中です。詳細は管理者にお問い合わせください。");
+          setUser(null); setProfileDone(false); setMenuProfile(null); setUserGroups([]);
+          setLoading(false); navigate("/login");
+          return;
+        }
+      } catch (banErr) {
+        console.error("App.jsx ban check failed:", banErr);
+      }
+
+      setUser(u);
+      const snap = await getDoc(doc(db, "users", u.uid));
+      const done = snap.exists() && !!snap.data().displayName;
+      setProfileDone(done);
+      if (snap.exists()) {
+        const data = snap.data();
+        setMenuProfile(data);
+        const groupIds = data.groups || [];
+        if (groupIds.length > 0) {
+          const groupSnaps = await Promise.all(groupIds.map((id) => getDoc(doc(db, "groups", id))));
+          setUserGroups(groupSnaps.filter((s) => s.exists()).map((s) => ({ id: s.id, ...s.data() })));
+        } else {
+          setUserGroups([]);
+        }
+      }
+      try {
+        const configSnap = await getDoc(doc(db, "adminSettings", "config"));
+        if (configSnap.exists()) {
+          setIsAdmin((configSnap.data().adminUids || []).includes(u.uid));
+        }
+      } catch (_) {}
+
+      isProcessing = false; // ← 追加
+
+    } else {
+      if (processingEmailLink.current) return;
+      isProcessing = false; // ← 追加
+      setProfileDone(false);
+      setMenuProfile(null);
+      setUserGroups([]);
+    }
+    setLoading(false);
+  });
+  return unsubscribe;
+}, [navigate]);
+
   // お知らせ取得
   useEffect(() => {
     const fetchNotice = async () => {
