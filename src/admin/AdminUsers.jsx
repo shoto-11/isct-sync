@@ -196,10 +196,19 @@ export default function AdminUsers() {
               { label: "学系", key: "gakukei" },
               { label: "学年", key: "gakunen" },
               { label: "性別", key: "gender" },
+              { label: "自己紹介", key: "bio" },
             ].map(({ label, key }) => (
               <div key={key} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                 <label style={s.formLabel}>{label}</label>
-                <input style={s.input} value={editingUser?.[key] ?? selectedUser[key] ?? ""} onChange={e => setEditingUser(prev => ({ ...(prev || selectedUser), [key]: e.target.value }))} />
+                {key === "bio" ? (
+                  <textarea
+                    style={{ ...s.input, minHeight: 80, resize: "vertical", lineHeight: 1.6, fontFamily: "inherit" }}
+                    value={editingUser?.bio ?? selectedUser.bio ?? ""}
+                    onChange={e => setEditingUser(prev => ({ ...(prev || selectedUser), bio: e.target.value }))}
+                  />
+                ) : (
+                  <input style={s.input} value={editingUser?.[key] ?? selectedUser[key] ?? ""} onChange={e => setEditingUser(prev => ({ ...(prev || selectedUser), [key]: e.target.value }))} />
+                )}
               </div>
             ))}
 
