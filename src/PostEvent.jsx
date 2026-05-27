@@ -239,7 +239,11 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* イベント画像（任意） */}
       <div style={s.section}>
-        <label style={s.label}>イベント画像（任意）</label>
+        <label style={s.label}>イベント画像（任意）
+          <span style={{ fontSize: 11, color: "#9AADA8", fontWeight: 500, marginLeft: 6 }}>
+              ※推奨サイズ：横16：縦9の比率（例：1920×1080px）
+        </span>
+        </label>
         <div style={s.imageArea} onClick={() => document.getElementById("imgInput").click()}>
           {preview ? (
             <img src={preview} alt="preview" style={s.previewImg} />
@@ -485,7 +489,7 @@ const s = {
     appearance: "none"
   },
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6, boxSizing: "border-box" },
-  imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR, boxSizing: "border-box" },
+  imageArea: { width:"100%", aspectRatio: "16/9",height:"auto", borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR, boxSizing: "border-box" },
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },
   imagePlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", gap:8 },
   imagePlaceholderText: { fontSize:13, color:"#5A7370", fontWeight:600 },
