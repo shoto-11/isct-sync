@@ -31,6 +31,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
   const [followerCount, setFollowerCount] = useState(0);
   const [history, setHistory] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null); // GroupManage表示用
+  const [editBio, setEditBio] = useState("");
 
   const uid = auth.currentUser?.uid;
   useEffect(() => {
@@ -54,6 +55,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
         setEditGakukei(data.gakukei || "");
         setEditGakunen(data.gakunen || "");
         setEditGender(data.gender || "");
+        setEditBio(data.bio || "");
       }
 
       // 自分が投稿したイベント（個人 + グループ両方）
@@ -102,7 +104,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
   };
 
   const handleSaveProfile = async () => {
-    const updated = { displayName: editName, gakuin: editGakuin, gakukei: editGakukei, gakunen: editGakunen, gender: editGender };
+    const updated = { displayName: editName, gakuin: editGakuin, gakukei: editGakukei, gakunen: editGakunen, gender: editGender, bio: editBio };
     await updateDoc(doc(db, "users", uid), updated);
     setProfile((prev) => ({ ...prev, ...updated }));
     setEditMode(false);
@@ -177,22 +179,6 @@ const EventCard = ({ event }) => {
           </div>
 
           <p style={s.email}>{auth.currentUser?.email}</p>
-        </div>
-
-        {/* ── 🔔 【機能変更】フォロー・フォロワー数から新着通知設定の一覧管理へ ── */}
-        <div style={{ background: "white", padding: "14px 20px", borderRadius: 12, margin: "0 14px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 16 }}><Bell size={16} color={THEME} /></span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#1A2E2B" }}>通知設定中のユーザー</span>
-          </div>
-          <button 
-            type="button"
-            className="imp-tab-btn"
-            onClick={() => navigate(`/notification-settings/${uid}`)} 
-            style={{ ...s.outlineBtn, padding: "6px 14px", fontSize: 12, "--normal-bg": "white", "--normal-color": THEME, "--normal-border": `1.5px solid ${THEME}` }}
-          >
-            一覧を見る
-          </button>
         </div>
 
         {/* ── プロフィール編集 ── */}
@@ -278,6 +264,15 @@ const EventCard = ({ event }) => {
                 ))}
               </div>
             </div>
+            <div style={s.editSection}>
+              <label style={s.editLabel}>自己紹介（任意）</label>
+              <textarea
+                style={{ ...s.editInput, minHeight: 80, resize: "vertical", lineHeight: 1.6, fontFamily: "inherit" }}
+                placeholder="あなたの自己紹介や活動内容を書いてみましょう"
+                value={editBio}
+                onChange={e => setEditBio(e.target.value)}
+              />
+            </div>
             <div style={s.editBtnRow}>
               <button className="tag-tab-btn" style={s.cancelBtn} onClick={() => setEditMode(false)}>キャンセル</button>
               <button className="submit-btn" style={s.saveBtn} onClick={handleSaveProfile}>保存する</button>
@@ -287,23 +282,51 @@ const EventCard = ({ event }) => {
 
         {/* ── 基本情報 ── */}
         {!editMode && (
-          <div style={s.infoBox}>
-            {[
-              { icon: <Building2 size={14} />, label: "学院", value: profile?.gakuin },
-              { icon: <BookOpen size={14} />, label: "学系", value: profile?.gakukei },
-              { icon: <GraduationCap size={14} />, label: "学年", value: profile?.gakunen },
-              { icon: <User size={14} />, label: "性別", value: profile?.gender },
-            ].map(({ icon, label, value }, i, arr) => (
-              <div key={label}>
-                <div style={s.infoRow}>
-                  <span style={s.infoLabel}>{icon} {label}</span>
-                  <span style={s.infoValue}>{value}</span>
-                </div>
-                {i < arr.length - 1 && <div style={s.infoDivider} />}
-              </div>
-            ))}
+  <div style={s.infoBox}>
+    {[
+      { icon: <Building2 size={14} />, label: "学院", value: profile?.gakuin },
+      { icon: <BookOpen size={14} />, label: "学系", value: profile?.gakukei },
+      { icon: <GraduationCap size={14} />, label: "学年", value: profile?.gakunen },
+      { icon: <User size={14} />, label: "性別", value: profile?.gender },
+    ].map(({ icon, label, value }, i, arr) => (
+      <div key={label}>
+        <div style={s.infoRow}>
+          <span style={s.infoLabel}>{icon} {label}</span>
+          <span style={s.infoValue}>{value}</span>
+        </div>
+        {i < arr.length - 1 && <div style={s.infoDivider} />}
+      </div>
+    ))}
+
+    {/* 自己紹介 */}
+    <div style={s.infoDivider} />
+    <div style={s.infoRow}>
+      <span style={s.infoLabel}><User size={14} /> 自己紹介</span>
+    </div>
+    {profile?.bio ? (
+      <div style={{ fontSize: 13, color: "#1A2E2B", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
+        {profile.bio}
+      </div>
+    ) : (
+      <span style={{ fontSize: 13, color: "#9AADA8", fontStyle: "italic" }}>自己紹介はまだ登録されていません。</span>
+    )}
+  </div>
+)}
+       {/* ── 🔔 【機能変更】フォロー・フォロワー数から新着通知設定の一覧管理へ ── */}
+        <div style={{ background: "white", padding: "14px 20px", borderRadius: 12, margin: "0 14px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 16 }}><Bell size={16} color={THEME} /></span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#1A2E2B" }}>通知設定中のユーザー</span>
           </div>
-        )}
+          <button 
+            type="button"
+            className="imp-tab-btn"
+            onClick={() => navigate(`/notification-settings/${uid}`)} 
+            style={{ ...s.outlineBtn, padding: "6px 14px", fontSize: 12, "--normal-bg": "white", "--normal-color": THEME, "--normal-border": `1.5px solid ${THEME}` }}
+          >
+            一覧を見る
+          </button>
+        </div>
 
         {/* ── グループ一覧 ── */}
         <div style={s.groupSection}>

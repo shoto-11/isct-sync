@@ -795,11 +795,7 @@ const handleDelete = async () => {
                 } else {
                     // 👤 個人の場合：それが自分ならマイページへ、他人ならユーザープロフィール画面へ遷移
                     const personalUid = event.createdByPersonal || event.createdBy;
-                    if (auth.currentUser?.uid === personalUid) {
-                    window.location.href = '/mypage';
-                    } else {
                     window.location.href = `/users/${personalUid}`;
-                    }
                 }
               }}
             >

@@ -6,7 +6,7 @@ import logo from "./assets/logo.png";
 import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { useEffect, useState, useRef } from "react";
 import { BG_COLOR } from "./constants";
-import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck, MapPin, Zap, TrendingUp } from "lucide-react";
+import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck, MapPin, Zap, TrendingUp,User } from "lucide-react";
 import "./animations.css";
 
 // 💡 【共通定義】アプリ内のすべてのイベント要素で使い回すYouTubeライクな高品質アニメーション
@@ -45,14 +45,9 @@ function EventCard({ event, onSelect, size = "small" }) {
         <div style={s.cardDate}>{event.date}{event.startTime ? ` ${event.startTime}` : ""}</div>
         <div style={s.cardFooter}>
           <span style={s.cardOrganizer}>
-            {(event.organizerName || "").length > 12
-              ? (event.organizerName || "").slice(0, 12) + "..."
+            {(event.organizerName || "").length > 16
+              ? (event.organizerName || "").slice(0, 16) + "..."
               : (event.organizerName || "募集者不明")}
-          </span>
-          <span style={s.cardLocation}>
-            {(event.location || "").length > 5
-              ? event.location.slice(0, 5) + "..."
-              : event.location}
           </span>
         </div>
       </div>
@@ -78,11 +73,13 @@ function RankItem({ event, rank, count, label, onSelect }) {
         </div>
       )}
       <div style={{ flex:1 }}>
-        {/* 通常カードと同じように、ホバー時に綺麗に下線が連動するクラス名を追加 */}
         <div className="hover-title-underline" style={s.rankTitle}>{event.title}</div>
         <div style={s.rankMeta}>
           <span style={{ display:"flex", alignItems:"center", gap:4 }}><Calendar size={11} color="#5A7370" /> {event.date}</span>
           <span style={{ display:"flex", alignItems:"center", gap:4 }}><MapPin size={11} color="#5A7370" /> {event.location}</span>
+        </div>
+        <div style={{ ...s.rankMeta, marginTop: 3 }}>
+          <span style={{ display:"flex", alignItems:"center", gap:4 }}><User size={11} color="#5A7370" /> {event.organizerName || "募集者不明"}</span>
         </div>
       </div>
       <div style={s.rankParticipants}>{count} {label}</div>
@@ -751,7 +748,7 @@ noticeBar: {
   cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
   cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B", overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" },
   cardDate: { fontFamily:"monospace", fontSize:11, color:THEME, fontWeight:700 },
-  cardFooter: { display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:2 },
+  cardFooter: { display:"flex", justifyContent:"flex-end", alignItems:"center", marginTop:2 },
   cardOrganizer: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap" },
   cardLocation: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap", textAlign:"right" },
   ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)`, width:"calc(100% - 28px)", boxSizing:"border-box" },

@@ -574,12 +574,13 @@ return (
                         </div>
                       )}
                       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-                        {/* 💡 イベントタイトルにホバー時下線連動クラスを追加 */}
                         <div className="hover-title-underline" style={s.eventCardTitle}>
                           {event.title}
                         </div>
-                        <div style={s.eventMetaRow}><Calendar size={11} /> <span>{event.date}</span></div>
-                        <div style={s.eventMetaRow}><MapPin size={11} /> <span>{event.location}</span></div>
+                        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                          <div style={s.eventMetaRow}><Calendar size={11} /> <span>{event.date}</span></div>
+                          <div style={s.eventMetaRow}><MapPin size={11} /> <span>{event.location}</span></div>
+                        </div>
                         {event.tags?.genre && (
                           <span style={{ ...s.genreTagLabel, background: style.bg, color: style.color }}>{event.tags.genre}</span>
                         )}

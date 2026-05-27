@@ -4,7 +4,7 @@ import { collection, getDocs, orderBy, query, getDoc, doc } from "firebase/fires
 import { useNavigate } from "react-router-dom";
 import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS,RECRUIT_TAGS } from "./constants";
 import { BG_COLOR } from "./constants";
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar, MapPin,User } from "lucide-react";
 import "./animations.css";
 
 const TagSection = ({ title, tags, selectedTags, onToggle }) => (
@@ -270,7 +270,9 @@ const sortResults = (list, mode) => {
                           {event.tags?.genre && <span style={{ ...s.resultTag, background:cs.bg, color:cs.color }}>{event.tags.genre}</span>}
                           {event.tags?.campus && <span style={s.resultTagGray}>{event.tags.campus}</span>}
                         </div>
-                        <div style={s.resultOrganizer}>{event.organizerName}</div>
+                       <div style={{ ...s.resultOrganizer, display: "flex", alignItems: "center", gap: 4 }}>
+                          <User size={11} color="#5A7370" /> {event.organizerName}
+                        </div>
                       </div>
                     </div>
                   );

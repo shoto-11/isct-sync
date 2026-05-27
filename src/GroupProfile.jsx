@@ -180,7 +180,7 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
           {/* 💡 🔔 通知オン/オフの切り替え処理を追加 */}
           {auth.currentUser && (
             <button
-                className={`tag-tab-btn ${isNotifying ? "tag-active-tab" : ""}`}
+                className={`tag-tab-btn ${isNotifying ? "" : "tag-active-tab"}`}
                 onClick={async () => {
                     if (!currentUid) return;
                     const myRef = doc(db, "users", currentUid);
@@ -316,7 +316,7 @@ const s = {
   eventThumb: { width: 68, height: 68, borderRadius: 10, objectFit: "cover", flexShrink: 0 },
   eventInfo: { flex: 1, minWidth: 0 },
   eventTitle: { fontSize: 14, fontWeight: 800, color: "#111", marginBottom: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
-  eventMeta: { display: "flex", flexDirection: "column", gap: 2, marginBottom: 6 },
+  eventMeta: { display: "flex", flexDirection: "row", gap: 12, flexWrap: "wrap", marginBottom: 2 },
   metaItem: { fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 4 },
   genreTag: { fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 999, width: "fit-content" },
   snsBtnBase: {
