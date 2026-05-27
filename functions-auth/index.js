@@ -5,6 +5,7 @@ import { onCall, HttpsError } from "firebase-functions/v2/https";
 import admin from "firebase-admin";
 import crypto from "crypto";
 import nodemailer from "nodemailer"; // 💡 インポートはすべて最上部にまとめます
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 console.log("=== [DEBUG] 2026-05-21 NODEMAILER DEPLOY ===");
 
 if (admin.apps.length === 0) {
@@ -140,3 +141,40 @@ export const verifyotpcode = onCall({ cors: true }, async (request) => {
     throw new HttpsError("internal", "内部サーバーエラーが発生しました");
   }
 });
+
+
+export const notifyContact = onDocumentCreated(
+  { document: "contacts/{docId}", region: "us-central1" },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
+
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false,
+      auth: {
+        user: "noreply.isct.sync@gmail.com",
+        pass: "vrsr abej iaed yyzj", // 既存のパスワード
+      },
+    });
+
+    await transporter.sendMail({
+      from: '"SYNC お問い合わせ" <noreply.isct.sync@gmail.com>',
+      to: "isct.sync@gmail.com",
+      subject: `【SYNC お問い合わせ】${data.type || "種別なし"}`,
+      text: `
+新しいお問い合わせが届きました。
+
+名前: ${data.name || "未入力"}
+メール: ${data.email || "未入力"}
+種別: ${data.type || "未入力"}
+内容:
+${data.message || "未入力"}
+
+送信日時: ${new Date().toLocaleString("ja-JP")}
+UID: ${data.uid || "未ログイン"}
+      `,
+    });
+  }
+);
