@@ -34,7 +34,17 @@
       filter: brightness(0.83) !important;
     }
 
-    
+    .event-hover-card .card-thumb-placeholder {
+  transition: filter 0.3s ease !important;
+}
+
+@media (hover: hover) {
+  .event-hover-card:hover .card-thumb-placeholder {
+    filter: brightness(0.87) !important;
+  }
+}
+
+
     /* 未選択ボタンの通常スタイルを明示（これがないとインラインと競合） */
 .tag-tab-btn:not(.tag-active-tab) {
   background-color: white !important;

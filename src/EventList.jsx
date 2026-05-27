@@ -33,7 +33,7 @@ function EventCard({ event, onSelect, size = "small" }) {
       {event.imageUrl ? (
         <img src={event.imageUrl} alt={event.title} style={s.cardImg} />
       ) : (
-        <div style={{ ...s.cardThumb, background: cs.bg }}>
+        <div className="card-thumb-placeholder" style={{ ...s.cardThumb, background: cs.bg }}>
           <span style={{ fontSize:40 }}>{emoji}</span>
         </div>
       )}
@@ -73,7 +73,7 @@ function RankItem({ event, rank, count, label, onSelect }) {
       {event.imageUrl ? (
         <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
       ) : (
-        <div style={{ ...s.rankThumb, background: cs.bg }}>
+        <div className="card-thumb-placeholder" style={{ ...s.rankThumb, background: cs.bg }}>
           <span style={{ fontSize:24 }}>{emoji}</span>
         </div>
       )}
@@ -635,34 +635,36 @@ const [recruitEvents, setRecruitEvents] = useState([]);
     {user && <Section title="あなたへのおすすめ" icon={<Target size={20} color="#88203a" />} events={recommendedEvents} onSelect={handleSelect} cardSize="large" />}
       <Section title="新着イベント" icon={<Calendar size={20} color="#88203a" />} events={events} onSelect={handleSelect} />
         <Section title="サークルイベント" icon={<Users size={20} color="#88203a" />} events={circleEvents} onSelect={handleSelect} />
+        <Section title="今週の人気イベント" icon={<TrendingUp size={20} color="#88203a" />} events={popularWeekEvents} onSelect={handleSelect} />
         <Section title="今日が締め切り" icon={<Clock size={20} color="#88203a" />} events={todayDeadlineEvents} onSelect={handleSelect} />
         <Section title="今日参加できるイベント" icon={<Zap size={20} color="#88203a" />} events={todayEvents} onSelect={handleSelect} />
-        <Section title="今週の人気イベント" icon={<TrendingUp size={20} color="#88203a" />} events={popularWeekEvents} onSelect={handleSelect} />
         <Section title="長期メンバー募集中" icon={<Users size={20} color="#88203a" />} events={recruitEvents} onSelect={handleSelect} />
 
-      {/* CTA */}
+      {/* CTA 
+      {/*
       <div
-  className="banner-hover"
-  style={s.ctaBanner}
-  onClick={() => window.open("https://www.youtube.com/", "_blank")}
->
-  <div>
-    <div style={s.ctaText}>現在募集中のイベントを見る</div>
-    <div style={s.ctaSub}>全{events.length}件のイベントが掲載中</div>
-  </div>
-  <div style={s.ctaArrow}>›</div>
-</div>
+        className="banner-hover"
+        style={s.ctaBanner}
+        onClick={() => window.open("https://www.youtube.com/", "_blank")}
+      >
+        <div>
+          <div style={s.ctaText}>現在募集中のイベントを見る</div>
+          <div style={s.ctaSub}>全{events.length}件のイベントが掲載中</div>
+        </div>
+        <div style={s.ctaArrow}>›</div>
+      </div>*/}
 
-{/* Survey */}
-<div
-  className="banner-hover"
-  style={s.surveyBanner}
-  onClick={() => window.open("https://www.youtube.com/", "_blank")}
->
-  <div style={s.surveyLabel}>在学生限定</div>
-  <div style={s.surveyTitle}>2026春イベント<br />リクエスト＆アンケート実施中！！</div>
-  <div style={s.surveyDeadline}>📅 5/22 まで</div>
-</div>
+      {/* Survey */}
+      {/*
+      <div
+        className="banner-hover"
+        style={s.surveyBanner}
+        onClick={() => window.open("https://www.youtube.com/", "_blank")}
+      >
+        <div style={s.surveyLabel}>在学生限定</div>
+        <div style={s.surveyTitle}>2026春イベント<br />リクエスト＆アンケート実施中！！</div>
+        <div style={s.surveyDeadline}>📅 5/22 まで</div>
+      </div>*/}
 
       {/* ランキング */}
       <div style={s.rankingHeader}>

@@ -254,7 +254,7 @@ const sortResults = (list, mode) => {
                       {event.imageUrl ? (
                         <img src={event.imageUrl} alt={event.title} style={s.resultThumb} />
                       ) : (
-                        <div style={{ ...s.resultThumb, background:cs.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28 }}>
+                        <div className="card-thumb-placeholder" style={{ ...s.resultThumb, background:cs.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28 }}>
                           {emoji}
                         </div>
                       )}

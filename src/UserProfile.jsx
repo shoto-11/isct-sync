@@ -160,7 +160,7 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
                     <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
                     ) : (
                     /* 💡 画像がない場合の枠。ホバー時に連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
-                    <div style={{ ...s.eventThumb, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, aspectRatio: "1/1" }}>
+                    <div className="card-thumb-placeholder" style={{ ...s.eventThumb, background:bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, aspectRatio: "1/1" }}>
                         {emoji}
                     </div>
                     )}

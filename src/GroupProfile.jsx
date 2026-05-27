@@ -263,7 +263,7 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
                     <img src={event.imageUrl} alt="" style={s.eventThumb} />
                   ) : (
                     /* 💡 画像がない場合の枠。ホバー時に連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
-                    <div style={{ ...s.eventThumb, background: style.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, aspectRatio: "1/1" }}>
+                    <div className="card-thumb-placeholder" style={{ ...s.eventThumb, background: style.bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, aspectRatio: "1/1" }}>
                       {emoji}
                     </div>
                   )}
