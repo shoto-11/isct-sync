@@ -361,7 +361,11 @@ const handleDelete = async () => {
 
         {/* 画像 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>イベント画像（任意）</label>
+          <label style={s.editLabel}>イベント画像（任意）
+            <span style={{ fontSize: 11, color: "#9AADA8", fontWeight: 500, marginLeft: 6 }}>
+              ※推奨サイズ：横16：縦9の比率（例：1920×1080px）
+            </span>
+          </label>
           <div style={s.imageArea} onClick={() => document.getElementById("editImgInput").click()}>
             {editPreview ? (
               <img src={editPreview} alt="preview" style={s.previewImg} />
@@ -909,7 +913,7 @@ const s = {
   required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
   input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box" },
   textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
-  imageArea: { width:"100%", height:180, borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR },
+  imageArea: { width:"100%", aspectRatio: "16/9",height: "auto", borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR },
   previewImg: { width:"100%", height:"100%", objectFit:"cover" },
   imagePlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", gap:8 },
   imagePlaceholderText: { fontSize:13, color:"#5A7370", fontWeight:600 },
