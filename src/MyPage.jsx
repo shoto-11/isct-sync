@@ -11,6 +11,37 @@ import "./animations.css";
 
 const THEME = "#88203a";
 
+// MyPage の export default function の外、上に定義
+function EventCard({ event, onEventSelect, userGroups }) {
+  const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
+  const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+  const isGroupEvent = userGroups.some((g) => g.id === event.createdBy);
+  const THEME = "#88203a";
+  return (
+    <div className="event-hover-card" style={s.eventItem} onClick={() => onEventSelect(event)}>
+      {event.imageUrl ? (
+        <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
+      ) : (
+        <div className="card-thumb-placeholder" style={{ ...s.eventThumb, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, aspectRatio: "1/1" }}>
+          {emoji}
+        </div>
+      )}
+      <div style={s.eventInfo}>
+        <div className="hover-title-underline" style={s.eventTitle}>{event.title}</div>
+        <div style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 6 }}>
+          <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
+        </div>
+        {isGroupEvent && (
+          <span style={{ ...s.groupBadge, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <Users size={11} />
+            <span>{userGroups.find((g) => g.id === event.createdBy)?.displayName}</span>
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsChanged }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
@@ -68,8 +99,16 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
       setMyEvents(allEvents);
 
       // 閲覧履歴
-      const hist = JSON.parse(localStorage.getItem(`history_${uid}`) || "[]");
-      setHistory(hist);
+      const histRaw = JSON.parse(localStorage.getItem(`history_${uid}`) || "[]");
+      const histIds = histRaw.map(e => e.id).filter(Boolean);
+      if (histIds.length > 0) {
+        const eventsSnap2 = await getDocs(collection(db, "events"));
+        const eventsMap = Object.fromEntries(eventsSnap2.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
+        const freshHist = histIds.map(id => eventsMap[id]).filter(Boolean);
+        setHistory(freshHist);
+      } else {
+        setHistory([]);
+      }
 
       // いいね・参加予定
       const statsSnap = await getDocs(collection(db, "eventStats"));
@@ -111,44 +150,6 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
   };
 
   if (loading) return <p style={{ padding: 24, color: "#5A7370" }}>読み込み中...</p>;
-
-const EventCard = ({ event }) => {
-    const bg = GENRE_STYLES[event.tags?.genre]?.bg || "#F5F5F5";
-    const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
-    const isGroupEvent = userGroups.some((g) => g.id === event.createdBy);
-    return (
-      <div 
-        /* 💡 animations.css の共通ホバー・クリッククラスを適用！ */
-        className="event-hover-card" 
-        style={s.eventItem} 
-        onClick={() => onEventSelect(event)}
-      >
-        {event.imageUrl ? (
-          <img src={event.imageUrl} alt={event.title} style={s.eventThumb} />
-        ) : (
-          /* 💡 画像がないプレースホルダー背景も連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
-          <div className="card-thumb-placeholder" style={{ ...s.eventThumb, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, aspectRatio: "1/1" }}>
-            {emoji}
-          </div>
-        )}
-        <div style={s.eventInfo}>
-          {/* 💡 タイトルにホバー時下線連動クラスを追加 */}
-          <div className="hover-title-underline" style={s.eventTitle}>
-            {event.title}
-          </div>
-          <div style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 6 }}>
-            <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
-          </div>
-          {isGroupEvent && (
-            <span style={{ ...s.groupBadge, display: "inline-flex", alignItems: "center", gap: 4 }}>
-              <Users size={11} /> 
-              <span>{userGroups.find((g) => g.id === event.createdBy)?.displayName}</span>
-            </span>
-          )}
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div style={s.outer}>
@@ -437,30 +438,30 @@ const EventCard = ({ event }) => {
             if (activeTab === "events") {
               return activeEvents.length === 0
                 ? <p style={s.empty}>まだ募集中のイベントはありません</p>
-                : activeEvents.map((event) => <EventCard key={event.id} event={event} />);
+                : activeEvents.map((event) => <EventCard key={event.id} event={event} onEventSelect={onEventSelect} userGroups={userGroups} />)
             }
             
             if (activeTab === "expired") {
               return expiredEvents.length === 0
                 ? <p style={s.empty}>募集終了したイベントはありません</p>
-                : expiredEvents.map((event) => <EventCard key={event.id} event={event} />);
+                : expiredEvents.map((event) => <EventCard key={event.id} event={event} onEventSelect={onEventSelect} userGroups={userGroups} />)
             }
           })()}
 
           {activeTab === "liked" && (
             likedEvents.length === 0
               ? <p style={s.empty}>いいねしたイベントはありません</p>
-              : likedEvents.map((event) => <EventCard key={event.id} event={event} />)
+              : likedEvents.map((event) => <EventCard key={event.id} event={event} onEventSelect={onEventSelect} userGroups={userGroups} />)
           )}
           {activeTab === "joined" && (
             joinedEvents.length === 0
               ? <p style={s.empty}>参加予定のイベントはありません</p>
-              : joinedEvents.map((event) => <EventCard key={event.id} event={event} />)
+              : joinedEvents.map((event) => <EventCard key={event.id} event={event} onEventSelect={onEventSelect} userGroups={userGroups} />)
           )}
           {activeTab === "history" && (
             history.length === 0
               ? <p style={s.empty}>閲覧履歴はありません</p>
-              : history.map((event) => <EventCard key={event.id} event={event} />)
+              : history.map((event) => <EventCard key={event.id} event={event} onEventSelect={onEventSelect} userGroups={userGroups} />)
           )}
         </div>
       </div>
