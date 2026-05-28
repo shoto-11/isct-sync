@@ -67,10 +67,18 @@ export default function EventDetail({ event: initialEvent, onBack }) {
     const recordView = async () => {
       if (!auth.currentUser || !event.id) return;
       const uid = auth.currentUser.uid;
+      try {
+          await updateDoc(doc(db, "users", uid), {
+            viewHistory: arrayUnion(event.id)
+          });
+        } catch (err) {
+          console.error("履歴の保存に失敗:", err);
+        }
       const now = new Date();
       const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
       const viewRef = doc(db, "eventStats", event.id);
       const snap = await getDoc(viewRef);
+      
       if (snap.exists()) {
         const data = snap.data();
         setLikeCount((data.likes || []).length);

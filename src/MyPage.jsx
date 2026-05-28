@@ -87,6 +87,17 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
         setEditGakunen(data.gakunen || "");
         setEditGender(data.gender || "");
         setEditBio(data.bio || "");
+        // 閲覧履歴
+        const viewHistory = (data.viewHistory || []).slice(-30).reverse(); // 最新30件
+        if (viewHistory.length > 0) {
+          const allEventsSnap = await getDocs(collection(db, "events"));
+          const eventsMap = Object.fromEntries(allEventsSnap.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
+          const freshHist = viewHistory.map(id => eventsMap[id]).filter(Boolean);
+          setHistory(freshHist);
+        } else {
+          setHistory([]);
+        }
+
       }
 
       // 自分が投稿したイベント（個人 + グループ両方）
@@ -97,19 +108,6 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
       );
       const allEvents = eventSnaps.flatMap((s) => s.docs.map((d) => ({ id: d.id, ...d.data() })));
       setMyEvents(allEvents);
-
-      // 閲覧履歴
-      const histRaw = JSON.parse(localStorage.getItem(`history_${uid}`) || "[]");
-      const histIds = histRaw.map(e => e.id).filter(Boolean);
-      if (histIds.length > 0) {
-        const eventsSnap2 = await getDocs(collection(db, "events"));
-        const eventsMap = Object.fromEntries(eventsSnap2.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
-        const freshHist = histIds.map(id => eventsMap[id]).filter(Boolean);
-        setHistory(freshHist);
-      } else {
-        setHistory([]);
-      }
-
       // いいね・参加予定
       const statsSnap = await getDocs(collection(db, "eventStats"));
       const eventsSnap = await getDocs(collection(db, "events"));
