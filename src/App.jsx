@@ -291,7 +291,7 @@ function MainLayout({
         if (!user) { navigate("/login"); return; }
         navigate("/post");
       }}>
-        ＋ イベントを作る
+        ＋ 募集する
       </button>
 
       {/* ── Footer ── */}
@@ -388,7 +388,7 @@ function MainLayout({
           {[
             { icon: <Home size={18} />, label: "ホーム", to: "/" },
             { icon: <User size={18} />, label: "マイページ", to: "/mypage" },
-            { icon: <PenLine size={18} />, label: "イベントを作る", to: "/post" },
+            { icon: <PenLine size={18} />, label: "募集する", to: "/post" },
           ].map(({ icon, label, to }) => (
             <button key={to} className="menu-drawer-btn" onClick={() => { navigate(to); setMenuOpen(false); }}>
               <span style={s.menuItemLeft}>{icon}&nbsp; {label}</span>

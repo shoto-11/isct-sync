@@ -32,10 +32,6 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
   const [deadline, setDeadline] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
   const [genreTag, setGenreTag] = useState("");
-  const [targetTags, setTargetTags] = useState([]);
-  const [campusTag, setCampusTag] = useState("");
-  const [styleTag, setStyleTag] = useState("");
-  const [organizerTag, setOrganizerTag] = useState("");
   const [contact, setContact] = useState("");
   const [targetGakuin, setTargetGakuin] = useState([]);
   const [targetGakukei, setTargetGakukei] = useState([]);
@@ -43,7 +39,13 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
   const [organizerType, setOrganizerType] = useState(userGroups.length > 0 ? "group" : "personal");
   const [selectedGroupId, setSelectedGroupId] = useState(userGroups.length > 0 ? userGroups[0].id : null);
   const [userProfile, setUserProfile] = useState(null);
-  const [recruitTag, setRecruitTag] = useState("");
+
+  const [recruitTags, setRecruitTags] = useState([]);
+  const [targetTags, setTargetTags] = useState([]);   // 任意に
+  const [campusTags, setCampusTags] = useState([]);   // 複数選択に
+  const [styleTags, setStyleTags] = useState([]);
+  const [organizerTags, setOrganizerTags] = useState([]);
+  const [hasDeadline, setHasDeadline] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -102,12 +104,16 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
   const handleSubmit = async () => {
     // 💡 必須判定の完全同期（9つの条件）
-    if (!title.trim() || !detail.trim() || !date || !location.trim() || !deadline || !genreTag || !targetTags.length || !campusTag) {
+    // date・targetTags・campusTag を必須から外す
+    if (!title.trim() || !detail.trim() || !genreTag) {
       alert("必須項目を全て入力・選択してください。");
       return;
     }
-    // 💡 【新規追加】申し込み締切日がイベント日時を超えていないかチェック
-    if (new Date(deadline) > new Date(date)) {
+    if (hasDeadline && !deadline) {
+      alert("締切日を入力してください。");
+      return;
+    }
+    if (hasDeadline && date && new Date(deadline) > new Date(date)) {
       alert("申し込み締切日はイベント当日、またはそれより前の日付に設定してください。");
       return;
     }
@@ -144,15 +150,15 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         startTime,
         endTime,
         location: location.trim(),
-        deadline,
-        deadlineTime,
+        deadline: hasDeadline ? deadline : "",
+        deadlineTime: hasDeadline ? deadlineTime : "",
         tags: {
           genre: genreTag,
           targets: targetTags,
-          campus: campusTag,
-          style: styleTag,
-          organizer: organizerTag,
-          recruit: recruitTag// 💡 修正
+          campus: campusTags,    // 配列に
+          style: styleTags,
+          organizer: organizerTags,
+          recruit: recruitTags,
         },
         imageUrl,
         attachments: attachmentUrls,
@@ -185,7 +191,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <ArrowLeft size={16} />
         <span>戻る</span>
       </button>*/}
-      <h2 style={s.heading}>イベントを作る</h2>
+      <h2 style={s.heading}>募集内容登録</h2>
 
 
 {/* 主催者選択（必須） */}
@@ -269,18 +275,21 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <textarea style={s.textarea} placeholder="イベントの内容、持ち物、注意事項などを記入してください" value={detail} onChange={e => setDetail(e.target.value)} rows={4} />
       </div>
 
-      {/* イベント日時（必須） */}
+      {/* イベント日時（任意） */}
       <div style={s.section}>
-        <label style={s.label}>イベント日時 <span style={s.required}>必須</span></label>
-        <input style={{ ...s.input, maxWidth: "100%", minWidth: 0 }} type="date" value={date} onChange={e => setDate(e.target.value)} onFocus={e => e.target.showPicker()}/>
-        <div style={s.timeRow}>
-          <div style={{ flex:1, minWidth:0 }}>
-            <label style={{ ...s.label, fontSize:11 }}>開始時刻（任意）</label>
+        <label style={s.label}>イベント日時（任意）</label>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <div style={{ flex: 2 }}>
+            <label style={{ ...s.label, fontSize: 11 }}>日付</label>
+            <input style={s.input} type="date" value={date} onChange={e => setDate(e.target.value)} onFocus={e => e.target.showPicker()} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label style={{ ...s.label, fontSize: 11 }}>開始時刻</label>
             <input style={s.input} type="time" value={startTime} onChange={e => setStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
           </div>
           <div style={s.timeSeparator}>〜</div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <label style={{ ...s.label, fontSize:11 }}>終了時刻（任意）</label>
+          <div style={{ flex: 1 }}>
+            <label style={{ ...s.label, fontSize: 11 }}>終了時刻</label>
             <input style={s.input} type="time" value={endTime} onChange={e => setEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
           </div>
         </div>
@@ -288,18 +297,39 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* 場所（必須） */}
       <div style={s.section}>
-        <label style={s.label}>場所 <span style={s.required}>必須</span></label>
+        <label style={s.label}>実施場所・集合場所（任意）</label>
         <input style={s.input} placeholder="例：大岡山グラウンド" value={location} onChange={e => setLocation(e.target.value)} />
       </div>
 
-      {/* 申し込み締切日（必須） */}
+      {/* 申し込み締切*/}
       <div style={s.section}>
-        <label style={s.label}>申し込み締切日 <span style={s.required}>必須</span></label>
-        <input style={{ ...s.input, maxWidth: "100%", minWidth: 0 }} type="date" value={deadline} onChange={e => setDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
-      </div>
-      <div style={s.section}>
-        <label style={s.label}>申し込み締切時間（任意）</label>
-        <input style={{ ...s.input, maxWidth: "100%", minWidth: 0 }} type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+        <label style={s.label}>申し込み締切</label>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, paddingTop: 20 }}>
+            <button
+              className={`tag-tab-btn ${hasDeadline ? "tag-active-tab" : ""}`}
+              style={s.tagBtn}
+              onClick={() => setHasDeadline(true)}
+            >期限あり</button>
+            <button
+              className={`tag-tab-btn ${!hasDeadline ? "tag-active-tab" : ""}`}
+              style={s.tagBtn}
+              onClick={() => { setHasDeadline(false); setDeadline(""); setDeadlineTime(""); }}
+            >無期限</button>
+          </div>
+          {hasDeadline && (
+            <>
+              <div style={{ flex: 2, minWidth: 120 }}>
+                <label style={{ ...s.label, fontSize: 11 }}>日付</label>
+                <input style={s.input} type="date" value={deadline} onChange={e => setDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
+              </div>
+              <div style={{ flex: 1, minWidth: 80 }}>
+                <label style={{ ...s.label, fontSize: 11 }}>締切時間</label>
+                <input style={s.input} type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       {/* ① ジャンル（必須） */}
@@ -316,21 +346,21 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       </div>
 
       <div style={s.section}>
-        <label style={s.label}>② 募集種別（任意）</label>
+        <label style={s.label}>② 募集種別（任意・複数選択可）</label>
         <div style={s.optionGrid}>
-            {RECRUIT_TAGS.map(t => (
+          {RECRUIT_TAGS.map(t => (
             <button key={t}
-                className={`tag-tab-btn ${recruitTag === t ? "tag-active-tab" : ""}`}
-                style={s.tagBtn}
-                onClick={() => setRecruitTag(prev => prev === t ? "" : t)}
+              className={`tag-tab-btn ${recruitTags.includes(t) ? "tag-active-tab" : ""}`}
+              style={s.tagBtn}
+              onClick={() => setRecruitTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
             >{t}</button>
-            ))}
+          ))}
         </div>
-        </div>
+      </div>
 
       {/* ② 対象学年（必須） */}
       <div style={s.section}>
-        <label style={s.label}>③ 対象学年 <span style={s.required}>必須・複数選択可</span></label>
+        <label style={s.label}>③ 対象学年（任意・複数選択可）</label>
         <div style={s.optionGrid}>
           {TARGET_TAGS.map(t => (
             <button key={t} 
@@ -380,39 +410,42 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* ③ キャンパス（必須） */}
       <div style={s.section}>
-        <label style={s.label}>⑥ キャンパス <span style={s.required}>必須</span></label>
+        <label style={s.label}>⑥ キャンパス（任意・複数選択可）</label>
         <div style={s.optionGrid}>
           {CAMPUS_TAGS.map(t => (
-            <button key={t} 
-            className={`tag-tab-btn ${campusTag === t ? "tag-active-tab" : ""}`}
-            style={s.tagBtn}
-            onClick={() => setCampusTag(t)}>{t}</button>
+            <button key={t}
+              className={`tag-tab-btn ${campusTags.includes(t) ? "tag-active-tab" : ""}`}
+              style={s.tagBtn}
+              onClick={() => setCampusTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+            >{t}</button>
           ))}
         </div>
       </div>
 
-      {/* ④ 参加スタイル（任意） */}
+      {/* 参加スタイル */}
       <div style={s.section}>
-        <label style={s.label}>⑦ 参加スタイル（任意）</label>
+        <label style={s.label}>⑦ 参加スタイル（任意・複数選択可）</label>
         <div style={s.optionGrid}>
           {STYLE_TAGS.map(t => (
-            <button key={t} 
-            className={`tag-tab-btn ${styleTag === t ? "tag-active-tab" : ""}`}
-            style={s.tagBtn}
-            onClick={() => setStyleTag(prev => prev === t ? "" : t)}>{t}</button>
+            <button key={t}
+              className={`tag-tab-btn ${styleTags.includes(t) ? "tag-active-tab" : ""}`}
+              style={s.tagBtn}
+              onClick={() => setStyleTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+            >{t}</button>
           ))}
         </div>
       </div>
 
-      {/* ⑤ 主催者種別（任意） */}
+      {/* 主催者種別 */}
       <div style={s.section}>
-        <label style={s.label}>⑧ 主催者種別（任意）</label>
+        <label style={s.label}>⑧ 主催者種別（任意・複数選択可）</label>
         <div style={s.optionGrid}>
           {ORGANIZER_TAGS.map(t => (
-            <button key={t} 
-            className={`tag-tab-btn ${organizerTag === t ? "tag-active-tab" : ""}`}
-            style={s.tagBtn}
-            onClick={() => setOrganizerTag(prev => prev === t ? "" : t)}>{t}</button>
+            <button key={t}
+              className={`tag-tab-btn ${organizerTags.includes(t) ? "tag-active-tab" : ""}`}
+              style={s.tagBtn}
+              onClick={() => setOrganizerTags(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+            >{t}</button>
           ))}
         </div>
       </div>
@@ -440,16 +473,18 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         )}
       </div>
       
-      {/* 申し込みボタン名（任意） */}
+      {/* 申し込みボタン名・リンク */}
       <div style={s.section}>
-        <label style={s.label}>申し込みボタンの名前（任意）</label>
-        <input style={s.input} placeholder="参加を申し込む" value={applyLabel} onChange={e => setApplyLabel(e.target.value)} />
-      </div>
-
-      {/* 申し込みリンク（任意） */}
-      <div style={s.section}>
-        <label style={s.label}>申し込みリンク（任意）</label>
-        <input style={s.input} type="url" placeholder="https://forms.gle/..." value={applyLink} onChange={e => setApplyLink(e.target.value)} />
+        <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <label style={s.label}>申し込みボタン名（任意）</label>
+            <input style={s.input} placeholder="参加を申し込む" value={applyLabel} onChange={e => setApplyLabel(e.target.value)} />
+          </div>
+          <div style={{ flex: 2 }}>
+            <label style={s.label}>申し込みリンク（任意）</label>
+            <input style={s.input} type="url" placeholder="https://forms.gle/..." value={applyLink} onChange={e => setApplyLink(e.target.value)} />
+          </div>
+        </div>
       </div>
 
       {/* お問い合わせ先（任意） */}
