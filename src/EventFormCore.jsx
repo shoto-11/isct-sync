@@ -123,17 +123,17 @@ export default function EventFormCore({
         <textarea style={s.textarea} placeholder="イベントの内容、持ち物、注意事項などを記入してください" value={detail} onChange={e => setDetail(e.target.value)} rows={4} />
       </div>
 
-      {/* イベント日時 */}
+      {/* 開催日時 */}
       <div style={s.section}>
-        <label style={s.label}>イベント日時</label>
+        <label style={s.label}>開催日時</label>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
           <div style={{ display: "flex", gap: 8 }}>
             <button type="button" className={`tag-tab-btn ${hasDate ? "tag-active-tab" : ""}`}
               style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
-              onClick={() => setHasDate(true)}>日時を指定する</button>
+              onClick={() => setHasDate(true)}>日時指定</button>
             <button type="button" className={`tag-tab-btn ${!hasDate ? "tag-active-tab" : ""}`}
               style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
-              onClick={() => { setHasDate(false); setDates([{ date: "", startTime: "", endTime: "" }]); }}>日時を指定しない</button>
+              onClick={() => { setHasDate(false); setDates([{ date: "", startTime: "", endTime: "" }]); }}>通年募集</button>
           </div>
 
           {hasDate && (

@@ -54,7 +54,7 @@ function EventCard({ event, onSelect, size = "small" }) {
           <span style={s.cardDate}>
             {firstDate
               ? `${formatDate(firstDate.date)}${firstDate.startTime ? `  ${firstDate.startTime}` : ""}`
-              : "日時指定なし"}
+              : "通年募集"}
           </span>
         </div>
 
@@ -72,17 +72,27 @@ function EventCard({ event, onSelect, size = "small" }) {
   );
 }
 
-
 function RankItem({ event, rank, count, label, onSelect }) {
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
   const rankColors = ["#C8A84B","#8E9EAB","#A0674A","#B0BEC5"];
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [, m, d] = dateStr.split("-");
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+    const w = weekdays[new Date(dateStr).getDay()];
+    return `${m}-${d}（${w}）`;
+  };
+
+  const firstDate = event.dates?.length > 0
+    ? event.dates[0]
+    : event.date
+      ? { date: event.date, startTime: event.startTime }
+      : null;
+
   return (
-    <div 
-      className="event-hover-card" /* 💡 週間ランキングにも共通アニメーションを強制適用！ */
-      style={s.rankItem} 
-      onClick={() => onSelect(event)}
-    >
+    <div className="event-hover-card" style={s.rankItem} onClick={() => onSelect(event)}>
       <div style={{ ...s.rankNum, color: rankColors[rank] }}>{rank+1}</div>
       {event.imageUrl ? (
         <img src={event.imageUrl} alt={event.title} style={s.rankImg} />
@@ -94,11 +104,20 @@ function RankItem({ event, rank, count, label, onSelect }) {
       <div style={{ flex:1 }}>
         <div className="hover-title-underline" style={s.rankTitle}>{event.title}</div>
         <div style={s.rankMeta}>
-          <span style={{ display:"flex", alignItems:"center", gap:4 }}><Calendar size={11} color="#5A7370" /> {event.date}</span>
-          <span style={{ display:"flex", alignItems:"center", gap:4 }}><MapPin size={11} color="#5A7370" /> {event.location}</span>
+          <span style={{ display:"flex", alignItems:"center", gap:4 }}>
+            <Calendar size={11} color="#5A7370" />
+            {firstDate ? `${formatDate(firstDate.date)}${firstDate.startTime ? `  ${firstDate.startTime}` : ""}` : "通年募集"}
+          </span>
+          {event.location && (
+            <span style={{ display:"flex", alignItems:"center", gap:4 }}>
+              <MapPin size={11} color="#5A7370" /> {event.location}
+            </span>
+          )}
         </div>
         <div style={{ ...s.rankMeta, marginTop: 3 }}>
-          <span style={{ display:"flex", alignItems:"center", gap:4 }}><User size={11} color="#5A7370" /> {event.organizerName || "募集者不明"}</span>
+          <span style={{ display:"flex", alignItems:"center", gap:4 }}>
+            <User size={11} color="#5A7370" /> {event.organizerName || "募集者不明"}
+          </span>
         </div>
       </div>
       <div style={s.rankParticipants}>{count} {label}</div>

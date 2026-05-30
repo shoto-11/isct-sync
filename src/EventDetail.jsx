@@ -537,31 +537,36 @@ export default function EventDetail({ event: initialEvent, onBack }) {
                 ? [{ date: event.date, startTime: event.startTime, endTime: event.endTime }]
                 : []
             ).filter(d => d.date);
-            if (ds.length === 0) return null;
+
             const formatDate = (dateStr) => {
               const [, m, d] = dateStr.split("-");
               const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
               const w = weekdays[new Date(dateStr).getDay()];
               return `${m}-${d}（${w}）`;
             };
+
             return (
               <>
                 <div style={s.infoRow}>
                   <span style={s.infoIcon}><Calendar size={20} color="#88203a" /></span>
                   <div style={{ flex: 1 }}>
                     <div style={s.infoLabel}>開催日時</div>
-                    <div style={{ borderLeft: "2px solid #88203a", paddingLeft: 10, marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
-                      {ds.map((d, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                          <div style={{ ...s.infoValue, flexShrink: 0 }}>{formatDate(d.date)}</div>
-                          {(d.startTime || d.endTime) && (
-                            <div style={{ fontSize: 14, color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>
-                              {d.startTime || ""} 〜 {d.endTime || ""}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                    {ds.length > 0 ? (
+                      <div style={{ borderLeft: "2px solid #88203a", paddingLeft: 10, marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
+                        {ds.map((d, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                            <div style={{ ...s.infoValue, flexShrink: 0 }}>{formatDate(d.date)}</div>
+                            {(d.startTime || d.endTime) && (
+                              <div style={{ fontSize: 14, color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>
+                                {d.startTime || ""} 〜 {d.endTime || ""}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={s.infoValue}>通年募集</div>
+                    )}
                   </div>
                 </div>
                 <div style={s.infoDivider} />
