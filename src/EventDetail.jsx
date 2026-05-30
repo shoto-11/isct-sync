@@ -614,7 +614,6 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           {/* 場所 */}
           {event.location && (
             <>
-              <div style={s.infoDivider} />
               <div style={s.infoRow}>
                 <span style={s.infoIcon}><MapPin size={20} color="#88203a" /></span>
                 <div>
@@ -622,6 +621,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
                   <div style={s.infoValue}>{event.location}</div>
                 </div>
               </div>
+               <div style={s.infoDivider} />
             </>
           )}
 

@@ -11,7 +11,6 @@ import "./animations.css";
 
 // 💡 【共通定義】アプリ内のすべてのイベント要素で使い回すYouTubeライクな高品質アニメーション
 // コンポーネントの外、または最上部に一度だけインジェクションします
-
 function EventCard({ event, onSelect, size = "small" }) {
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
@@ -27,8 +26,19 @@ function EventCard({ event, onSelect, size = "small" }) {
     return `${m}-${d}（${w}）`;
   };
 
-  // 複数日程対応
-  const firstDate = event.dates?.length > 0 ? event.dates[0] : event.date ? { date: event.date, startTime: event.startTime } : null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const allDates = (event.dates?.length > 0
+    ? event.dates
+    : event.date
+      ? [{ date: event.date, startTime: event.startTime }]
+      : []
+  ).filter(d => d.date && new Date(d.date) >= now);
+
+  const firstDate = allDates[0] || null;
+  const extraCount = allDates.length - 1;
+  const hadDates = event.dates?.length > 0 || event.date;
 
   return (
     <div
@@ -53,8 +63,10 @@ function EventCard({ event, onSelect, size = "small" }) {
           <Calendar size={11} color={THEME} strokeWidth={2.5} style={{ flexShrink: 0 }} />
           <span style={s.cardDate}>
             {firstDate
-              ? `${formatDate(firstDate.date)}${firstDate.startTime ? `  ${firstDate.startTime}` : ""}`
-              : "通年募集"}
+              ? `${formatDate(firstDate.date)}${firstDate.startTime ? ` ${firstDate.startTime}` : ""}${extraCount > 0 ? ` ほか${extraCount}日程` : ""}`
+              : hadDates
+                ? "日程終了"
+                : "通年募集"}
           </span>
         </div>
 
@@ -406,7 +418,9 @@ const [recruitEvents, setRecruitEvents] = useState([]);
     const fetch = async () => {
       const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
-      const now = new Date();
+     const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
       const list = snapshot.docs
         .map(d => ({ id: d.id, ...d.data() }))
         .filter(event => {
