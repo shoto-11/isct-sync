@@ -1,5 +1,5 @@
 import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, BG_COLOR, GAKUIN,RECRUIT_TAGS } from "./constants";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
 import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -26,15 +26,11 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [editImage, setEditImage] = useState(null);
   const [editPreview, setEditPreview] = useState(event.imageUrl || null);
   const [editGenre, setEditGenre] = useState(event.tags?.genre || "");
-  const [editTargets, setEditTargets] = useState(event.tags?.targets || []);
-  const [editCampus, setEditCampus] = useState(event.tags?.campus || "");
-  const [editStyle, setEditStyle] = useState(event.tags?.style || "");
-  const [editRecruit, setEditRecruit] = useState(event.tags?.recruit || "");
-  const [editOrganizer, setEditOrganizer] = useState(event.tags?.organizer || "");
   const [liked, setLiked] = useState(false);
   const [joining, setJoining] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [joinCount, setJoinCount] = useState(0);
+  const [showAdvancedTags, setShowAdvancedTags] = useState(false);
 
   // 💡 主催者（詳細表示用 ＆ 編集時のカード選択用）
   const [organizer, setOrganizer] = useState(null);
@@ -49,6 +45,44 @@ export default function EventDetail({ event: initialEvent, onBack }) {
 
   const [editAttachments, setEditAttachments] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState(event.attachments || []);
+
+  const [editCampus, setEditCampus] = useState(
+  Array.isArray(event.tags?.campus) ? event.tags.campus : event.tags?.campus ? [event.tags.campus] : []
+  );
+  const [editStyle, setEditStyle] = useState(
+    Array.isArray(event.tags?.style) ? event.tags.style : event.tags?.style ? [event.tags.style] : []
+  );
+  const [editRecruit, setEditRecruit] = useState(
+    Array.isArray(event.tags?.recruit) ? event.tags.recruit : event.tags?.recruit ? [event.tags.recruit] : []
+  );
+  const [editOrganizer, setEditOrganizer] = useState(
+    Array.isArray(event.tags?.organizer) ? event.tags.organizer : event.tags?.organizer ? [event.tags.organizer] : []
+  );
+  const [editTargets, setEditTargets] = useState(event.tags?.targets || []);
+  const [editHasDeadline, setEditHasDeadline] = useState(!!event.deadline);
+
+  const [editHasDate, setEditHasDate] = useState(!!event.date);
+
+  // 既存の editDate, editStartTime, editEndTime はそのまま残しつつ、複数日程用のstateを追加
+const [editDates, setEditDates] = useState(
+  event.dates?.length > 0
+    ? event.dates
+    : [{ date: event.date || "", startTime: event.startTime || "", endTime: event.endTime || "" }]
+);
+
+const addEditDate = () => {
+  setEditDates(prev => [...prev, { date: "", startTime: "", endTime: "" }]);
+};
+
+const removeEditDate = (index) => {
+  setEditDates(prev => prev.filter((_, i) => i !== index));
+};
+
+const updateEditDate = (index, field, value) => {
+  setEditDates(prev => prev.map((d, i) => i === index ? { ...d, [field]: value } : d));
+};
+
+
   // 💡 権限判定に createdByPersonal（個人UID）も考慮するように修正
   const isOwner = 
   auth.currentUser?.uid === event.createdByPersonal || 
@@ -172,8 +206,20 @@ export default function EventDetail({ event: initialEvent, onBack }) {
 
   const handleSave = async () => {
     // 💡 必須バリデーションの条件を作成画面（PostEvent）と完全に統一
-    if (!editTitle.trim() || !editDetail.trim() || !editDate || !editLocation.trim() || !editDeadline || !editGenre || !editTargets.length || !editCampus) {
-      alert("必須項目を全て入力してください");
+    if (!editTitle.trim() || !editDetail.trim() || !editGenre) {
+    alert("イベント名・詳細・ジャンルは必須です。");
+    return;
+    }
+    if (editHasDate && editDates.some(d => !d.date)) {
+      alert("開催日を入力してください。");
+      return;
+    }
+    if (editHasDeadline && !editDeadline) {
+      alert("締切日を入力してください。");
+      return;
+    }
+    if (editHasDeadline && editDate && editDeadline && new Date(editDeadline) > new Date(editDate)) {
+      alert("締切日はイベント当日またはそれより前に設定してください。");
       return;
     }
     // 💡 【新規追加】申し込み締切日がイベント日時を超えていないかチェック
@@ -209,22 +255,19 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         const updated = {
           title: editTitle.trim(),
           detail: editDetail.trim(),
-          date: editDate,
-          startTime: editStartTime,
-          endTime: editEndTime,
           location: editLocation.trim(),
-          deadline: editDeadline,
-          deadlineTime: editDeadlineTime,
+          deadline: editHasDeadline ? editDeadline : "",
+          deadlineTime: editHasDeadline ? editDeadlineTime : "",
           applyLabel: editApplyLabel || "参加を申し込む",
           applyLink: editApplyLink,
           imageUrl,
           tags: {
             genre: editGenre,
             targets: editTargets,
-            campus: editCampus,
-            style: editStyle,
-            organizer: editOrganizer,
-            recruit: editRecruit,
+            campus: editCampus,       // 配列
+            style: editStyle,         // 配列
+            organizer: editOrganizer, // 配列
+            recruit: editRecruit,     // 配列
           },
           targetGakuin: editTargetGakuin,
           targetGakukei: editTargetGakukei,
@@ -234,7 +277,11 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           createdBy: finalOrganizerId,
           organizerName,
           organizerAvatar,
-          attachments: [...existingAttachments, ...newAttachmentUrls], // ← ここで使う
+          attachments: [...existingAttachments, ...newAttachmentUrls],
+          dates: editHasDate ? editDates : [],
+          date: editHasDate ? (editDates[0]?.date || "") : "",
+          startTime: editHasDate ? (editDates[0]?.startTime || "") : "",
+          endTime: editHasDate ? (editDates[0]?.endTime || "") : "",
         };
 
         await updateDoc(doc(db, "events", event.id), updated);
@@ -369,7 +416,7 @@ const handleDelete = async () => {
 
         {/* 画像 */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>イベント画像（任意）
+          <label style={s.editLabel}>イベント画像
             <span style={{ fontSize: 11, color: "#9AADA8", fontWeight: 500, marginLeft: 6 }}>
               ※推奨サイズ：横16：縦9の比率（例：1920×1080px）
             </span>
@@ -393,43 +440,170 @@ const handleDelete = async () => {
           <input style={s.input} value={editTitle} onChange={e => setEditTitle(e.target.value)} />
         </div>
 
+        {/* 日時 */}
+          <div style={s.editSection}>
+            <label style={s.editLabel}>イベント日時</label>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  className={`tag-tab-btn ${editHasDate ? "tag-active-tab" : ""}`}
+                  style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
+                  onClick={() => setEditHasDate(true)}
+                >日時を指定する</button>
+                <button
+                  type="button"
+                  className={`tag-tab-btn ${!editHasDate ? "tag-active-tab" : ""}`}
+                  style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
+                  onClick={() => { setEditHasDate(false); setEditDate(""); setEditStartTime(""); setEditEndTime(""); }}
+                >日時を指定しない</button>
+              </div>
+              {editHasDate && (
+                <div style={{
+                  background: "#FAFDFC",
+                  border: `2px solid ${THEME}`,
+                  borderRadius: 12,
+                  padding: "16px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 16,
+                  width: "100%",
+                  boxSizing: "border-box",
+                  boxShadow: "0 4px 12px rgba(136,32,58,0.04)"
+                }}>
+                  {editDates.map((d, i) => (
+                    <div key={i} style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                      paddingBottom: i < editDates.length - 1 ? 16 : 0,
+                      borderBottom: i < editDates.length - 1 ? "1px solid #E0E8E7" : "none"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+                          <Calendar size={15} strokeWidth={2.5} />
+                          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>
+                            {editDates.length > 1 ? `開催日 ${i + 1}` : "開催日"}
+                          </span>
+                        </div>
+                        {editDates.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeEditDate(i)}
+                            style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", display: "flex", alignItems: "center" }}
+                          >
+                            <X size={16} />
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        style={s.input}
+                        type="date"
+                        value={d.date}
+                        onChange={e => updateEditDate(i, "date", e.target.value)}
+                        onFocus={e => e.target.showPicker()}
+                      />
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+                        <Clock size={15} strokeWidth={2.5} />
+                        <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>開催時間</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <input style={s.input} type="time" value={d.startTime} onChange={e => updateEditDate(i, "startTime", e.target.value)} onFocus={e => e.target.showPicker()} />
+                        </div>
+                        <div style={{ color: "#5A7370", fontWeight: 700, flexShrink: 0 }}>〜</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <input style={s.input} type="time" value={d.endTime} onChange={e => updateEditDate(i, "endTime", e.target.value)} onFocus={e => e.target.showPicker()} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={addEditDate}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      padding: "10px",
+                      background: "white",
+                      border: `1.5px dashed ${THEME}`,
+                      borderRadius: 8,
+                      color: THEME,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      width: "100%",
+                    }}
+                  >
+                    <Plus size={15} /> 日程を追加する
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+        {/* 締切 */}
+        <div style={s.editSection}>
+          <label style={s.editLabel}>申し込み締切</label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className={`tag-tab-btn ${editHasDeadline ? "tag-active-tab" : ""}`}
+                style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
+                onClick={() => setEditHasDeadline(true)}
+              >期限あり</button>
+              <button
+                type="button"
+                className={`tag-tab-btn ${!editHasDeadline ? "tag-active-tab" : ""}`}
+                style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
+                onClick={() => { setEditHasDeadline(false); setEditDeadline(""); setEditDeadlineTime(""); }}
+              >期限なし</button>
+            </div>
+            {editHasDeadline && (
+              <div style={{
+                background: "#FAFDFC",
+                border: `2px solid ${THEME}`,
+                borderRadius: 12,
+                padding: "16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 12,
+                width: "100%",
+                boxSizing: "border-box",
+                boxShadow: "0 4px 12px rgba(136,32,58,0.04)"
+              }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+                    <Calendar size={15} strokeWidth={2.5} />
+                    <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>締切日</span>
+                  </div>
+                  <input style={s.input} type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+                    <Clock size={15} strokeWidth={2.5} />
+                    <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>締切時間</span>
+                  </div>
+                  <input style={s.input} type="time" value={editDeadlineTime} onChange={e => setEditDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+                {/* 場所 */}
+        <div style={s.editSection}>
+          <label style={s.editLabel}>実施場所・集合場所</label>
+          <input style={s.input} value={editLocation} onChange={e => setEditLocation(e.target.value)} />
+        </div>
+
         {/* 詳細 */}
         <div style={s.editSection}>
           <label style={s.editLabel}>イベント詳細 <span style={s.required}>必須</span></label>
           <textarea style={s.textarea} value={editDetail} onChange={e => setEditDetail(e.target.value)} rows={4} />
-        </div>
-
-        {/* 日時 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>イベント日時 <span style={s.required}>必須</span></label>
-          <input style={s.input} type="date" value={editDate} onChange={e => setEditDate(e.target.value)} onFocus={e => e.target.showPicker()} />
-          <div style={s.timeRow}>
-            <div style={{ flex:1 }}>
-              <label style={{ ...s.editLabel, fontSize:11 }}>開始時刻（任意）</label>
-              <input style={s.input} type="time" value={editStartTime} onChange={e => setEditStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-            </div>
-            <div style={s.timeSep}>〜</div>
-            <div style={{ flex:1 }}>
-              <label style={{ ...s.editLabel, fontSize:11 }}>終了時刻（任意）</label>
-              <input style={s.input} type="time" value={editEndTime} onChange={e => setEditEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-            </div>
-          </div>
-        </div>
-
-        {/* 場所 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>場所 <span style={s.required}>必須</span></label>
-          <input style={s.input} value={editLocation} onChange={e => setEditLocation(e.target.value)} />
-        </div>
-
-        {/* 締切 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>申し込み締切日 <span style={s.required}>必須</span></label>
-          <input style={s.input} type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
-          <div style={{ marginTop: 8 }}>
-            <label style={{ ...s.editLabel, fontSize:11 }}>申し込み締切時間（任意）</label>
-            <input style={s.input} type="time" value={editDeadlineTime} onChange={e => setEditDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-          </div>
         </div>
 
         {/* ジャンル */}
@@ -437,117 +611,154 @@ const handleDelete = async () => {
           <label style={s.editLabel}>① ジャンル <span style={s.required}>必須</span></label>
           <div style={s.optionGrid}>
             {GENRE_TAGS.map(t => (
-              <button key={t} 
-              className={`tag-tab-btn ${editGenre === t ? "tag-active-tab" : ""}`}
+              <button key={t}
+                className={`tag-tab-btn ${editGenre === t ? "tag-active-tab" : ""}`}
                 style={s.tagBtn}
-              onClick={() => setEditGenre(t)}>{t}</button>
+                onClick={() => setEditGenre(t)}>{t}</button>
             ))}
           </div>
         </div>
-        {/* 募集種別 */}
+        {/* 詳細タグ 開閉ボタン */}
         <div style={s.editSection}>
-        <label style={s.editLabel}>② 募集系統（任意）</label>
-        <div style={s.optionGrid}>
-            {RECRUIT_TAGS.map(t => (
-            <button key={t}
-                className={`tag-tab-btn ${editRecruit === t ? "tag-active-tab" : ""}`}
-                style={s.tagBtn}
-                onClick={() => setEditRecruit(prev => prev === t ? "" : t)}>{t}</button>
-            ))}
-        </div>
-        </div>
+          <button
+            type="button"
+            onClick={() => setShowAdvancedTags(prev => !prev)}
+            style={{
+              width: "100%",
+              padding: "12px 16px",
+              background: "#F4F6F5",
+              border: "1.5px solid #D0DDD9",
+              borderRadius: showAdvancedTags ? "10px 10px 0 0" : 10,
+              fontSize: 13,
+              fontWeight: 700,
+              color: "#5A7370",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>② 詳細タグを設定する（募集種別・対象・キャンパスなど）</span>
+            <span style={{ fontSize: 18, transition: "transform 0.3s", transform: showAdvancedTags ? "rotate(180deg)" : "rotate(0deg)" }}>›</span>
+          </button>
 
-        {/* 対象者 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>③ 対象学年 <span style={s.required}>必須・複数選択可</span></label>
-          <div style={s.optionGrid}>
-            {TARGET_TAGS.map(t => (
-              <button key={t} 
-              className={`tag-tab-btn ${editTargets.includes(t) ? "tag-active-tab" : ""}`}
-                style={s.tagBtn}
-                onClick={() => setEditTargets(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>{t}</button>
-            ))}
-          </div>
-        </div>
-        
-        {/* 対象学院 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>④ 対象学院（任意・複数選択可）</label>
-          <div style={s.optionGrid}>
-            {Object.keys(GAKUIN).map(g => (
-              <button
-                key={g}
-                className={`tag-tab-btn ${editTargetGakuin.includes(g) ? "tag-active-tab" : ""}`}
-                style={s.tagBtn}
-                onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
-              >
-                {g}
-              </button>
-            ))}
-          </div>
-        </div>
+          {showAdvancedTags && (
+            <div style={{
+              border: "1.5px solid #D0DDD9",
+              borderTop: "none",
+              borderRadius: "0 0 10px 10px",
+              padding: "16px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+              background: "white",
+            }}>
+              {/* 募集種別 */}
+              <div>
+                <label style={s.editLabel}>② 募集種別</label>
+                <div style={s.optionGrid}>
+                  {RECRUIT_TAGS.map(t => (
+                    <button key={t}
+                      className={`tag-tab-btn ${editRecruit.includes(t) ? "tag-active-tab" : ""}`}
+                      style={s.tagBtn}
+                      onClick={() => setEditRecruit(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                    >{t}</button>
+                  ))}
+                </div>
+              </div>
 
-        {/* 対象学系 */}
-        {editTargetGakuin.length > 0 && (
-          <div style={s.editSection}>
-            <label style={s.editLabel}>⑤ 対象学系（任意・複数選択可）</label>
-            <div style={s.optionGrid}>
-              {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
-                <button
-                  key={k}
-                  className={`tag-tab-btn ${editTargetGakukei.includes(k) ? "tag-active-tab" : ""}`}
-                    style={s.tagBtn}
-                  onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
-                >
-                  {k}
-                </button>
-              ))}
+              {/* 対象学年 */}
+              <div>
+                <label style={s.editLabel}>③ 対象学年</label>
+                <div style={s.optionGrid}>
+                  {TARGET_TAGS.map(t => (
+                    <button key={t}
+                      className={`tag-tab-btn ${editTargets.includes(t) ? "tag-active-tab" : ""}`}
+                      style={s.tagBtn}
+                      onClick={() => setEditTargets(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                    >{t}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 対象学院 */}
+              <div>
+                <label style={s.editLabel}>④ 対象学院</label>
+                <div style={s.optionGrid}>
+                  {Object.keys(GAKUIN).map(g => (
+                    <button key={g}
+                      className={`tag-tab-btn ${editTargetGakuin.includes(g) ? "tag-active-tab" : ""}`}
+                      style={s.tagBtn}
+                      onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
+                    >{g}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 対象学系 */}
+              {editTargetGakuin.length > 0 && (
+                <div>
+                  <label style={s.editLabel}>⑤ 対象学系</label>
+                  <div style={s.optionGrid}>
+                    {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
+                      <button key={k}
+                        className={`tag-tab-btn ${editTargetGakukei.includes(k) ? "tag-active-tab" : ""}`}
+                        style={s.tagBtn}
+                        onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
+                      >{k}</button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* キャンパス */}
+              <div>
+                <label style={s.editLabel}>⑥ キャンパス</label>
+                <div style={s.optionGrid}>
+                  {CAMPUS_TAGS.map(t => (
+                      <button key={t}
+                        className={`tag-tab-btn ${editCampus.includes(t) ? "tag-active-tab" : ""}`}
+                        style={s.tagBtn}
+                        onClick={() => setEditCampus(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                      >{t}</button>
+                    ))}
+                </div>
+              </div>
+
+              {/* 参加スタイル */}
+              <div>
+                <label style={s.editLabel}>⑦ 参加スタイル</label>
+                <div style={s.optionGrid}>
+                  {STYLE_TAGS.map(t => (
+                      <button key={t}
+                        className={`tag-tab-btn ${editStyle.includes(t) ? "tag-active-tab" : ""}`}
+                        style={s.tagBtn}
+                        onClick={() => setEditStyle(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                      >{t}</button>
+                    ))}
+                </div>
+              </div>
+
+              {/* 主催者種別 */}
+              <div>
+                <label style={s.editLabel}>⑧ 主催者種別</label>
+                <div style={s.optionGrid}>
+                  {ORGANIZER_TAGS.map(t => (
+                      <button key={t}
+                        className={`tag-tab-btn ${editOrganizer.includes(t) ? "tag-active-tab" : ""}`}
+                        style={s.tagBtn}
+                        onClick={() => setEditOrganizer(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                      >{t}</button>
+                    ))}
+                </div>
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* キャンパス */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>⑥ キャンパス <span style={s.required}>必須</span></label>
-          <div style={s.optionGrid}>
-            {CAMPUS_TAGS.map(t => (
-              <button key={t} 
-              className={`tag-tab-btn ${editCampus === t ? "tag-active-tab" : ""}`}
-                style={s.tagBtn}
-              onClick={() => setEditCampus(t)}>{t}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* 参加スタイル */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>⑦ 参加スタイル（任意）</label>
-          <div style={s.optionGrid}>
-            {STYLE_TAGS.map(t => (
-              <button key={t} 
-              className={`tag-tab-btn ${editStyle === t ? "tag-active-tab" : ""}`}
-                style={s.tagBtn}
-              onClick={() => setEditStyle(prev => prev === t ? "" : t)}>{t}</button>
-            ))}
-          </div>
-        </div>
-
-        {/* 主催者 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>⑧ 主催者種別（任意）</label>
-          <div style={s.optionGrid}>
-            {ORGANIZER_TAGS.map(t => (
-              <button key={t} 
-              className={`tag-tab-btn ${editOrganizer === t ? "tag-active-tab" : ""}`}
-                style={s.tagBtn}
-              onClick={() => setEditOrganizer(prev => prev === t ? "" : t)}>{t}</button>
-            ))}
-          </div>
+          )}
         </div>
 
         {/* 添付画像・資料 */}
           <div style={s.editSection}>
-            <label style={s.editLabel}>添付画像・資料（任意）</label>
+            <label style={s.editLabel}>添付画像・資料</label>
 
             {existingAttachments.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
@@ -590,16 +801,20 @@ const handleDelete = async () => {
 
         {/* 申し込み */}
         <div style={s.editSection}>
-          <label style={s.editLabel}>申し込みボタン名（任意）</label>
-          <input style={s.input} placeholder="参加を申し込む" value={editApplyLabel} onChange={e => setEditApplyLabel(e.target.value)} />
-        </div>
-        <div style={s.editSection}>
-          <label style={s.editLabel}>申し込みリンク（任意）</label>
-          <input style={s.input} type="url" placeholder="https://forms.gle/..." value={editApplyLink} onChange={e => setEditApplyLink(e.target.value)} />
+          <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ flex: 1 }}>
+              <label style={s.editLabel}>募集ボタン名</label>
+              <input style={s.input} placeholder="参加を申し込む" value={editApplyLabel} onChange={e => setEditApplyLabel(e.target.value)} />
+            </div>
+            <div style={{ flex: 2 }}>
+              <label style={s.editLabel}>募集リンク</label>
+              <input style={s.input} type="url" placeholder="https://forms.gle/..." value={editApplyLink} onChange={e => setEditApplyLink(e.target.value)} />
+            </div>
+          </div>
         </div>
 
         <div style={s.editSection}>
-          <label style={s.editLabel}>お問い合わせ先（任意）</label>
+          <label style={s.editLabel}>お問い合わせ先</label>
           <input
             style={s.input}
             placeholder="例：example@m.isct.ac.jp / @Twitter"
@@ -647,38 +862,62 @@ const handleDelete = async () => {
 
       <div style={s.body}>
         <h1 style={s.title}>{event.title}</h1>
-        {event.tags?.genre && (
-          <span style={{ ...s.tag, background:"#F9EAED", color:"#88203a" }}>{event.tags.genre}</span>
-        )}
+        
+        
 
         <div style={s.infoBox}>
+          {/* 日時（設定されている場合のみ表示） */}
+          {(event.dates?.length > 0 ? event.dates : event.date ? [{ date: event.date, startTime: event.startTime, endTime: event.endTime }] : []).map((d, i) => (
+            d.date && (
+              <React.Fragment key={i}>
+                <div style={s.infoRow}>
+                  <span style={s.infoIcon}><Calendar size={20} color="#88203a" /></span>
+                  <div>
+                    <div style={s.infoLabel}>
+                      {event.dates?.length > 1 ? `開催日時 ${i + 1}` : "開催日時"}
+                    </div>
+                    <div style={s.infoValue}>
+                      {d.date}
+                      {(d.startTime || d.endTime) && (
+                        <span> {d.startTime || ""} 〜 {d.endTime || ""}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div style={s.infoDivider} />
+              </React.Fragment>
+            )
+          ))}
+
+          {/* 締切 */}
           <div style={s.infoRow}>
-            <span style={s.infoIcon}><Calendar size={20} color="#88203a" /></span>
+            <span style={s.infoIcon}><Clock size={20} color="#88203a" /></span>
             <div>
-              <div style={s.infoLabel}>イベント日時</div>
-              <div style={s.infoValue}>{event.date}{event.startTime && ` ${event.startTime}`}{event.endTime && ` 〜 ${event.endTime}`}</div>
+              <div style={s.infoLabel}>申し込み締切</div>
+              <div style={s.infoValue}>
+                {event.deadline
+                  ? `${event.deadline}${event.deadlineTime ? ` ${event.deadlineTime}` : ""}`
+                  : "期限なし"}
+              </div>
             </div>
           </div>
           <div style={s.infoDivider} />
-          <div style={s.infoRow}>
-            <span style={s.infoIcon}><MapPin size={20} color="#88203a" /></span>
-            <div>
-              <div style={s.infoLabel}>場所</div>
-              <div style={s.infoValue}>{event.location}</div>
-            </div>
-          </div>
-          {event.deadline && (
+
+                    {/* 場所（設定されている場合のみ表示） */}
+          {event.location && (
             <>
-              <div style={s.infoDivider} />
               <div style={s.infoRow}>
-                <span style={s.infoIcon}><Clock size={20} color="#88203a" /></span>
+                <span style={s.infoIcon}><MapPin size={20} color="#88203a" /></span>
                 <div>
-                  <div style={s.infoLabel}>申し込み締切</div>
-                  <div style={s.infoValue}>{event.deadline}{event.deadlineTime && ` ${event.deadlineTime}`}</div>
+                  <div style={s.infoLabel}>実施場所・集合場所</div>
+                  <div style={s.infoValue}>{event.location}</div>
                 </div>
               </div>
+              <div style={s.infoDivider} />
             </>
           )}
+
+          {/* 定員（設定されている場合のみ） */}
           {event.capacity && (
             <>
               <div style={s.infoDivider} />
@@ -693,20 +932,30 @@ const handleDelete = async () => {
           )}
         </div>
 
-        {event.tags && (
-          <div style={s.tagsBox}>
-            {event.tags.genre && <span style={s.tagChip}>{event.tags.genre}</span>}
-            {event.tags.targets?.map(t => <span key={t} style={s.tagChip}>{t}</span>)}
-            {event.tags.campus && <span style={s.tagChip}>{event.tags.campus}</span>}
-            {event.tags.style && <span style={s.tagChip}>{event.tags.style}</span>}
-            {event.tags.organizer && <span style={s.tagChip}>{event.tags.organizer}</span>}
-          </div>
-        )}
-
         {event.detail && (
           <div style={s.section}>
             <h2 style={s.sectionTitle}>イベント詳細</h2>
             <p style={s.detailText}>{event.detail}</p>
+          </div>
+        )}
+
+
+        {event.tags && (
+          <div style={s.tagsBox}>
+            {event.tags.genre && <span style={s.tagChip}>{event.tags.genre}</span>}
+            {event.tags.targets?.map(t => <span key={t} style={s.tagChip}>{t}</span>)}
+            {Array.isArray(event.tags.campus)
+              ? event.tags.campus.map(t => <span key={t} style={s.tagChip}>{t}</span>)
+              : event.tags.campus && <span style={s.tagChip}>{event.tags.campus}</span>}
+            {Array.isArray(event.tags.style)
+              ? event.tags.style.map(t => <span key={t} style={s.tagChip}>{t}</span>)
+              : event.tags.style && <span style={s.tagChip}>{event.tags.style}</span>}
+            {Array.isArray(event.tags.organizer)
+              ? event.tags.organizer.map(t => <span key={t} style={s.tagChip}>{t}</span>)
+              : event.tags.organizer && <span style={s.tagChip}>{event.tags.organizer}</span>}
+            {Array.isArray(event.tags.recruit)
+              ? event.tags.recruit.map(t => <span key={t} style={s.tagChip}>{t}</span>)
+              : event.tags.recruit && <span style={s.tagChip}>{event.tags.recruit}</span>}
           </div>
         )}
 

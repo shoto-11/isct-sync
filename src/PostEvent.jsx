@@ -41,11 +41,12 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
   const [userProfile, setUserProfile] = useState(null);
 
   const [recruitTags, setRecruitTags] = useState([]);
-  const [targetTags, setTargetTags] = useState([]);   // 任意に
-  const [campusTags, setCampusTags] = useState([]);   // 複数選択に
+  const [targetTags, setTargetTags] = useState([]);   
+  const [campusTags, setCampusTags] = useState([]);  
   const [styleTags, setStyleTags] = useState([]);
   const [organizerTags, setOrganizerTags] = useState([]);
   const [hasDeadline, setHasDeadline] = useState(true);
+  const [hasDate, setHasDate] = useState(true);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -105,18 +106,28 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
   const handleSubmit = async () => {
     // 💡 必須判定の完全同期（9つの条件）
     // date・targetTags・campusTag を必須から外す
-    if (!title.trim() || !detail.trim() || !genreTag) {
-      alert("必須項目を全て入力・選択してください。");
-      return;
-    }
-    if (hasDeadline && !deadline) {
-      alert("締切日を入力してください。");
-      return;
-    }
-    if (hasDeadline && date && new Date(deadline) > new Date(date)) {
-      alert("申し込み締切日はイベント当日、またはそれより前の日付に設定してください。");
-      return;
-    }
+      if (!title.trim() || !detail.trim() || !genreTag) {
+    alert("イベント名・詳細・ジャンルは必須です。");
+    return;
+  }
+  // 「日時を指定する」= dateがある状態
+  // 開催日ボタンを押したのに日付が空はNG
+  if ((startTime || endTime) && !date) {
+    alert("開催日を入力してください。");
+    return;
+  }
+  if (hasDeadline && !deadline) {
+    alert("締切日を入力してください。");
+    return;
+  }
+  if (hasDeadline && date && deadline && new Date(deadline) > new Date(date)) {
+    alert("締切日はイベント当日またはそれより前に設定してください。");
+    return;
+  }
+  if (hasDate && !date) {
+  alert("開催日を入力してください。");
+  return;
+}
     setLoading(true);
 
     try {
@@ -243,9 +254,9 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         </div>
       </div>
 
-      {/* イベント画像（任意） */}
+      {/* イベント画像 */}
       <div style={s.section}>
-        <label style={s.label}>イベント画像（任意）
+        <label style={s.label}>イベント画像
           <span style={{ fontSize: 11, color: "#9AADA8", fontWeight: 500, marginLeft: 6 }}>
               ※推奨サイズ：横16：縦9の比率（例：1920×1080px）
         </span>
@@ -275,59 +286,130 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         <textarea style={s.textarea} placeholder="イベントの内容、持ち物、注意事項などを記入してください" value={detail} onChange={e => setDetail(e.target.value)} rows={4} />
       </div>
 
-      {/* イベント日時（任意） */}
+      {/* ── イベント日時 ── */}
       <div style={s.section}>
-        <label style={s.label}>イベント日時（任意）</label>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-          <div style={{ flex: 2 }}>
-            <label style={{ ...s.label, fontSize: 11 }}>日付</label>
-            <input style={s.input} type="date" value={date} onChange={e => setDate(e.target.value)} onFocus={e => e.target.showPicker()} />
+        <label style={s.label}>イベント日時</label>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
+          
+          {/* 上段：日時の指定あり・なし 切り替えボタン */}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              className={`tag-tab-btn ${hasDate ? "tag-active-tab" : ""}`}
+              style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
+              onClick={() => setHasDate(true)}
+            >日時を指定する</button>
+            <button
+              type="button"
+              className={`tag-tab-btn ${!hasDate ? "tag-active-tab" : ""}`}
+              style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
+              onClick={() => { setHasDate(false); setDate(""); setStartTime(""); setEndTime(""); }}
+            >日時を指定しない</button>
           </div>
-          <div style={{ flex: 1 }}>
-            <label style={{ ...s.label, fontSize: 11 }}>開始時刻</label>
-            <input style={s.input} type="time" value={startTime} onChange={e => setStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-          </div>
-          <div style={s.timeSeparator}>〜</div>
-          <div style={{ flex: 1 }}>
-            <label style={{ ...s.label, fontSize: 11 }}>終了時刻</label>
-            <input style={s.input} type="time" value={endTime} onChange={e => setEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-          </div>
+
+          {/* 下段：指定ありの時、ボタンの下にひとつのカードとして包括されて現れる入力欄 */}
+          {hasDate && (
+            <div style={{
+              background: "#FAFDFC",           // ほんのり上品な薄い背景色
+              border: `2px solid ${THEME}`,    // SYNCのテーマカラーでしっかり包括
+              borderRadius: 12,                // 角丸でポップに
+              padding: "16px",                 // 内側にしっかり余白
+              display: "flex",
+              flexDirection: "column",         // スマホでも絶対に崩れない2段構成
+              gap: 12,
+              width: "100%",
+              boxSizing: "border-box",
+              boxShadow: "0 4px 12px rgba(136,32,58,0.04)" // 軽い立体感
+            }}>
+              {/* 包括カード内の1段目：日付入力 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+                  <Calendar size={15} strokeWidth={2.5} />
+                  <span style={{ fontSize: 12, fontVeriant: "dense", fontWeight: 800, letterSpacing: "0.03em" }}>開催日</span>
+                </div>
+                <input style={s.input} type="date" value={date} onChange={e => setDate(e.target.value)} onFocus={e => e.target.showPicker()} />
+              </div>
+
+              {/* 包括カード内の2段目：時刻入力（横並び） */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+                  <Clock size={15} strokeWidth={2.5} />
+                  <span style={{ fontSize: 12, fontVeriant: "dense", fontWeight: 800, letterSpacing: "0.03em" }}>開催時間</span>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <input style={s.input} type="time" value={startTime} onChange={e => setStartTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+                  </div>
+                  <div style={{ color: "#5A7370", fontWeight: 700, flexShrink: 0 }}>〜</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <input style={s.input} type="time" value={endTime} onChange={e => setEndTime(e.target.value)} onFocus={e => e.target.showPicker()} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* 場所（必須） */}
       <div style={s.section}>
-        <label style={s.label}>実施場所・集合場所（任意）</label>
+        <label style={s.label}>実施場所・集合場所</label>
         <input style={s.input} placeholder="例：大岡山グラウンド" value={location} onChange={e => setLocation(e.target.value)} />
       </div>
 
-      {/* 申し込み締切*/}
+      {/* ── 申し込み締切 ── */}
       <div style={s.section}>
         <label style={s.label}>申し込み締切</label>
-        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0, paddingTop: 20 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
+          
+          {/* 上段：期限の有無切り替えボタン */}
+          <div style={{ display: "flex", gap: 8 }}>
             <button
+              type="button"
               className={`tag-tab-btn ${hasDeadline ? "tag-active-tab" : ""}`}
-              style={s.tagBtn}
+              style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
               onClick={() => setHasDeadline(true)}
             >期限あり</button>
             <button
+              type="button"
               className={`tag-tab-btn ${!hasDeadline ? "tag-active-tab" : ""}`}
-              style={s.tagBtn}
+              style={{ ...s.tagBtn, padding: "10px 14px", borderRadius: 8, flex: 1 }}
               onClick={() => { setHasDeadline(false); setDeadline(""); setDeadlineTime(""); }}
             >無期限</button>
           </div>
+
+          {/* 下段：期限ありの時、ボタンの下にひとつのカードとして包括されて現れる入力欄 */}
           {hasDeadline && (
-            <>
-              <div style={{ flex: 2, minWidth: 120 }}>
-                <label style={{ ...s.label, fontSize: 11 }}>日付</label>
+            <div style={{
+              background: "#FAFDFC",           // ほんのり上品な薄い背景色
+              border: `2px solid ${THEME}`,    // SYNCのテーマカラーでしっかり包括
+              borderRadius: 12,                // 角丸でポップに
+              padding: "16px",                 // 内側にしっかり余白
+              display: "flex",
+              flexDirection: "column",         // スマホでも絶対に崩れない2段構成
+              gap: 12,
+              width: "100%",
+              boxSizing: "border-box",
+              boxShadow: "0 4px 12px rgba(136,32,58,0.04)" // 軽い立体感
+            }}>
+              {/* 包括カード内の1段目：締切日入力 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+                  <Calendar size={15} strokeWidth={2.5} />
+                  <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>締切日</span>
+                </div>
                 <input style={s.input} type="date" value={deadline} onChange={e => setDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
               </div>
-              <div style={{ flex: 1, minWidth: 80 }}>
-                <label style={{ ...s.label, fontSize: 11 }}>締切時間</label>
+
+              {/* 包括カード内の2段目：締切時間入力 */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+                  <Clock size={15} strokeWidth={2.5} />
+                  <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>締切時間</span>
+                </div>
                 <input style={s.input} type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
               </div>
-            </>
+            </div>
           )}
         </div>
       </div>
@@ -346,7 +428,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       </div>
 
       <div style={s.section}>
-        <label style={s.label}>② 募集種別（任意・複数選択可）</label>
+        <label style={s.label}>② 募集種別</label>
         <div style={s.optionGrid}>
           {RECRUIT_TAGS.map(t => (
             <button key={t}
@@ -360,7 +442,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* ② 対象学年（必須） */}
       <div style={s.section}>
-        <label style={s.label}>③ 対象学年（任意・複数選択可）</label>
+        <label style={s.label}>③ 対象学年</label>
         <div style={s.optionGrid}>
           {TARGET_TAGS.map(t => (
             <button key={t} 
@@ -374,9 +456,9 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         </div>
       </div>
 
-      {/* 対象学院（任意） */}
+      {/* 対象学院 */}
       <div style={s.section}>
-        <label style={s.label}>④ 対象学院（任意・複数選択可）</label>
+        <label style={s.label}>④ 対象学院</label>
         <div style={s.optionGrid}>
           {Object.keys(GAKUIN).map(g => (
             <button key={g} 
@@ -390,10 +472,10 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         </div>
       </div>
 
-      {/* 対象学系（任意） */}
+      {/* 対象学系 */}
       {targetGakuin.length > 0 && (
         <div style={s.section}>
-          <label style={s.label}>⑤ 対象学系（任意・複数選択可）</label>
+          <label style={s.label}>⑤ 対象学系</label>
           <div style={s.optionGrid}>
             {targetGakuin.flatMap(g => GAKUIN[g]).map(k => (
               <button key={k} 
@@ -410,7 +492,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* ③ キャンパス（必須） */}
       <div style={s.section}>
-        <label style={s.label}>⑥ キャンパス（任意・複数選択可）</label>
+        <label style={s.label}>⑥ キャンパス</label>
         <div style={s.optionGrid}>
           {CAMPUS_TAGS.map(t => (
             <button key={t}
@@ -424,7 +506,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* 参加スタイル */}
       <div style={s.section}>
-        <label style={s.label}>⑦ 参加スタイル（任意・複数選択可）</label>
+        <label style={s.label}>⑦ 参加スタイル</label>
         <div style={s.optionGrid}>
           {STYLE_TAGS.map(t => (
             <button key={t}
@@ -438,7 +520,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
 
       {/* 主催者種別 */}
       <div style={s.section}>
-        <label style={s.label}>⑧ 主催者種別（任意・複数選択可）</label>
+        <label style={s.label}>⑧ 主催者種別</label>
         <div style={s.optionGrid}>
           {ORGANIZER_TAGS.map(t => (
             <button key={t}
@@ -451,9 +533,9 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       </div>
 
 
-      {/* 添付画像・資料（任意） */}
+      {/* 添付画像・資料 */}
       <div style={s.section}>
-        <label style={s.label}>添付画像・資料（任意）</label>
+        <label style={s.label}>添付画像・資料</label>
         <div style={s.attachArea} onClick={() => document.getElementById("attachInput").click()}>
           <Paperclip size={18} color="#5A7370" />
           <span style={s.imagePlaceholderText}>
@@ -473,23 +555,23 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         )}
       </div>
       
-      {/* 申し込みボタン名・リンク */}
+      {/* 募集ボタン名・リンク */}
       <div style={s.section}>
         <div style={{ display: "flex", gap: 12 }}>
           <div style={{ flex: 1 }}>
-            <label style={s.label}>申し込みボタン名（任意）</label>
-            <input style={s.input} placeholder="参加を申し込む" value={applyLabel} onChange={e => setApplyLabel(e.target.value)} />
+            <label style={s.label}>募集ボタン名</label>
+            <input style={s.input} placeholder="参加はこちら" value={applyLabel} onChange={e => setApplyLabel(e.target.value)} />
           </div>
           <div style={{ flex: 2 }}>
-            <label style={s.label}>申し込みリンク（任意）</label>
+            <label style={s.label}>募集リンク</label>
             <input style={s.input} type="url" placeholder="https://forms.gle/..." value={applyLink} onChange={e => setApplyLink(e.target.value)} />
           </div>
         </div>
       </div>
 
-      {/* お問い合わせ先（任意） */}
+      {/* お問い合わせ先 */}
       <div style={s.section}>
-        <label style={s.label}>お問い合わせ先（任意）</label>
+        <label style={s.label}>お問い合わせ先</label>
         <input style={s.input} placeholder="例：example@m.isct.ac.jp / @Twitter" value={contact} onChange={e => setContact(e.target.value)} />
       </div>
 
