@@ -12,38 +12,55 @@ import "./animations.css";
 // 💡 【共通定義】アプリ内のすべてのイベント要素で使い回すYouTubeライクな高品質アニメーション
 // コンポーネントの外、または最上部に一度だけインジェクションします
 
-
 function EventCard({ event, onSelect, size = "small" }) {
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
   const cardWidth = size === "large"
     ? (window.innerWidth > 768 ? 330 : 220)
     : (window.innerWidth > 768 ? 250 : 180);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return null;
+    const [, m, d] = dateStr.split("-");
+    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+    const w = weekdays[new Date(dateStr).getDay()];
+    return `${m}-${d}（${w}）`;
+  };
+
+  // 複数日程対応
+  const firstDate = event.dates?.length > 0 ? event.dates[0] : event.date ? { date: event.date, startTime: event.startTime } : null;
+
   return (
     <div
       className="event-hover-card"
-      style={{
-        ...s.card,
-        width: cardWidth,
-        background: "white",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-      }}
+      style={{ ...s.card, width: cardWidth, background: "white", boxShadow: "0 2px 10px rgba(0,0,0,0.08)" }}
       onClick={() => onSelect(event)}
     >
       {event.imageUrl ? (
         <img src={event.imageUrl} alt={event.title} style={s.cardImg} />
       ) : (
         <div className="card-thumb-placeholder" style={{ ...s.cardThumb, background: cs.bg }}>
-          <span style={{ fontSize:40 }}>{emoji}</span>
+          <span style={{ fontSize: 40 }}>{emoji}</span>
         </div>
       )}
       <div style={s.cardBody}>
-        {/* className="hover-title-underline" を付与し、カードホバー時に連動して下線が走るように変更 */}
         <div className="hover-title-underline" style={s.cardTitle}>
           {event.title}
         </div>
-        <div style={s.cardDate}>{event.date}{event.startTime ? ` ${event.startTime}` : ""}</div>
+
+        {/* 日時 */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <Calendar size={11} color={THEME} strokeWidth={2.5} style={{ flexShrink: 0 }} />
+          <span style={s.cardDate}>
+            {firstDate
+              ? `${formatDate(firstDate.date)}${firstDate.startTime ? `  ${firstDate.startTime}` : ""}`
+              : "日時指定なし"}
+          </span>
+        </div>
+
+        {/* 主催者（右下） */}
         <div style={s.cardFooter}>
+          <User size={11} color="#5A7370" strokeWidth={2.5} style={{ flexShrink: 0 }} />
           <span style={s.cardOrganizer}>
             {(event.organizerName || "").length > 16
               ? (event.organizerName || "").slice(0, 16) + "..."
@@ -54,6 +71,8 @@ function EventCard({ event, onSelect, size = "small" }) {
     </div>
   );
 }
+
+
 function RankItem({ event, rank, count, label, onSelect }) {
   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
@@ -738,9 +757,9 @@ noticeBar: {
   cardThumb: { width:"100%", aspectRatio:"16/9", display:"flex", alignItems:"center", justifyContent:"center" },
   cardBody: { padding:"12px 14px", display:"flex", flexDirection:"column", gap:5 },
   cardTitle: { fontSize:14, fontWeight:700, lineHeight:1.4, color:"#1A2E2B", overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" },
-  cardDate: { fontFamily:"monospace", fontSize:11, color:THEME, fontWeight:700 },
+  cardDate: { fontFamily: "monospace", fontSize: 11, color: THEME, fontWeight: 700 },
+  cardOrganizer: { fontSize: 11, color: "#5A7370", overflow: "hidden", whiteSpace: "nowrap" },
   cardFooter: { display:"flex", justifyContent:"flex-end", alignItems:"center", marginTop:2 },
-  cardOrganizer: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap" },
   cardLocation: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap", textAlign:"right" },
   ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)`, width:"calc(100% - 28px)", boxSizing:"border-box" },
   ctaText: { color:"white", fontSize:15, fontWeight:700 },

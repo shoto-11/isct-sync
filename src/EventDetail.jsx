@@ -570,17 +570,41 @@ export default function EventDetail({ event: initialEvent, onBack }) {
           })()}
 
           {/* 締切 */}
-          <div style={s.infoRow}>
-            <span style={s.infoIcon}><Clock size={20} color="#88203a" /></span>
-            <div>
-              <div style={s.infoLabel}>申し込み締切</div>
-              <div style={s.infoValue}>
-                {event.deadline
-                  ? `${event.deadline}${event.deadlineTime ? ` ${event.deadlineTime}` : ""}`
-                  : "期限なし"}
-              </div>
-            </div>
-          </div>
+          {(() => {
+            const formatDeadline = (dateStr) => {
+              if (!dateStr) return null;
+              const [, m, d] = dateStr.split("-");
+              const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+              const w = weekdays[new Date(dateStr).getDay()];
+              return `${m}-${d}（${w}）`;
+            };
+
+            return (
+              <>
+                <div style={s.infoRow}>
+                  <span style={s.infoIcon}><Clock size={20} color="#88203a" /></span>
+                  <div style={{ flex: 1 }}>
+                    <div style={s.infoLabel}>申し込み締切</div>
+                    {event.deadline ? (
+                      <div style={{ borderLeft: "2px solid #88203a", paddingLeft: 10, marginTop: 4 }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                          <div style={{ ...s.infoValue, flexShrink: 0 }}>{formatDeadline(event.deadline)}</div>
+                          {event.deadlineTime && (
+                            <div style={{ fontSize: 14, color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>
+                              {event.deadlineTime}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={s.infoValue}>期限なし</div>
+                    )}
+                  </div>
+                </div>
+                <div style={s.infoDivider} />
+              </>
+            );
+          })()}
 
           {/* 場所 */}
           {event.location && (
