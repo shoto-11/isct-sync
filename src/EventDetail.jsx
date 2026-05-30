@@ -1,11 +1,12 @@
-import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, BG_COLOR, GAKUIN,RECRUIT_TAGS } from "./constants";
+import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS, ORGANIZER_TAGS, BG_COLOR, GAKUIN, RECRUIT_TAGS } from "./constants";
 import React, { useState, useEffect } from "react";
 import { db, storage, auth } from "./firebase";
-import { doc, updateDoc, arrayUnion, arrayRemove, increment, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, setDoc, getDoc, collection, getDocs, query, where, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { MapPin,  Pencil,Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon,Trash2,X  } from "lucide-react";
+import { MapPin, Pencil, Calendar, Clock, Users, ChevronRight, User, Heart, CalendarCheck, Paperclip, Plus, ImageIcon, Trash2, X } from "lucide-react";
 import "./animations.css";
 import heic2any from "heic2any";
+import EventFormFields from "./EventFormFields";
 
 export default function EventDetail({ event: initialEvent, onBack }) {
   const [event, setEvent] = useState(initialEvent);
@@ -15,9 +16,6 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   // 編集用state
   const [editTitle, setEditTitle] = useState(event.title || "");
   const [editDetail, setEditDetail] = useState(event.detail || "");
-  const [editDate, setEditDate] = useState(event.date || "");
-  const [editStartTime, setEditStartTime] = useState(event.startTime || "");
-  const [editEndTime, setEditEndTime] = useState(event.endTime || "");
   const [editLocation, setEditLocation] = useState(event.location || "");
   const [editDeadline, setEditDeadline] = useState(event.deadline || "");
   const [editDeadlineTime, setEditDeadlineTime] = useState(event.deadlineTime || "");
@@ -30,9 +28,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [joining, setJoining] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [joinCount, setJoinCount] = useState(0);
-  const [showAdvancedTags, setShowAdvancedTags] = useState(false);
 
-  // 💡 主催者（詳細表示用 ＆ 編集時のカード選択用）
   const [organizer, setOrganizer] = useState(null);
   const [editOrganizerType, setEditOrganizerType] = useState(event.organizerType || "personal");
   const [editOrganizerId, setEditOrganizerId] = useState(event.organizerId || event.createdBy);
@@ -42,12 +38,11 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [editTargetGakuin, setEditTargetGakuin] = useState(event.targetGakuin || []);
   const [editTargetGakukei, setEditTargetGakukei] = useState(event.targetGakukei || []);
   const [editContact, setEditContact] = useState(event.contact || "");
-
   const [editAttachments, setEditAttachments] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState(event.attachments || []);
 
   const [editCampus, setEditCampus] = useState(
-  Array.isArray(event.tags?.campus) ? event.tags.campus : event.tags?.campus ? [event.tags.campus] : []
+    Array.isArray(event.tags?.campus) ? event.tags.campus : event.tags?.campus ? [event.tags.campus] : []
   );
   const [editStyle, setEditStyle] = useState(
     Array.isArray(event.tags?.style) ? event.tags.style : event.tags?.style ? [event.tags.style] : []
@@ -60,35 +55,24 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   );
   const [editTargets, setEditTargets] = useState(event.tags?.targets || []);
   const [editHasDeadline, setEditHasDeadline] = useState(!!event.deadline);
-
   const [editHasDate, setEditHasDate] = useState(!!event.date);
+  const [editDates, setEditDates] = useState(
+    event.dates?.length > 0
+      ? event.dates
+      : [{ date: event.date || "", startTime: event.startTime || "", endTime: event.endTime || "" }]
+  );
 
-  // 既存の editDate, editStartTime, editEndTime はそのまま残しつつ、複数日程用のstateを追加
-const [editDates, setEditDates] = useState(
-  event.dates?.length > 0
-    ? event.dates
-    : [{ date: event.date || "", startTime: event.startTime || "", endTime: event.endTime || "" }]
-);
+  // テンプレートモーダル
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateEvents, setTemplateEvents] = useState([]);
+  const [templateSearch, setTemplateSearch] = useState("");
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
-const addEditDate = () => {
-  setEditDates(prev => [...prev, { date: "", startTime: "", endTime: "" }]);
-};
-
-const removeEditDate = (index) => {
-  setEditDates(prev => prev.filter((_, i) => i !== index));
-};
-
-const updateEditDate = (index, field, value) => {
-  setEditDates(prev => prev.map((d, i) => i === index ? { ...d, [field]: value } : d));
-};
-
-
-  // 💡 権限判定に createdByPersonal（個人UID）も考慮するように修正
-  const isOwner = 
-  auth.currentUser?.uid === event.createdByPersonal || 
-  auth.currentUser?.uid === event.createdBy ||
-  (event.organizerType === "group" && organizer?.members?.includes(auth.currentUser?.uid));
-  const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5" };
+  const isOwner =
+    auth.currentUser?.uid === event.createdByPersonal ||
+    auth.currentUser?.uid === event.createdBy ||
+    (event.organizerType === "group" && organizer?.members?.includes(auth.currentUser?.uid));
+  const cs = GENRE_STYLES[event.tags?.genre] || { bg: "#F5F5F5" };
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -102,219 +86,230 @@ const updateEditDate = (index, field, value) => {
       if (!auth.currentUser || !event.id) return;
       const uid = auth.currentUser.uid;
       try {
-          await updateDoc(doc(db, "users", uid), {
-            viewHistory: arrayUnion(event.id)
-          });
-        } catch (err) {
-          console.error("履歴の保存に失敗:", err);
-        }
+        await updateDoc(doc(db, "users", uid), { viewHistory: arrayUnion(event.id) });
+      } catch (err) { console.error("履歴の保存に失敗:", err); }
       const now = new Date();
       const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
       const viewRef = doc(db, "eventStats", event.id);
       const snap = await getDoc(viewRef);
-      
       if (snap.exists()) {
         const data = snap.data();
         setLikeCount((data.likes || []).length);
         setJoinCount((data.joins || []).length);
         setLiked((data.likes || []).some(l => l.uid === uid));
         setJoining((data.joins || []).some(j => j.uid === uid));
-        
         const views = (data.views || []).filter(v => new Date(v.date) > weekAgo);
-        const alreadyViewed = views.some(v => v.uid === uid);
-        if (!alreadyViewed) {
-          await updateDoc(viewRef, {
-            views: arrayUnion({ uid, date: now.toISOString() }),
-          });
+        if (!views.some(v => v.uid === uid)) {
+          await updateDoc(viewRef, { views: arrayUnion({ uid, date: now.toISOString() }) });
         }
       } else {
-        await setDoc(viewRef, {
-          eventId: event.id,
-          deadline: event.deadline || null,
-          views: [{ uid, date: now.toISOString() }],
-          likes: [],
-          joins: [],
-        });
+        await setDoc(viewRef, { eventId: event.id, deadline: event.deadline || null, views: [{ uid, date: now.toISOString() }], likes: [], joins: [] });
       }
     };
     recordView();
   }, [event.id]);
 
-  // 詳細表示用の主催者データを動的にフェッチ
   useEffect(() => {
     const fetchOrganizer = async () => {
       const type = event.organizerType || "personal";
       const id = event.organizerId || event.createdBy;
       if (!id) return;
-
       try {
         if (type === "group") {
-          const orgSnap = await getDoc(doc(db, "groups", id));
-          if (orgSnap.exists()) setOrganizer({ type: "group", ...orgSnap.data() });
+          const snap = await getDoc(doc(db, "groups", id));
+          if (snap.exists()) setOrganizer({ type: "group", ...snap.data() });
         } else {
-          const orgSnap = await getDoc(doc(db, "users", id));
-          if (orgSnap.exists()) setOrganizer({ type: "personal", ...orgSnap.data() });
+          const snap = await getDoc(doc(db, "users", id));
+          if (snap.exists()) setOrganizer({ type: "personal", ...snap.data() });
         }
-      } catch (err) {
-        console.error("主催者の取得に失敗しました:", err);
-      }
+      } catch (err) { console.error("主催者の取得に失敗しました:", err); }
     };
     fetchOrganizer();
   }, [event.organizerType, event.organizerId, event.createdBy]);
 
-  // 編集モード開示時に、コンテキストに必要なデータを先回り取得
   useEffect(() => {
     if (!editMode || !auth.currentUser) return;
-    
     const fetchEditContextData = async () => {
       const uid = auth.currentUser.uid;
       try {
         const userSnap = await getDoc(doc(db, "users", uid));
         if (userSnap.exists()) setUserProfile({ id: userSnap.id, ...userSnap.data() });
-
-        const groupsRef = collection(db, "groups");
-        const q = query(groupsRef, where("members", "array-contains", uid));
-        const querySnapshot = await getDocs(q);
-        setUserGroups(querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (err) {
-        console.error("編集用コンテキストの取得に失敗しました:", err);
-      }
+        const q = query(collection(db, "groups"), where("members", "array-contains", uid));
+        const qs = await getDocs(q);
+        setUserGroups(qs.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) { console.error("編集用コンテキストの取得に失敗しました:", err); }
     };
     fetchEditContextData();
   }, [editMode]);
 
-  const handleImageChange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+  useEffect(() => {
+    if (!showTemplateModal || !auth.currentUser) return;
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const uid = auth.currentUser.uid;
+        const personalSnap = await getDocs(query(collection(db, "events"), where("createdByPersonal", "==", uid)));
+        const groupSnaps = await Promise.all(
+          userGroups.map(g => getDocs(query(collection(db, "events"), where("organizerId", "==", g.id))))
+        );
+        const allEvents = [
+          ...personalSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+          ...groupSnaps.flatMap(s => s.docs.map(d => ({ id: d.id, ...d.data() })))
+        ];
+        const unique = Array.from(new Map(allEvents.map(e => [e.id, e])).values());
+        unique.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+        setTemplateEvents(unique);
+      } catch (err) { console.error(err); }
+      setLoadingTemplates(false);
+    };
+    fetchTemplates();
+  }, [showTemplateModal]);
 
-  let finalFile = file;
-
-  if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
-    try {
-      const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
-      finalFile = new File([converted], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
-    } catch (err) {
-      alert("画像の変換に失敗しました。別の形式でお試しください。");
-      return;
+  const applyTemplate = (tmpl) => {
+    setEditTitle(tmpl.title || "");
+    setEditDetail(tmpl.detail || "");
+    setEditLocation(tmpl.location || "");
+    setEditApplyLabel(tmpl.applyLabel || "");
+    setEditApplyLink(tmpl.applyLink || "");
+    setEditContact(tmpl.contact || "");
+    setEditGenre(tmpl.tags?.genre || "");
+    setEditTargets(tmpl.tags?.targets || []);
+    setEditCampus(Array.isArray(tmpl.tags?.campus) ? tmpl.tags.campus : tmpl.tags?.campus ? [tmpl.tags.campus] : []);
+    setEditStyle(Array.isArray(tmpl.tags?.style) ? tmpl.tags.style : tmpl.tags?.style ? [tmpl.tags.style] : []);
+    setEditOrganizer(Array.isArray(tmpl.tags?.organizer) ? tmpl.tags.organizer : tmpl.tags?.organizer ? [tmpl.tags.organizer] : []);
+    setEditRecruit(Array.isArray(tmpl.tags?.recruit) ? tmpl.tags.recruit : tmpl.tags?.recruit ? [tmpl.tags.recruit] : []);
+    setEditTargetGakuin(tmpl.targetGakuin || []);
+    setEditTargetGakukei(tmpl.targetGakukei || []);
+    setEditPreview(tmpl.imageUrl || null);
+    setEditImage(null);
+    setExistingAttachments(tmpl.attachments || []);
+    setEditAttachments([]);
+    if (tmpl.dates?.length > 0) {
+      setEditHasDate(true); setEditDates(tmpl.dates);
+    } else if (tmpl.date) {
+      setEditHasDate(true); setEditDates([{ date: tmpl.date, startTime: tmpl.startTime || "", endTime: tmpl.endTime || "" }]);
+    } else {
+      setEditHasDate(false); setEditDates([{ date: "", startTime: "", endTime: "" }]);
     }
-  }
+    if (tmpl.deadline) {
+      setEditHasDeadline(true); setEditDeadline(tmpl.deadline); setEditDeadlineTime(tmpl.deadlineTime || "");
+    } else {
+      setEditHasDeadline(false); setEditDeadline(""); setEditDeadlineTime("");
+    }
+    if (tmpl.organizerType === "group" && tmpl.organizerId) {
+      const matched = userGroups.find(g => g.id === tmpl.organizerId);
+      if (matched) { setEditOrganizerType("group"); setEditOrganizerId(tmpl.organizerId); }
+      else { setEditOrganizerType("personal"); setEditOrganizerId(auth.currentUser?.uid || ""); }
+    } else {
+      setEditOrganizerType("personal"); setEditOrganizerId(auth.currentUser?.uid || "");
+    }
+    setShowTemplateModal(false);
+    setTemplateSearch("");
+  };
 
-  setEditImage(finalFile);
-  setEditPreview(URL.createObjectURL(finalFile));
-};
-
+  const handleImageChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    let finalFile = file;
+    if (file.type === "image/heic" || file.type === "image/heif" || file.name.toLowerCase().endsWith(".heic") || file.name.toLowerCase().endsWith(".heif")) {
+      try {
+        const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+        finalFile = new File([converted], file.name.replace(/\.heic$/i, ".jpg").replace(/\.heif$/i, ".jpg"), { type: "image/jpeg" });
+      } catch { alert("画像の変換に失敗しました。別の形式でお試しください。"); return; }
+    }
+    setEditImage(finalFile);
+    setEditPreview(URL.createObjectURL(finalFile));
+  };
 
   const handleSave = async () => {
-    // 💡 必須バリデーションの条件を作成画面（PostEvent）と完全に統一
     if (!editTitle.trim() || !editDetail.trim() || !editGenre) {
-    alert("イベント名・詳細・ジャンルは必須です。");
-    return;
+      alert("イベント名・詳細・ジャンルは必須です。"); return;
     }
     if (editHasDate && editDates.some(d => !d.date)) {
-      alert("開催日を入力してください。");
-      return;
+      alert("開催日を入力してください。"); return;
     }
     if (editHasDeadline && !editDeadline) {
-      alert("締切日を入力してください。");
-      return;
+      alert("締切日を入力してください。"); return;
     }
-    if (editHasDeadline && editDate && editDeadline && new Date(editDeadline) > new Date(editDate)) {
-      alert("締切日はイベント当日またはそれより前に設定してください。");
-      return;
-    }
-    // 💡 【新規追加】申し込み締切日がイベント日時を超えていないかチェック
-    if (new Date(editDeadline) > new Date(editDate)) {
-      alert("申し込み締切日はイベント当日、またはそれより前の日付に設定してください。");
-      return;
-          }
-      setSaving(true);
-      try {
-        let imageUrl = event.imageUrl;
-        if (editImage) {
-          const storageRef = ref(storage, `events/${Date.now()}_${editImage.name}`);
-          await uploadBytes(storageRef, editImage);
-          imageUrl = await getDownloadURL(storageRef);
-        }
-
-        // ← 追加：新規添付ファイルをアップロード
-        const newAttachmentUrls = [];
-        for (const file of editAttachments) {
-          const storageRef = ref(storage, `attachments/${Date.now()}_${file.name}`);
-          await uploadBytes(storageRef, file);
-          const url = await getDownloadURL(storageRef);
-          newAttachmentUrls.push({ name: file.name, url });
-        }
-
-        const currentUid = auth.currentUser.uid;
-        const selectedGroup = userGroups.find(g => g.id === editOrganizerId);
-        const finalOrganizerType = editOrganizerType === "group" ? "group" : "personal";
-        const finalOrganizerId = editOrganizerType === "group" && selectedGroup ? selectedGroup.id : currentUid;
-        const organizerName = editOrganizerType === "group" && selectedGroup ? selectedGroup.displayName : (userProfile?.displayName || auth.currentUser.email);
-        const organizerAvatar = editOrganizerType === "group" && selectedGroup ? (selectedGroup.avatarUrl || "") : (userProfile?.avatarUrl || "");
-
-        const updated = {
-          title: editTitle.trim(),
-          detail: editDetail.trim(),
-          location: editLocation.trim(),
-          deadline: editHasDeadline ? editDeadline : "",
-          deadlineTime: editHasDeadline ? editDeadlineTime : "",
-          applyLabel: editApplyLabel || "参加を申し込む",
-          applyLink: editApplyLink,
-          imageUrl,
-          tags: {
-            genre: editGenre,
-            targets: editTargets,
-            campus: editCampus,       // 配列
-            style: editStyle,         // 配列
-            organizer: editOrganizer, // 配列
-            recruit: editRecruit,     // 配列
-          },
-          targetGakuin: editTargetGakuin,
-          targetGakukei: editTargetGakukei,
-          contact: editContact,
-          organizerType: finalOrganizerType,
-          organizerId: finalOrganizerId,
-          createdBy: finalOrganizerId,
-          organizerName,
-          organizerAvatar,
-          attachments: [...existingAttachments, ...newAttachmentUrls],
-          dates: editHasDate ? editDates : [],
-          date: editHasDate ? (editDates[0]?.date || "") : "",
-          startTime: editHasDate ? (editDates[0]?.startTime || "") : "",
-          endTime: editHasDate ? (editDates[0]?.endTime || "") : "",
-        };
-
-        await updateDoc(doc(db, "events", event.id), updated);
-        setEvent(prev => ({ ...prev, ...updated }));
-        setExistingAttachments([...existingAttachments, ...newAttachmentUrls]); // ← state更新
-        setEditAttachments([]); // ← リセット
-        setEditMode(false);
-        alert("イベント情報を更新しました！");
-      } catch (err) {
-        alert("保存に失敗しました: " + err.message);
+    setSaving(true);
+    try {
+      let imageUrl = event.imageUrl;
+      if (editImage) {
+        const storageRef = ref(storage, `events/${Date.now()}_${editImage.name}`);
+        await uploadBytes(storageRef, editImage);
+        imageUrl = await getDownloadURL(storageRef);
       }
-      setSaving(false);
+      const newAttachmentUrls = [];
+      for (const file of editAttachments) {
+        const storageRef = ref(storage, `attachments/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        newAttachmentUrls.push({ name: file.name, url });
+      }
+      const currentUid = auth.currentUser.uid;
+      const selectedGroup = userGroups.find(g => g.id === editOrganizerId);
+      const finalOrganizerType = editOrganizerType === "group" ? "group" : "personal";
+      const finalOrganizerId = editOrganizerType === "group" && selectedGroup ? selectedGroup.id : currentUid;
+      const organizerName = editOrganizerType === "group" && selectedGroup ? selectedGroup.displayName : (userProfile?.displayName || auth.currentUser.email);
+      const organizerAvatar = editOrganizerType === "group" && selectedGroup ? (selectedGroup.avatarUrl || "") : (userProfile?.avatarUrl || "");
+
+      const updated = {
+        title: editTitle.trim(),
+        detail: editDetail.trim(),
+        location: editLocation.trim(),
+        deadline: editHasDeadline ? editDeadline : "",
+        deadlineTime: editHasDeadline ? editDeadlineTime : "",
+        applyLabel: editApplyLabel || "参加を申し込む",
+        applyLink: editApplyLink,
+        imageUrl,
+        tags: {
+          genre: editGenre,
+          targets: editTargets,
+          campus: editCampus,
+          style: editStyle,
+          organizer: editOrganizer,
+          recruit: editRecruit,
+        },
+        targetGakuin: editTargetGakuin,
+        targetGakukei: editTargetGakukei,
+        contact: editContact,
+        organizerType: finalOrganizerType,
+        organizerId: finalOrganizerId,
+        createdBy: finalOrganizerId,
+        organizerName,
+        organizerAvatar,
+        attachments: [...existingAttachments, ...newAttachmentUrls],
+        dates: editHasDate ? editDates : [],
+        date: editHasDate ? (editDates[0]?.date || "") : "",
+        startTime: editHasDate ? (editDates[0]?.startTime || "") : "",
+        endTime: editHasDate ? (editDates[0]?.endTime || "") : "",
+      };
+
+      await updateDoc(doc(db, "events", event.id), updated);
+      setEvent(prev => ({ ...prev, ...updated }));
+      setExistingAttachments([...existingAttachments, ...newAttachmentUrls]);
+      setEditAttachments([]);
+      setEditMode(false);
+      alert("イベント情報を更新しました！");
+    } catch (err) {
+      alert("保存に失敗しました: " + err.message);
+    }
+    setSaving(false);
   };
-  
+
   const handleLike = async () => {
     if (!auth.currentUser) return;
     const uid = auth.currentUser.uid;
     const viewRef = doc(db, "eventStats", event.id);
     const snap = await getDoc(viewRef);
     if (!snap.exists()) return;
-    const data = snap.data();
-    const likes = data.likes || [];
-    
+    const likes = snap.data().likes || [];
     if (liked) {
-      const newLikes = likes.filter(l => l.uid !== uid);
-      await updateDoc(viewRef, { likes: newLikes });
-      setLiked(false);
-      setLikeCount(c => c - 1);
+      await updateDoc(viewRef, { likes: likes.filter(l => l.uid !== uid) });
+      setLiked(false); setLikeCount(c => c - 1);
     } else {
-      const newLikes = [...likes, { uid, date: new Date().toISOString() }];
-      await updateDoc(viewRef, { likes: newLikes });
-      setLiked(true);
-      setLikeCount(c => c + 1);
+      await updateDoc(viewRef, { likes: [...likes, { uid, date: new Date().toISOString() }] });
+      setLiked(true); setLikeCount(c => c + 1);
     }
   };
 
@@ -324,19 +319,13 @@ const updateEditDate = (index, field, value) => {
     const viewRef = doc(db, "eventStats", event.id);
     const snap = await getDoc(viewRef);
     if (!snap.exists()) return;
-    const data = snap.data();
-    const joins = data.joins || [];
-
+    const joins = snap.data().joins || [];
     if (joining) {
-      const newJoins = joins.filter(j => j.uid !== uid);
-      await updateDoc(viewRef, { joins: newJoins });
-      setJoining(false);
-      setJoinCount(c => c - 1);
+      await updateDoc(viewRef, { joins: joins.filter(j => j.uid !== uid) });
+      setJoining(false); setJoinCount(c => c - 1);
     } else {
-      const newJoins = [...joins, { uid, date: new Date().toISOString() }];
-      await updateDoc(viewRef, { joins: newJoins });
-      setJoining(true);
-      setJoinCount(c => c + 1);
+      await updateDoc(viewRef, { joins: [...joins, { uid, date: new Date().toISOString() }] });
+      setJoining(true); setJoinCount(c => c + 1);
     }
   };
 
@@ -346,482 +335,142 @@ const updateEditDate = (index, field, value) => {
     }
   };
 
-const handleDelete = async () => {
-  if (!window.confirm("このイベントを削除しますか？この操作は取り消せません。")) return;
-  try {
-    await deleteDoc(doc(db, "events", event.id));
-    window.location.href = "/";
-  } catch (err) {
-    alert("削除に失敗しました: " + err.message);
-  }
-};
+  const handleDelete = async () => {
+    if (!window.confirm("このイベントを削除しますか？この操作は取り消せません。")) return;
+    try {
+      await deleteDoc(doc(db, "events", event.id));
+      window.location.href = "/";
+    } catch (err) { alert("削除に失敗しました: " + err.message); }
+  };
 
-  // ─── 編集モード画面 ───
+  // ─── 編集モード ───
   if (editMode) return (
     <div style={s.container}>
-      <div style={{ maxWidth:720, margin:"0 auto", width:"100%", padding:"8px 16px" }}>
-        <button style={s.backBtn} onClick={() => setEditMode(false)}>← 編集をキャンセル</button>
-      </div>
-      <div style={s.editBox}>
-        <h2 style={s.editTitle}>イベントを編集</h2>
 
-        {/* 募集者選択カードセクション（必須） */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>主催者を変更 <span style={s.required}>必須</span></label>
-          <div style={s.cardGrid}>
-            <button
-                className={`organizer-card ${editOrganizerType === "personal" ? "organizer-selected" : ""}`}
-                style={s.organizerCard}
-                onClick={() => setEditOrganizerType("personal")}
-                >
-              <div style={s.cardAvatarWrap}>
-                {userProfile?.avatarUrl ? <img src={userProfile.avatarUrl} style={s.cardAvatar} alt="user" /> : <User size={16} color={THEME} />}
-              </div>
-              <div style={s.cardInfo}>
-                <div style={s.cardName}>{userProfile?.displayName || "あなた (個人)"}</div>
-                <div style={s.cardTypeTag}>個人名義</div>
-              </div>
-            </button>
-
-            {userGroups.map((group) => (
-              <button
-                key={group.id}
-                className={`organizer-card ${editOrganizerType === "group" && editOrganizerId === group.id ? "organizer-selected" : ""}`}
-                style={s.organizerCard}
-                onClick={() => { setEditOrganizerType("group"); setEditOrganizerId(group.id); }}
-                >
-                <div style={s.cardAvatarWrap}>
-                  {group.avatarUrl ? <img src={group.avatarUrl} style={s.cardAvatar} alt="group" /> : <Users size={16} color="#9AADA8" />}
-                </div>
-                <div style={s.cardInfo}>
-                  <div style={s.cardName}>{group.displayName}</div>
-                  <div style={s.cardTypeTag}>{group.groupType || "サークル"}</div>
-                </div>
-              </button>
-            ))}
-
-            <button
-                className="organizer-card"
-                style={{ ...s.organizerCard, ...s.dashedCard }}
-                onClick={handleNavigateToGroupCreation}
-                >
-              <div style={s.plusIconWrap}><Plus size={16} color="#5A7370" /></div>
-              <div style={s.cardInfo}>
-                <div style={{ ...s.cardName, color: "#5A7370" }}>新しいグループ</div>
-                <div style={{ ...s.cardTypeTag, color: "#7A9591" }}>作成・参加はこちら</div>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        {/* 画像 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>イベント画像
-            <span style={{ fontSize: 11, color: "#9AADA8", fontWeight: 500, marginLeft: 6 }}>
-              ※推奨サイズ：横16：縦9の比率（例：1920×1080px）
-            </span>
-          </label>
-          <div style={s.imageArea} onClick={() => document.getElementById("editImgInput").click()}>
-            {editPreview ? (
-              <img src={editPreview} alt="preview" style={s.previewImg} />
-            ) : (
-              <div style={s.imagePlaceholder}>
-                <ImageIcon size={32} color="#BACFCB" />
-                <span style={s.imagePlaceholderText}>タップして画像を変更</span>
-              </div>
-            )}
-            <input id="editImgInput" type="file" accept="image/*" style={{ display:"none" }} onChange={handleImageChange} />
-          </div>
-        </div>
-
-        {/* タイトル */}
-        <div style={s.editMode ? s.editSection : s.editSection}>
-          <label style={s.editLabel}>イベント名 <span style={s.required}>必須</span></label>
-          <input style={s.input} value={editTitle} onChange={e => setEditTitle(e.target.value)} />
-        </div>
-
-        {/* 日時 */}
-          <div style={s.editSection}>
-            <label style={s.editLabel}>イベント日時</label>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  className={`tag-tab-btn ${editHasDate ? "tag-active-tab" : ""}`}
-                  style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
-                  onClick={() => setEditHasDate(true)}
-                >日時を指定する</button>
-                <button
-                  type="button"
-                  className={`tag-tab-btn ${!editHasDate ? "tag-active-tab" : ""}`}
-                  style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
-                  onClick={() => { setEditHasDate(false); setEditDate(""); setEditStartTime(""); setEditEndTime(""); }}
-                >日時を指定しない</button>
-              </div>
-              {editHasDate && (
-                <div style={{
-                  background: "#FAFDFC",
-                  border: `2px solid ${THEME}`,
-                  borderRadius: 12,
-                  padding: "16px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 16,
-                  width: "100%",
-                  boxSizing: "border-box",
-                  boxShadow: "0 4px 12px rgba(136,32,58,0.04)"
-                }}>
-                  {editDates.map((d, i) => (
-                    <div key={i} style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 10,
-                      paddingBottom: i < editDates.length - 1 ? 16 : 0,
-                      borderBottom: i < editDates.length - 1 ? "1px solid #E0E8E7" : "none"
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
-                          <Calendar size={15} strokeWidth={2.5} />
-                          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>
-                            {editDates.length > 1 ? `開催日 ${i + 1}` : "開催日"}
-                          </span>
+      {/* テンプレートモーダル */}
+      {showTemplateModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <div style={{ background: "white", borderRadius: 16, padding: 20, width: "100%", maxWidth: 560, maxHeight: "80vh", display: "flex", flexDirection: "column", gap: 12, boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0 }}>過去のイベントから呼び出す</h3>
+              <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20 }}
+                onClick={() => { setShowTemplateModal(false); setTemplateSearch(""); }}>✕</button>
+            </div>
+            <input
+              style={{ ...s.input, marginBottom: 4 }}
+              placeholder="イベント名・主催者名で検索..."
+              value={templateSearch}
+              onChange={e => setTemplateSearch(e.target.value)}
+              autoFocus
+            />
+            <div style={{ overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+              {loadingTemplates ? (
+                <p style={{ color: "#5A7370", textAlign: "center", padding: 24 }}>読み込み中...</p>
+              ) : templateEvents.filter(e =>
+                  !templateSearch ||
+                  e.title?.toLowerCase().includes(templateSearch.toLowerCase()) ||
+                  e.organizerName?.toLowerCase().includes(templateSearch.toLowerCase())
+                ).length === 0 ? (
+                <p style={{ color: "#5A7370", textAlign: "center", padding: 24 }}>イベントが見つかりません</p>
+              ) : templateEvents
+                  .filter(e => !templateSearch ||
+                    e.title?.toLowerCase().includes(templateSearch.toLowerCase()) ||
+                    e.organizerName?.toLowerCase().includes(templateSearch.toLowerCase())
+                  )
+                  .map(tmpl => (
+                    <div key={tmpl.id} className="event-hover-card"
+                      style={{ borderRadius: 10, border: "1px solid #E0E8E7", cursor: "pointer", background: "#FAFDFC", display: "flex", gap: 12, padding: "12px", alignItems: "center" }}
+                      onClick={() => applyTemplate(tmpl)}
+                    >
+                      {tmpl.imageUrl
+                        ? <img src={tmpl.imageUrl} alt={tmpl.title} style={{ width: 72, height: 72, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />
+                        : <div style={{ width: 72, height: 72, borderRadius: 8, background: GENRE_STYLES[tmpl.tags?.genre]?.bg || "#F5F5F5", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 28 }}>
+                            {GENRE_EMOJI[tmpl.tags?.genre] || "📌"}
+                          </div>
+                      }
+                      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{tmpl.title}</div>
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          {(tmpl.dates?.[0]?.date || tmpl.date) && (
+                            <span style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 3 }}>
+                              <Calendar size={11} /> {tmpl.dates?.[0]?.date || tmpl.date}
+                            </span>
+                          )}
+                          {tmpl.location && (
+                            <span style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 3 }}>
+                              <MapPin size={11} /> {tmpl.location}
+                            </span>
+                          )}
                         </div>
-                        {editDates.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeEditDate(i)}
-                            style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", display: "flex", alignItems: "center" }}
-                          >
-                            <X size={16} />
-                          </button>
-                        )}
-                      </div>
-                      <input
-                        style={s.input}
-                        type="date"
-                        value={d.date}
-                        onChange={e => updateEditDate(i, "date", e.target.value)}
-                        onFocus={e => e.target.showPicker()}
-                      />
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
-                        <Clock size={15} strokeWidth={2.5} />
-                        <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>開催時間</span>
-                      </div>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <input style={s.input} type="time" value={d.startTime} onChange={e => updateEditDate(i, "startTime", e.target.value)} onFocus={e => e.target.showPicker()} />
-                        </div>
-                        <div style={{ color: "#5A7370", fontWeight: 700, flexShrink: 0 }}>〜</div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <input style={s.input} type="time" value={d.endTime} onChange={e => updateEditDate(i, "endTime", e.target.value)} onFocus={e => e.target.showPicker()} />
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                          {tmpl.tags?.genre && (
+                            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: GENRE_STYLES[tmpl.tags.genre]?.bg || "#F9EAED", color: GENRE_STYLES[tmpl.tags.genre]?.color || THEME }}>
+                              {tmpl.tags.genre}
+                            </span>
+                          )}
+                          {tmpl.organizerName && (
+                            <span style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 3 }}>
+                              <User size={11} /> {tmpl.organizerName}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={addEditDate}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      gap: 6,
-                      padding: "10px",
-                      background: "white",
-                      border: `1.5px dashed ${THEME}`,
-                      borderRadius: 8,
-                      color: THEME,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: "pointer",
-                      width: "100%",
-                    }}
-                  >
-                    <Plus size={15} /> 日程を追加する
-                  </button>
-                </div>
-              )}
+                  ))
+              }
             </div>
           </div>
-
-        {/* 締切 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>申し込み締切</label>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%", boxSizing: "border-box" }}>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button
-                type="button"
-                className={`tag-tab-btn ${editHasDeadline ? "tag-active-tab" : ""}`}
-                style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
-                onClick={() => setEditHasDeadline(true)}
-              >期限あり</button>
-              <button
-                type="button"
-                className={`tag-tab-btn ${!editHasDeadline ? "tag-active-tab" : ""}`}
-                style={{ ...s.tagBtn, padding: "10px 16px", borderRadius: 8, flex: 1 }}
-                onClick={() => { setEditHasDeadline(false); setEditDeadline(""); setEditDeadlineTime(""); }}
-              >期限なし</button>
-            </div>
-            {editHasDeadline && (
-              <div style={{
-                background: "#FAFDFC",
-                border: `2px solid ${THEME}`,
-                borderRadius: 12,
-                padding: "16px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 12,
-                width: "100%",
-                boxSizing: "border-box",
-                boxShadow: "0 4px 12px rgba(136,32,58,0.04)"
-              }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
-                    <Calendar size={15} strokeWidth={2.5} />
-                    <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>締切日</span>
-                  </div>
-                  <input style={s.input} type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} onFocus={e => e.target.showPicker()} />
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
-                    <Clock size={15} strokeWidth={2.5} />
-                    <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>締切時間</span>
-                  </div>
-                  <input style={s.input} type="time" value={editDeadlineTime} onChange={e => setEditDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-                </div>
-              </div>
-            )}
-          </div>
         </div>
+      )}
 
-                {/* 場所 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>実施場所・集合場所</label>
-          <input style={s.input} value={editLocation} onChange={e => setEditLocation(e.target.value)} />
-        </div>
+      <div style={{ maxWidth: 720, margin: "0 auto", width: "100%", padding: "8px 16px" }}>
+        <button style={s.backBtn} onClick={() => setEditMode(false)}>← 編集をキャンセル</button>
+      </div>
 
-        {/* 詳細 */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>イベント詳細 <span style={s.required}>必須</span></label>
-          <textarea style={s.textarea} value={editDetail} onChange={e => setEditDetail(e.target.value)} rows={4} />
-        </div>
-
-        {/* ジャンル */}
-        <div style={s.editSection}>
-          <label style={s.editLabel}>① ジャンル <span style={s.required}>必須</span></label>
-          <div style={s.optionGrid}>
-            {GENRE_TAGS.map(t => (
-              <button key={t}
-                className={`tag-tab-btn ${editGenre === t ? "tag-active-tab" : ""}`}
-                style={s.tagBtn}
-                onClick={() => setEditGenre(t)}>{t}</button>
-            ))}
-          </div>
-        </div>
-        {/* 詳細タグ 開閉ボタン */}
-        <div style={s.editSection}>
+      <div style={s.editBox}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h2 style={s.editTitle}>イベントを編集</h2>
           <button
             type="button"
-            onClick={() => setShowAdvancedTags(prev => !prev)}
-            style={{
-              width: "100%",
-              padding: "12px 16px",
-              background: "#F4F6F5",
-              border: "1.5px solid #D0DDD9",
-              borderRadius: showAdvancedTags ? "10px 10px 0 0" : 10,
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#5A7370",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
+            className="tag-tab-btn"
+            style={{ fontSize: 12, fontWeight: 700, padding: "8px 14px", borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+            onClick={() => setShowTemplateModal(true)}
           >
-            <span>② 詳細タグを設定する（募集種別・対象・キャンパスなど）</span>
-            <span style={{ fontSize: 18, transition: "transform 0.3s", transform: showAdvancedTags ? "rotate(180deg)" : "rotate(0deg)" }}>›</span>
+            <Clock size={14} /> 過去のイベントから呼び出す
           </button>
-
-          {showAdvancedTags && (
-            <div style={{
-              border: "1.5px solid #D0DDD9",
-              borderTop: "none",
-              borderRadius: "0 0 10px 10px",
-              padding: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              background: "white",
-            }}>
-              {/* 募集種別 */}
-              <div>
-                <label style={s.editLabel}>② 募集種別</label>
-                <div style={s.optionGrid}>
-                  {RECRUIT_TAGS.map(t => (
-                    <button key={t}
-                      className={`tag-tab-btn ${editRecruit.includes(t) ? "tag-active-tab" : ""}`}
-                      style={s.tagBtn}
-                      onClick={() => setEditRecruit(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                    >{t}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 対象学年 */}
-              <div>
-                <label style={s.editLabel}>③ 対象学年</label>
-                <div style={s.optionGrid}>
-                  {TARGET_TAGS.map(t => (
-                    <button key={t}
-                      className={`tag-tab-btn ${editTargets.includes(t) ? "tag-active-tab" : ""}`}
-                      style={s.tagBtn}
-                      onClick={() => setEditTargets(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                    >{t}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 対象学院 */}
-              <div>
-                <label style={s.editLabel}>④ 対象学院</label>
-                <div style={s.optionGrid}>
-                  {Object.keys(GAKUIN).map(g => (
-                    <button key={g}
-                      className={`tag-tab-btn ${editTargetGakuin.includes(g) ? "tag-active-tab" : ""}`}
-                      style={s.tagBtn}
-                      onClick={() => setEditTargetGakuin(prev => prev.includes(g) ? prev.filter(x => x !== g) : [...prev, g])}
-                    >{g}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 対象学系 */}
-              {editTargetGakuin.length > 0 && (
-                <div>
-                  <label style={s.editLabel}>⑤ 対象学系</label>
-                  <div style={s.optionGrid}>
-                    {editTargetGakuin.flatMap(g => GAKUIN[g]).map(k => (
-                      <button key={k}
-                        className={`tag-tab-btn ${editTargetGakukei.includes(k) ? "tag-active-tab" : ""}`}
-                        style={s.tagBtn}
-                        onClick={() => setEditTargetGakukei(prev => prev.includes(k) ? prev.filter(x => x !== k) : [...prev, k])}
-                      >{k}</button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* キャンパス */}
-              <div>
-                <label style={s.editLabel}>⑥ キャンパス</label>
-                <div style={s.optionGrid}>
-                  {CAMPUS_TAGS.map(t => (
-                      <button key={t}
-                        className={`tag-tab-btn ${editCampus.includes(t) ? "tag-active-tab" : ""}`}
-                        style={s.tagBtn}
-                        onClick={() => setEditCampus(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                      >{t}</button>
-                    ))}
-                </div>
-              </div>
-
-              {/* 参加スタイル */}
-              <div>
-                <label style={s.editLabel}>⑦ 参加スタイル</label>
-                <div style={s.optionGrid}>
-                  {STYLE_TAGS.map(t => (
-                      <button key={t}
-                        className={`tag-tab-btn ${editStyle.includes(t) ? "tag-active-tab" : ""}`}
-                        style={s.tagBtn}
-                        onClick={() => setEditStyle(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                      >{t}</button>
-                    ))}
-                </div>
-              </div>
-
-              {/* 主催者種別 */}
-              <div>
-                <label style={s.editLabel}>⑧ 主催者種別</label>
-                <div style={s.optionGrid}>
-                  {ORGANIZER_TAGS.map(t => (
-                      <button key={t}
-                        className={`tag-tab-btn ${editOrganizer.includes(t) ? "tag-active-tab" : ""}`}
-                        style={s.tagBtn}
-                        onClick={() => setEditOrganizer(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
-                      >{t}</button>
-                    ))}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* 添付画像・資料 */}
-          <div style={s.editSection}>
-            <label style={s.editLabel}>添付画像・資料</label>
-
-            {existingAttachments.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
-                {existingAttachments.map((a, i) => (
-                  <div key={i} style={{ fontSize: 12, color: "#5A7370", padding: "6px 10px", background: "#F4F6F5", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Paperclip size={12} />{a.name}</span>
-                    <button style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", display: "flex", alignItems: "center" }}
-                      onClick={() => setExistingAttachments(prev => prev.filter((_, j) => j !== i))}>
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div style={{ width: "100%", padding: "12px", borderRadius: 8, border: "2px dashed #D0DDD9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#F9FAFA" }}
-              onClick={() => document.getElementById("editAttachInput").click()}>
-              <Paperclip size={16} color="#5A7370" />
-              <span style={{ fontSize: 13, color: "#5A7370", fontWeight: 600 }}>
-                {editAttachments.length > 0 ? `${editAttachments.length}件追加済み` : "ファイルを追加"}
-              </span>
-              <input id="editAttachInput" type="file" multiple style={{ display: "none" }}
-                onChange={e => setEditAttachments(prev => [...prev, ...Array.from(e.target.files)])} />
-            </div>
-
-            {editAttachments.length > 0 && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
-                {editAttachments.map((f, i) => (
-                  <div key={i} style={{ fontSize: 12, color: "#5A7370", padding: "6px 10px", background: "#F4F6F5", borderRadius: 6, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><Paperclip size={12} />{f.name}</span>
-                    <button style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", display: "flex", alignItems: "center" }}
-                      onClick={() => setEditAttachments(prev => prev.filter((_, j) => j !== i))}>
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-        {/* 申し込み */}
-        <div style={s.editSection}>
-          <div style={{ display: "flex", gap: 12 }}>
-            <div style={{ flex: 1 }}>
-              <label style={s.editLabel}>募集ボタン名</label>
-              <input style={s.input} placeholder="参加を申し込む" value={editApplyLabel} onChange={e => setEditApplyLabel(e.target.value)} />
-            </div>
-            <div style={{ flex: 2 }}>
-              <label style={s.editLabel}>募集リンク</label>
-              <input style={s.input} type="url" placeholder="https://forms.gle/..." value={editApplyLink} onChange={e => setEditApplyLink(e.target.value)} />
-            </div>
-          </div>
-        </div>
-
-        <div style={s.editSection}>
-          <label style={s.editLabel}>お問い合わせ先</label>
-          <input
-            style={s.input}
-            placeholder="例：example@m.isct.ac.jp / @Twitter"
-            value={editContact}
-            onChange={e => setEditContact(e.target.value)}
-          />
-        </div>
+        {/* 共通フォーム */}
+        <EventFormFields
+          organizerType={editOrganizerType} setOrganizerType={setEditOrganizerType}
+          selectedGroupId={editOrganizerId} setSelectedGroupId={setEditOrganizerId}
+          userProfile={userProfile} userGroups={userGroups}
+          onNavigateToGroupCreation={handleNavigateToGroupCreation}
+          preview={editPreview} onImageChange={handleImageChange} imageInputId="editImgInput"
+          title={editTitle} setTitle={setEditTitle}
+          detail={editDetail} setDetail={setEditDetail}
+          location={editLocation} setLocation={setEditLocation}
+          contact={editContact} setContact={setEditContact}
+          applyLabel={editApplyLabel} setApplyLabel={setEditApplyLabel}
+          applyLink={editApplyLink} setApplyLink={setEditApplyLink}
+          hasDate={editHasDate} setHasDate={setEditHasDate}
+          dates={editDates} setDates={setEditDates}
+          hasDeadline={editHasDeadline} setHasDeadline={setEditHasDeadline}
+          deadline={editDeadline} setDeadline={setEditDeadline}
+          deadlineTime={editDeadlineTime} setDeadlineTime={setEditDeadlineTime}
+          genreTag={editGenre} setGenreTag={setEditGenre}
+          recruitTags={editRecruit} setRecruitTags={setEditRecruit}
+          targetTags={editTargets} setTargetTags={setEditTargets}
+          targetGakuin={editTargetGakuin} setTargetGakuin={setEditTargetGakuin}
+          targetGakukei={editTargetGakukei} setTargetGakukei={setEditTargetGakukei}
+          campusTags={editCampus} setCampusTags={setEditCampus}
+          styleTags={editStyle} setStyleTags={setEditStyle}
+          organizerTags={editOrganizer} setOrganizerTags={setEditOrganizer}
+          existingAttachments={existingAttachments} setExistingAttachments={setExistingAttachments}
+          attachments={editAttachments} setAttachments={setEditAttachments}
+          attachInputId="editAttachInput"
+          isEditMode={true}
+        />
 
         <button className="submit-btn" style={s.saveBtn} onClick={handleSave} disabled={saving}>
           {saving ? "保存中..." : "保存する"}
@@ -836,58 +485,71 @@ const handleDelete = async () => {
   return (
     <div style={s.container}>
       <div style={s.topBar}>
-  {isOwner && (
-    <button className="imp-tab-btn" style={s.editEventBtn} onClick={() => setEditMode(true)}>
-      <Pencil size={14} /> 編集
-    </button>
-  )}
-  {isOwner && (
-    <button
-    className="imp-tab-btn"
-      style={{ background:THEME, borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
-      onClick={handleDelete}
-    >
-      <Trash2 size={14} />削除
-    </button>
-  )}
-</div>
+        {isOwner && (
+          <button className="imp-tab-btn" style={s.editEventBtn} onClick={() => setEditMode(true)}>
+            <Pencil size={14} /> 編集
+          </button>
+        )}
+        {isOwner && (
+          <button className="imp-tab-btn"
+            style={{ background: THEME, borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+            onClick={handleDelete}
+          >
+            <Trash2 size={14} />削除
+          </button>
+        )}
+      </div>
 
-      {event.imageUrl ? (
-        <img src={event.imageUrl} alt={event.title} style={s.heroImg} />
-      ) : (
-        <div style={{ ...s.heroPlaceholder, background: cs.bg }}>
-          <span style={{ fontSize:64 }}>{GENRE_EMOJI[event.tags?.genre] || "📌"}</span>
-        </div>
-      )}
+      {event.imageUrl
+        ? <img src={event.imageUrl} alt={event.title} style={s.heroImg} />
+        : <div style={{ ...s.heroPlaceholder, background: cs.bg }}>
+            <span style={{ fontSize: 64 }}>{GENRE_EMOJI[event.tags?.genre] || "📌"}</span>
+          </div>
+      }
 
       <div style={s.body}>
         <h1 style={s.title}>{event.title}</h1>
-        
-        
 
         <div style={s.infoBox}>
-          {/* 日時（設定されている場合のみ表示） */}
-          {(event.dates?.length > 0 ? event.dates : event.date ? [{ date: event.date, startTime: event.startTime, endTime: event.endTime }] : []).map((d, i) => (
-            d.date && (
-              <React.Fragment key={i}>
+          {/* 開催日時 */}
+          {(() => {
+            const ds = (event.dates?.length > 0
+              ? event.dates
+              : event.date
+                ? [{ date: event.date, startTime: event.startTime, endTime: event.endTime }]
+                : []
+            ).filter(d => d.date);
+            if (ds.length === 0) return null;
+            const formatDate = (dateStr) => {
+              const [, m, d] = dateStr.split("-");
+              const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+              const w = weekdays[new Date(dateStr).getDay()];
+              return `${m}-${d}（${w}）`;
+            };
+            return (
+              <>
                 <div style={s.infoRow}>
                   <span style={s.infoIcon}><Calendar size={20} color="#88203a" /></span>
-                  <div>
-                    <div style={s.infoLabel}>
-                      {event.dates?.length > 1 ? `開催日時 ${i + 1}` : "開催日時"}
-                    </div>
-                    <div style={s.infoValue}>
-                      {d.date}
-                      {(d.startTime || d.endTime) && (
-                        <span> {d.startTime || ""} 〜 {d.endTime || ""}</span>
-                      )}
+                  <div style={{ flex: 1 }}>
+                    <div style={s.infoLabel}>開催日時</div>
+                    <div style={{ borderLeft: "2px solid #88203a", paddingLeft: 10, marginTop: 4, display: "flex", flexDirection: "column", gap: 6 }}>
+                      {ds.map((d, i) => (
+                        <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                          <div style={{ ...s.infoValue, flexShrink: 0 }}>{formatDate(d.date)}</div>
+                          {(d.startTime || d.endTime) && (
+                            <div style={{ fontSize: 14, color: "var(--color-text-secondary)", whiteSpace: "nowrap" }}>
+                              {d.startTime || ""} 〜 {d.endTime || ""}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
                 <div style={s.infoDivider} />
-              </React.Fragment>
-            )
-          ))}
+              </>
+            );
+          })()}
 
           {/* 締切 */}
           <div style={s.infoRow}>
@@ -901,11 +563,11 @@ const handleDelete = async () => {
               </div>
             </div>
           </div>
-          <div style={s.infoDivider} />
 
-                    {/* 場所（設定されている場合のみ表示） */}
+          {/* 場所 */}
           {event.location && (
             <>
+              <div style={s.infoDivider} />
               <div style={s.infoRow}>
                 <span style={s.infoIcon}><MapPin size={20} color="#88203a" /></span>
                 <div>
@@ -913,11 +575,10 @@ const handleDelete = async () => {
                   <div style={s.infoValue}>{event.location}</div>
                 </div>
               </div>
-              <div style={s.infoDivider} />
             </>
           )}
 
-          {/* 定員（設定されている場合のみ） */}
+          {/* 定員 */}
           {event.capacity && (
             <>
               <div style={s.infoDivider} />
@@ -939,142 +600,86 @@ const handleDelete = async () => {
           </div>
         )}
 
-
         {event.tags && (
           <div style={s.tagsBox}>
             {event.tags.genre && <span style={s.tagChip}>{event.tags.genre}</span>}
             {event.tags.targets?.map(t => <span key={t} style={s.tagChip}>{t}</span>)}
-            {Array.isArray(event.tags.campus)
-              ? event.tags.campus.map(t => <span key={t} style={s.tagChip}>{t}</span>)
-              : event.tags.campus && <span style={s.tagChip}>{event.tags.campus}</span>}
-            {Array.isArray(event.tags.style)
-              ? event.tags.style.map(t => <span key={t} style={s.tagChip}>{t}</span>)
-              : event.tags.style && <span style={s.tagChip}>{event.tags.style}</span>}
-            {Array.isArray(event.tags.organizer)
-              ? event.tags.organizer.map(t => <span key={t} style={s.tagChip}>{t}</span>)
-              : event.tags.organizer && <span style={s.tagChip}>{event.tags.organizer}</span>}
-            {Array.isArray(event.tags.recruit)
-              ? event.tags.recruit.map(t => <span key={t} style={s.tagChip}>{t}</span>)
-              : event.tags.recruit && <span style={s.tagChip}>{event.tags.recruit}</span>}
+            {(Array.isArray(event.tags.campus) ? event.tags.campus : event.tags.campus ? [event.tags.campus] : []).map(t => <span key={t} style={s.tagChip}>{t}</span>)}
+            {(Array.isArray(event.tags.style) ? event.tags.style : event.tags.style ? [event.tags.style] : []).map(t => <span key={t} style={s.tagChip}>{t}</span>)}
+            {(Array.isArray(event.tags.organizer) ? event.tags.organizer : event.tags.organizer ? [event.tags.organizer] : []).map(t => <span key={t} style={s.tagChip}>{t}</span>)}
+            {(Array.isArray(event.tags.recruit) ? event.tags.recruit : event.tags.recruit ? [event.tags.recruit] : []).map(t => <span key={t} style={s.tagChip}>{t}</span>)}
           </div>
         )}
 
         {event.attachments?.length > 0 && (
-        <div style={s.section}>
-          <h2 style={s.sectionTitle}>添付資料</h2>
-          <div style={s.attachList}>
-            {event.attachments.map((a, i) => {
-              const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.name) || a.type?.startsWith("image/");
-              const isPdf = /\.pdf$/i.test(a.name) || a.type === "application/pdf";
-
-              return (
-                <a key={i} href={a.url} target="_blank" rel="noreferrer" style={{ ...s.attachItem, display: "flex", flexDirection: "column", gap: 8, padding: 0, overflow: "hidden" }}>
-                  {isImage && (
-                    <img
-                      src={a.url}
-                      alt={a.name}
-                      style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: "8px 8px 0 0" }}
-                    />
-                  )}
-                  {isPdf && (
-                    <iframe
-                      src={`${a.url}#page=1&toolbar=0&navpanes=0`}
-                      style={{ width: "100%", height: 200, border: "none", borderRadius: "8px 8px 0 0", pointerEvents: "none" }}
-                      title={a.name}
-                    />
-                  )}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 12px" }}>
-                    <Paperclip size={14} /> {a.name}
-                  </div>
-                </a>
-              );
-            })}
+          <div style={s.section}>
+            <h2 style={s.sectionTitle}>添付資料</h2>
+            <div style={s.attachList}>
+              {event.attachments.map((a, i) => {
+                const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.name) || a.type?.startsWith("image/");
+                const isPdf = /\.pdf$/i.test(a.name) || a.type === "application/pdf";
+                return (
+                  <a key={i} href={a.url} target="_blank" rel="noreferrer"
+                    style={{ ...s.attachItem, display: "flex", flexDirection: "column", gap: 8, padding: 0, overflow: "hidden" }}>
+                    {isImage && <img src={a.url} alt={a.name} style={{ width: "100%", maxHeight: 240, objectFit: "cover", borderRadius: "8px 8px 0 0" }} />}
+                    {isPdf && <iframe src={`${a.url}#page=1&toolbar=0&navpanes=0`} style={{ width: "100%", height: 200, border: "none", borderRadius: "8px 8px 0 0", pointerEvents: "none" }} title={a.name} />}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "10px 12px" }}>
+                      <Paperclip size={14} /> {a.name}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
         {event.applyLink && (
-          <a href={event.applyLink}
-              target="_blank"
-              rel="noreferrer"
-              className="submit-btn"
-              style={s.applyBtn}
-              onClick={async () => {
-                if (!event.id) return;
-                try {
-                  const viewRef = doc(db, "eventStats", event.id);
-                  const snap = await getDoc(viewRef);
-                  if (snap.exists()) {
-                    await updateDoc(viewRef, { applyCount: (snap.data().applyCount || 0) + 1 });
-                  } else {
-                    await setDoc(viewRef, {
-                      eventId: event.id,
-                      deadline: event.deadline || null,
-                      views: [],
-                      likes: [],
-                      joins: [],
-                      applyCount: 1,
-                    });
-                  }
-                } catch (err) {
-                  console.error("申し込みカウントの記録に失敗:", err);
+          <a href={event.applyLink} target="_blank" rel="noreferrer" className="submit-btn" style={s.applyBtn}
+            onClick={async () => {
+              if (!event.id) return;
+              try {
+                const viewRef = doc(db, "eventStats", event.id);
+                const snap = await getDoc(viewRef);
+                if (snap.exists()) {
+                  await updateDoc(viewRef, { applyCount: (snap.data().applyCount || 0) + 1 });
+                } else {
+                  await setDoc(viewRef, { eventId: event.id, deadline: event.deadline || null, views: [], likes: [], joins: [], applyCount: 1 });
                 }
-              }}
-            >
-              {event.applyLabel || "参加を申し込む"} →
-            </a>
-          )}
+              } catch (err) { console.error("申し込みカウントの記録に失敗:", err); }
+            }}
+          >
+            {event.applyLabel || "参加を申し込む"} →
+          </a>
+        )}
+
         {organizer && (
           <div style={s.section}>
             <h2 style={s.sectionTitle}>主催者</h2>
-            <div
-              /* 💡 animations.css の共通ホバー・クリックアニメーションクラスを適用！ */
-              className="event-hover-card"
-              /* 💡 マイページの一覧に合わせた、綺麗で統一感のあるパディング・角丸・背景に微調整 */
-              style={{ 
-                display: "flex", 
-                alignItems: "center", 
-                gap: 12, 
-                cursor: "pointer",
-                padding: "10px 12px",
-                borderRadius: 10,
-                background: "#FAFAFA",
-                border: "1px solid #F0F0F0"
-              }}
+            <div className="event-hover-card"
+              style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", padding: "10px 12px", borderRadius: 10, background: "#FAFAFA", border: "1px solid #F0F0F0" }}
               onClick={() => {
-                // 💡 organizer.type または event.organizerType に基づいてルーティングを完全確定させます
                 const type = event.organizerType || organizer?.type || "personal";
-                const id = event.organizerId || event.createdBy;
-
                 if (type === "group") {
-                    // 👥 サークルの場合はサークルのプロフィール画面へ遷移
-                    window.location.href = `/groups/${id}`;
+                  window.location.href = `/groups/${event.organizerId || event.createdBy}`;
                 } else {
-                    // 👤 個人の場合：それが自分ならマイページへ、他人ならユーザープロフィール画面へ遷移
-                    const personalUid = event.createdByPersonal || event.createdBy;
-                    window.location.href = `/users/${personalUid}`;
+                  window.location.href = `/users/${event.createdByPersonal || event.createdBy}`;
                 }
               }}
             >
-              {organizer.avatarUrl ? (
-                <img src={organizer.avatarUrl} alt="avatar" style={{ width:44, height:44, borderRadius:"50%", objectFit:"cover", flexShrink:0 }} />
-              ) : (
-                /* 💡 画像がない場合の枠。ホバー時に連動して暗くなるよう、styleに「aspectRatio」の目印を追加 */
-                <div style={{ width:44, height:44, borderRadius:"50%", background:"#F4F6F5", border:"1px solid #E0E8E7", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, aspectRatio:"1/1" }}>
-                  {organizer.type === "group" ? <Users size={20} color="#9AADA8" /> : <User size={18} color={THEME} />}
-                </div>
-              )}
+              {organizer.avatarUrl
+                ? <img src={organizer.avatarUrl} alt="avatar" style={{ width: 44, height: 44, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                : <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#F4F6F5", border: "1px solid #E0E8E7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    {organizer.type === "group" ? <Users size={20} color="#9AADA8" /> : <User size={18} color={THEME} />}
+                  </div>
+              }
               <div style={{ flex: 1 }}>
-                {/* 💡 主催者名にホバー時下線連動クラスを追加 */}
-                <div className="hover-title-underline" style={{ fontSize:15, fontWeight:700, color:"#111" }}>
+                <div className="hover-title-underline" style={{ fontSize: 15, fontWeight: 700, color: "#111" }}>
                   {organizer.displayName}
                 </div>
-                <div style={{ fontSize:12, color:"#5A7370", marginTop:3 }}>
-                  {organizer.type === "group" ? (
-                    <span style={s.organizerBadge}>{organizer.groupType || "サークル"}</span>
-                  ) : (
-                    <span>{organizer.gakuin} {organizer.gakukei}</span>
-                  )}
+                <div style={{ fontSize: 12, color: "#5A7370", marginTop: 3 }}>
+                  {organizer.type === "group"
+                    ? <span style={s.organizerBadge}>{organizer.groupType || "サークル"}</span>
+                    : <span>{organizer.gakuin} {organizer.gakukei}</span>}
                 </div>
               </div>
               <ChevronRight size={18} color="#B0BEC5" />
@@ -1082,51 +687,32 @@ const handleDelete = async () => {
           </div>
         )}
 
-        {/* お問い合わせ */}
         {event.contact && (
-        <div style={s.section}>
+          <div style={s.section}>
             <h2 style={s.sectionTitle}>お問い合わせ先</h2>
-            {/* 💡 入力された文字列が http から始まるURL形式かどうかを先頭判定します */}
-            {event.contact.trim().startsWith("http") ? (
-            <a 
-                href={event.contact.trim()} 
-                target="_blank" 
-                rel="noreferrer" 
-                style={s.contactLink}
-                onMouseEnter={(e) => {
-                e.currentTarget.style.textDecoration = "underline";
-                e.currentTarget.style.opacity = "0.8";
-                }}
-                onMouseLeave={(e) => {
-                e.currentTarget.style.textDecoration = "none";
-                e.currentTarget.style.opacity = "1";
-                }}
-            >
-                {event.contact}
-            </a>
-            ) : (
-            <p style={s.detailText}>{event.contact}</p>
-            )}
-        </div>
+            {event.contact.trim().startsWith("http")
+              ? <a href={event.contact.trim()} target="_blank" rel="noreferrer" style={s.contactLink}
+                  onMouseEnter={e => { e.currentTarget.style.textDecoration = "underline"; e.currentTarget.style.opacity = "0.8"; }}
+                  onMouseLeave={e => { e.currentTarget.style.textDecoration = "none"; e.currentTarget.style.opacity = "1"; }}
+                >{event.contact}</a>
+              : <p style={s.detailText}>{event.contact}</p>
+            }
+          </div>
         )}
-            
-        {/* いいね・参加予定ボタン */}
+
         {auth.currentUser && (
           <div style={s.actionRow}>
-            <button
-            className={`reaction-btn ${liked ? "like-active" : ""}`}
-            style={{ ...s.actionBtn, ...(liked ? s.actionBtnActive : {}) }}
-            onClick={handleLike}
+            <button className={`reaction-btn ${liked ? "like-active" : ""}`}
+              style={{ ...s.actionBtn, ...(liked ? s.actionBtnActive : {}) }}
+              onClick={handleLike}
             >
-            {liked ? <Heart size={16} fill="#E53935" color="#E53935" /> : <Heart size={16} />} いいね {likeCount > 0 && likeCount}
+              {liked ? <Heart size={16} fill="#E53935" color="#E53935" /> : <Heart size={16} />} いいね {likeCount > 0 && likeCount}
             </button>
-
-            <button
-            className={`reaction-btn ${joining ? "join-active" : ""}`}
-            style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
-            onClick={handleJoin}
+            <button className={`reaction-btn ${joining ? "join-active" : ""}`}
+              style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
+              onClick={handleJoin}
             >
-            {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} 参加予定 {joinCount > 0 && joinCount}
+              {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} 参加予定 {joinCount > 0 && joinCount}
             </button>
           </div>
         )}
@@ -1136,57 +722,35 @@ const handleDelete = async () => {
 }
 
 const s = {
-  container: { background:BG_COLOR, minHeight:"100vh" },
-  topBar: { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 16px", maxWidth:720, margin:"0 auto", width:"100%" },
-  backBtn: { display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:THEME, fontSize:14, fontWeight:700, cursor:"pointer", padding:"8px 0" },
-  editEventBtn: {  background:THEME,borderRadius:8, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer" },
-  heroImg: { height: window.innerWidth > 768 ? 400 : "auto", width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", objectFit:"cover", display:"block", margin: window.innerWidth > 768 ? "0 auto" : "0 14px", maxWidth: "100%", borderRadius: 12 },
-  heroPlaceholder: { height: window.innerWidth > 768 ? 400 : "auto", width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", aspectRatio:"16/9", margin: window.innerWidth > 768 ? "0 auto" : "0 14px", display:"flex", alignItems:"center", justifyContent:"center", borderRadius: 12 },
-  body: { padding:"20px 16px", maxWidth:720, margin:"0 auto", display:"flex", flexDirection:"column", gap:16 },
-  title: { fontSize:24, fontWeight:700, color:"#111", lineHeight:1.3, margin:0 },
-  tag: { display:"inline-block", fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:999, width:"fit-content" },
-  infoBox: { background:"white", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.07)", display:"flex", flexDirection:"column", gap:12 },
-  infoRow: { display:"flex", alignItems:"flex-start", gap:12 },
-  infoIcon: { fontSize:20, flexShrink:0 },
-  infoLabel: { fontSize:11, color:"#5A7370", fontWeight:700, marginBottom:2 },
-  infoValue: { fontSize:15, fontWeight:700, color:"#111" },
-  infoDivider: { height:1, background:"#F0F0F0" },
-  tagsBox: { display:"flex", flexWrap:"wrap", gap:6 },
-  tagChip: { background:"#F9EAED", color:THEME, fontSize:12, fontWeight:700, padding:"4px 10px", borderRadius:999 },
-  section: { background:"white", borderRadius:12, padding:"16px", boxShadow:"0 2px 8px rgba(0,0,0,0.07)" },
-  sectionTitle: { fontSize:14, fontWeight:700, color:"#5A7370", margin:"0 0 10px" },
-  detailText: { fontSize:14, color:"#1A2E2B", lineHeight:1.8, whiteSpace:"pre-wrap", margin:0 },
-  attachList: { display:"flex", flexDirection:"column", gap:8 },
-  attachItem: { fontSize:13, color:THEME, padding:"8px 12px", background:"#F9EAED", borderRadius:8, textDecoration:"none", fontWeight:600 },
-  applyBtn: { display:"block", textAlign:"center", padding:"16px", background:THEME, color:"white", borderRadius:12, fontSize:16, fontWeight:700, textDecoration:"none", boxShadow:`0 4px 16px rgba(136,32,58,0.4)` },
-  editBox: { background:"white", borderRadius:16, padding:"24px 20px", margin:"16px", boxShadow:"0 2px 12px rgba(0,0,0,0.08)", display:"flex", flexDirection:"column", gap:16, maxWidth:720, marginLeft:"auto", marginRight:"auto" },
-  editTitle: { fontSize:18, fontWeight:700, color:"#111", margin:0 },
-  editSection: { display:"flex", flexDirection:"column", gap:8 },
-  editLabel: { fontSize:12, fontWeight:700, color:"#5A7370", letterSpacing:"0.05em" },
-  required: { background:"#E53935", color:"white", fontSize:10, fontWeight:700, padding:"1px 5px", borderRadius:3, marginLeft:4 },
-  input: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box" },
-  textarea: { width:"100%", padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:8, fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", lineHeight:1.6 },
-  imageArea: { width:"100%", aspectRatio: "16/9",height: "auto", borderRadius:12, overflow:"hidden", border:"2px dashed #D0DDD9", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:BG_COLOR },
-  previewImg: { width:"100%", height:"100%", objectFit:"cover" },
-  imagePlaceholder: { display:"flex", flexDirection:"column", alignItems:"center", gap:8 },
-  imagePlaceholderText: { fontSize:13, color:"#5A7370", fontWeight:600 },
-  timeRow: { display:"flex", alignItems:"flex-end", gap:8, marginTop:8 },
-  timeSep: { fontSize:16, color:"#5A7370", paddingBottom:10, flexShrink:0 },
-  optionGrid: { display:"flex", flexWrap:"wrap", gap:8 },
-  tagBtn: { padding:"6px 12px", borderRadius:999, border:"1.5px solid #D0DDD9", background:"white", fontSize:12, fontWeight:600, color:"#5A7370", cursor:"pointer" },
-  saveBtn: { padding:14, background:THEME, color:"white", border:"none", borderRadius:8, fontSize:15, fontWeight:700, cursor:"pointer", width:"100%" },
-  actionRow: { display:"flex", gap:12 },
-  actionBtn: { flex:1, padding:"12px", borderRadius:12, fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:6 },
-actionBtnJoinActive: {},
-  cardGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 10, marginTop: 4 },
-  organizerCard: { display: "flex", alignItems: "center", gap: 10, padding: "10px", borderRadius: 8, cursor: "pointer", transition: "all 0.2s" },
-  dashedCard: { borderStyle: "dashed", background: "#F4F6F5", borderColor: "#BACFCB" },
-  cardAvatarWrap: { width: 32, height: 32, borderRadius: "50%", background: "#F4F6F5", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 },
-  plusIconWrap: { width: 32, height: 32, borderRadius: "50%", background: "#E0E8E7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 },
-  cardAvatar: { width: "100%", height: "100%", objectFit: "cover" },
-  cardInfo: { minWidth: 0, flex: 1 },
-  cardName: { fontSize: 12, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "left" },
-  cardTypeTag: { fontSize: 10, color: "#7A9591", marginTop: 1, textAlign: "left" },
+  container: { background: BG_COLOR, minHeight: "100vh" },
+  topBar: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 16px", maxWidth: 720, margin: "0 auto", width: "100%" },
+  backBtn: { display: "flex", alignItems: "center", gap: 6, background: "none", border: "none", color: THEME, fontSize: 14, fontWeight: 700, cursor: "pointer", padding: "8px 0" },
+  editEventBtn: { background: THEME, borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" },
+  heroImg: { height: window.innerWidth > 768 ? 400 : "auto", width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", objectFit: "cover", display: "block", margin: window.innerWidth > 768 ? "0 auto" : "0 14px", maxWidth: "100%", borderRadius: 12 },
+  heroPlaceholder: { height: window.innerWidth > 768 ? 400 : "auto", width: window.innerWidth > 768 ? "auto" : "calc(100% - 28px)", aspectRatio: "16/9", margin: window.innerWidth > 768 ? "0 auto" : "0 14px", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 12 },
+  body: { padding: "20px 16px", maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16 },
+  title: { fontSize: 24, fontWeight: 700, color: "#111", lineHeight: 1.3, margin: 0 },
+  infoBox: { background: "white", borderRadius: 12, padding: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.07)", display: "flex", flexDirection: "column", gap: 12 },
+  infoRow: { display: "flex", alignItems: "flex-start", gap: 12 },
+  infoIcon: { fontSize: 20, flexShrink: 0 },
+  infoLabel: { fontSize: 11, color: "#5A7370", fontWeight: 700, marginBottom: 2 },
+  infoValue: { fontSize: 15, fontWeight: 700, color: "#111" },
+  infoDivider: { height: 1, background: "#F0F0F0" },
+  tagsBox: { display: "flex", flexWrap: "wrap", gap: 6 },
+  tagChip: { background: "#F9EAED", color: THEME, fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 999 },
+  section: { background: "white", borderRadius: 12, padding: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.07)" },
+  sectionTitle: { fontSize: 14, fontWeight: 700, color: "#5A7370", margin: "0 0 10px" },
+  detailText: { fontSize: 14, color: "#1A2E2B", lineHeight: 1.8, whiteSpace: "pre-wrap", margin: 0 },
+  attachList: { display: "flex", flexDirection: "column", gap: 8 },
+  attachItem: { fontSize: 13, color: THEME, padding: "8px 12px", background: "#F9EAED", borderRadius: 8, textDecoration: "none", fontWeight: 600 },
+  applyBtn: { display: "block", textAlign: "center", padding: "16px", background: THEME, color: "white", borderRadius: 12, fontSize: 16, fontWeight: 700, textDecoration: "none", boxShadow: `0 4px 16px rgba(136,32,58,0.4)` },
+  editBox: { background: "white", borderRadius: 16, padding: "24px 20px", margin: "16px", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", gap: 16, maxWidth: 720, marginLeft: "auto", marginRight: "auto" },
+  editTitle: { fontSize: 18, fontWeight: 700, color: "#111", margin: 0 },
+  input: { width: "100%", padding: "11px 13px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box" },
+  saveBtn: { padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" },
+  actionRow: { display: "flex", gap: 12 },
+  actionBtn: { flex: 1, padding: "12px", borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 },
+  actionBtnJoinActive: {},
   organizerBadge: { background: "#F4F6F5", color: "#5A7370", fontSize: 10, fontWeight: 700, padding: "2px 6px", borderRadius: 4 },
-  contactLink: { fontSize:14, color:"#88203a", lineHeight:1.8, wordBreak:"break-all", textDecoration:"none", fontWeight:600, cursor:"pointer", transition:"opacity 0.15s" },
+  contactLink: { fontSize: 14, color: "#88203a", lineHeight: 1.8, wordBreak: "break-all", textDecoration: "none", fontWeight: 600, cursor: "pointer", transition: "opacity 0.15s" },
 };
