@@ -88,15 +88,32 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
         setEditGender(data.gender || "");
         setEditBio(data.bio || "");
         // 閲覧履歴
-        const viewHistory = (data.viewHistory || []).slice(-30).reverse(); // 最新30件
-        if (viewHistory.length > 0) {
-          const allEventsSnap = await getDocs(collection(db, "events"));
-          const eventsMap = Object.fromEntries(allEventsSnap.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
-          const freshHist = viewHistory.map(id => eventsMap[id]).filter(Boolean);
-          setHistory(freshHist);
-        } else {
-          setHistory([]);
-        }
+        // 閲覧履歴
+      const viewHistory = (data.viewHistory || []); // 元の履歴配列
+      if (viewHistory.length > 0) {
+        const allEventsSnap = await getDocs(collection(db, "events"));
+        const eventsMap = Object.fromEntries(allEventsSnap.docs.map(d => [d.id, { id: d.id, ...d.data() }]));
+        
+        // 💡 1. 履歴データをマッピングし、配列内の元のインデックス（開いた順序）を保持
+        const freshHist = viewHistory
+          .map((id, index) => {
+            const ev = eventsMap[id];
+            if (!ev) return null;
+            return {
+              ...ev,
+              _viewIndex: index // 数値が大きいほど、直近に詳細を開いたイベント
+            };
+          })
+          .filter(Boolean);
+
+        // 💡 2. 開いたインデックスが大きいもの（＝最新の閲覧）が上（先頭）にくるよう厳密にソート
+        freshHist.sort((a, b) => b._viewIndex - a._viewIndex);
+
+        // 💡 3. 最新の30件に絞り込んでセット
+        setHistory(freshHist.slice(0, 30));
+      } else {
+        setHistory([]);
+      }
 
       }
 
