@@ -50,7 +50,10 @@ export default function AdminEvents() {
   const [editHasDeadline, setEditHasDeadline] = useState(true);
 
   // タグ（配列対応）
-  const [editGenre, setEditGenre] = useState("");
+ const [editGenre, setEditGenre] = useState([]);
+// handleOpenEventEdit内も変更
+setEditGenre(Array.isArray(event.tags?.genre) ? event.tags.genre : event.tags?.genre ? [event.tags.genre] : []);
+
   const [editTargets, setEditTargets] = useState([]);
   const [editCampus, setEditCampus] = useState([]);
   const [editStyle, setEditStyle] = useState([]);
@@ -133,7 +136,7 @@ export default function AdminEvents() {
   };
 
   const handleSave = async () => {
-    if (!editTitle.trim() || !editDetail.trim() || !editGenre) {
+    if (!editTitle.trim() || !editDetail.trim() || editGenre.length === 0) {
       alert("イベント名・詳細・ジャンルは必須です。"); return;
     }
     if (editHasDate && editDates.some(d => !d.date)) {

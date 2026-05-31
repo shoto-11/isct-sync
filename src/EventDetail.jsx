@@ -23,7 +23,9 @@ export default function EventDetail({ event: initialEvent, onBack }) {
   const [editApplyLink, setEditApplyLink] = useState(event.applyLink || "");
   const [editImage, setEditImage] = useState(null);
   const [editPreview, setEditPreview] = useState(event.imageUrl || null);
-  const [editGenre, setEditGenre] = useState(event.tags?.genre || "");
+  const [editGenre, setEditGenre] = useState(
+  Array.isArray(event.tags?.genre) ? event.tags.genre : event.tags?.genre ? [event.tags.genre] : []
+);
   const [liked, setLiked] = useState(false);
   const [joining, setJoining] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -649,7 +651,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
 
         {event.tags && (
           <div style={s.tagsBox}>
-            {event.tags.genre && <span style={s.tagChip}>{event.tags.genre}</span>}
+            {(Array.isArray(event.tags.genre) ? event.tags.genre : event.tags.genre ? [event.tags.genre] : []).map(t => <span key={t} style={s.tagChip}>{t}</span>)}
             {event.tags.targets?.map(t => <span key={t} style={s.tagChip}>{t}</span>)}
             {(Array.isArray(event.tags.campus) ? event.tags.campus : event.tags.campus ? [event.tags.campus] : []).map(t => <span key={t} style={s.tagChip}>{t}</span>)}
             {(Array.isArray(event.tags.style) ? event.tags.style : event.tags.style ? [event.tags.style] : []).map(t => <span key={t} style={s.tagChip}>{t}</span>)}

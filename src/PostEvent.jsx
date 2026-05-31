@@ -22,7 +22,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
   const [loading, setLoading] = useState(false);
   const [deadline, setDeadline] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
-  const [genreTag, setGenreTag] = useState("");
+  const [genreTag, setGenreTag] = useState([]);
   const [contact, setContact] = useState("");
   const [targetGakuin, setTargetGakuin] = useState([]);
   const [targetGakukei, setTargetGakukei] = useState([]);
@@ -147,7 +147,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
   };
 
   const handleSubmit = async () => {
-    if (!title.trim() || !detail.trim() || !genreTag) {
+    if (!title.trim() || !detail.trim() || genreTag.length === 0) {
       alert("イベント名・詳細・ジャンルは必須です。"); return;
     }
     if (hasDate && dates.some(d => !d.date)) {

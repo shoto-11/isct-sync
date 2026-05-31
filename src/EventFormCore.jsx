@@ -298,17 +298,17 @@ export default function EventFormCore({
       </div>
 
       {/* ① ジャンル */}
-      <div style={s.section}>
-        <label style={s.label}>① ジャンル <span style={s.required}>必須</span></label>
+        <div style={s.section}>
+        <label style={s.label}>① ジャンル <span style={s.required}>必須・複数選択可</span></label>
         <div style={s.optionGrid}>
-          {GENRE_TAGS.map(t => (
+            {GENRE_TAGS.map(t => (
             <button key={t}
-              className={`tag-tab-btn ${genreTag === t ? "tag-active-tab" : ""}`}
-              style={s.tagBtn}
-              onClick={() => setGenreTag(t)}>{t}</button>
-          ))}
+                className={`tag-tab-btn ${genreTag.includes(t) ? "tag-active-tab" : ""}`}
+                style={s.tagBtn}
+                onClick={() => setGenreTag(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>{t}</button>
+            ))}
         </div>
-      </div>
+        </div>
 
       {/* ② 〜 ⑧ 詳細タグ（折りたたみ） */}
       <div style={s.section}>

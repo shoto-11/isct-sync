@@ -35,7 +35,7 @@ export default function AdminProxyPost({ user }) {
   const [hasDeadline, setHasDeadline] = useState(true);
   const [deadline, setDeadline] = useState("");
   const [deadlineTime, setDeadlineTime] = useState("");
-  const [genreTag, setGenreTag] = useState("");
+  const [genreTag, setGenreTag] = useState([]);
   const [recruitTags, setRecruitTags] = useState([]);
   const [targetTags, setTargetTags] = useState([]);
   const [targetGakuin, setTargetGakuin] = useState([]);
@@ -74,7 +74,7 @@ export default function AdminProxyPost({ user }) {
 
   const handleSubmit = async () => {
     if (!proxyOrganizerId) { alert("主催者を先に選択してください。"); return; }
-    if (!title.trim() || !detail.trim() || !genreTag) {
+    if (!title.trim() || !detail.trim() || genreTag.length === 0) {
       alert("イベント名・詳細・ジャンルは必須です。"); return;
     }
     if (hasDate && dates.some(d => !d.date)) {
