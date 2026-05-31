@@ -645,7 +645,10 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         {event.detail && (
           <div style={s.section}>
             <h2 style={s.sectionTitle}>イベント詳細</h2>
-            <p style={s.detailText}>{event.detail}</p>
+            <div
+              dangerouslySetInnerHTML={{ __html: event.detail }}
+              style={{ fontSize:14, color:"#1A2E2B", lineHeight:1.8 }}
+            />
           </div>
         )}
 

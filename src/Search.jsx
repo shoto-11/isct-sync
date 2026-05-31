@@ -6,6 +6,67 @@ import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS,
 import { BG_COLOR } from "./constants";
 import { Calendar, MapPin,User } from "lucide-react";
 import "./animations.css";
+const filterEvents = (events, kw, tags) => {
+  return events.filter(event => {
+    const matchKeyword = kw === "" ||
+      event.title?.toLowerCase().includes(kw.toLowerCase()) ||
+      event.detail?.toLowerCase().includes(kw.toLowerCase()) ||
+      event.location?.toLowerCase().includes(kw.toLowerCase()) ||
+      event.organizerName?.toLowerCase().includes(kw.toLowerCase());
+
+    if (!matchKeyword) return false;
+    if (tags.length === 0) return true;
+
+    const selectedGenre    = tags.filter(t => GENRE_TAGS.includes(t));
+    const selectedRecruit  = tags.filter(t => RECRUIT_TAGS.includes(t));
+    const selectedTarget   = tags.filter(t => TARGET_TAGS.includes(t));
+    const selectedCampus   = tags.filter(t => CAMPUS_TAGS.includes(t));
+    const selectedStyle    = tags.filter(t => STYLE_TAGS.includes(t));
+    const selectedOrganizer = tags.filter(t => ORGANIZER_TAGS.includes(t));
+
+    // ジャンル（配列対応）
+    if (selectedGenre.length > 0) {
+      const eventGenres = Array.isArray(event.tags?.genre)
+        ? event.tags.genre
+        : event.tags?.genre ? [event.tags.genre] : [];
+      if (!selectedGenre.some(t => eventGenres.includes(t))) return false;
+    }
+    // 募集種別（配列対応）
+    if (selectedRecruit.length > 0) {
+      const eventRecruit = Array.isArray(event.tags?.recruit)
+        ? event.tags.recruit
+        : event.tags?.recruit ? [event.tags.recruit] : [];
+      if (!selectedRecruit.some(t => eventRecruit.includes(t))) return false;
+    }
+    // 対象者
+    if (selectedTarget.length > 0) {
+      if (!selectedTarget.some(t => event.tags?.targets?.includes(t))) return false;
+    }
+    // キャンパス（配列対応）
+    if (selectedCampus.length > 0) {
+      const eventCampus = Array.isArray(event.tags?.campus)
+        ? event.tags.campus
+        : event.tags?.campus ? [event.tags.campus] : [];
+      if (!selectedCampus.some(t => eventCampus.includes(t))) return false;
+    }
+    // 参加スタイル（配列対応）
+    if (selectedStyle.length > 0) {
+      const eventStyle = Array.isArray(event.tags?.style)
+        ? event.tags.style
+        : event.tags?.style ? [event.tags.style] : [];
+      if (!selectedStyle.some(t => eventStyle.includes(t))) return false;
+    }
+    // 主催者種別（配列対応）
+    if (selectedOrganizer.length > 0) {
+      const eventOrganizer = Array.isArray(event.tags?.organizer)
+        ? event.tags.organizer
+        : event.tags?.organizer ? [event.tags.organizer] : [];
+      if (!selectedOrganizer.some(t => eventOrganizer.includes(t))) return false;
+    }
+
+    return true;
+  });
+};
 
 const TagSection = ({ title, tags, selectedTags, onToggle }) => (
     <div style={s.tagSection}>
@@ -75,35 +136,9 @@ const [statsMap, setStatsMap] = useState({});
   }, [sortMode]);
 
     const handleSearch = () => {
-    setSearched(true);  // ← これも抜けていたので追加
-    const filtered = allEvents.filter(event => {
-      const matchKeyword = keyword === "" ||
-        event.title?.toLowerCase().includes(keyword.toLowerCase()) ||
-        event.detail?.toLowerCase().includes(keyword.toLowerCase()) ||
-        event.location?.toLowerCase().includes(keyword.toLowerCase()) ||
-        event.organizerName?.toLowerCase().includes(keyword.toLowerCase());
-
-      const matchTags = selectedTags.length === 0 || (() => {
-        const selectedGenre = selectedTags.filter(t => GENRE_TAGS.includes(t));
-        const selectedRecruit = selectedTags.filter(t => RECRUIT_TAGS.includes(t));
-        const selectedTarget = selectedTags.filter(t => TARGET_TAGS.includes(t));
-        const selectedCampus = selectedTags.filter(t => CAMPUS_TAGS.includes(t));
-        const selectedStyle = selectedTags.filter(t => STYLE_TAGS.includes(t));
-        const selectedOrganizer = selectedTags.filter(t => ORGANIZER_TAGS.includes(t));
-
-        if (selectedGenre.length > 0 && !selectedGenre.some(t => event.tags?.genre === t)) return false;
-        if (selectedRecruit.length > 0 && !selectedRecruit.some(t => event.tags?.recruit === t)) return false;
-        if (selectedTarget.length > 0 && !selectedTarget.some(t => event.tags?.targets?.includes(t))) return false;
-        if (selectedCampus.length > 0 && !selectedCampus.some(t => event.tags?.campus === t)) return false;
-        if (selectedStyle.length > 0 && !selectedStyle.some(t => event.tags?.style === t)) return false;
-        if (selectedOrganizer.length > 0 && !selectedOrganizer.some(t => event.tags?.organizer === t)) return false;
-        return true;
-      })();
-
-      return matchKeyword && matchTags;
-    });
-    setResults(sortResults(filtered, sortMode)); // ← filtered定義の後に移動
-  };
+  setSearched(true);
+  setResults(sortResults(filterEvents(allEvents, keyword, selectedTags), sortMode));
+};
 
 const sortResults = (list, mode) => {
   return [...list].sort((a, b) => {
@@ -122,36 +157,8 @@ const sortResults = (list, mode) => {
   const toggleTag = (tag) => {
   setSelectedTags(prev => {
     const next = prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag];
-    
-    // 検索済みの場合は自動で再検索
     if (searched) {
-      const filtered = allEvents.filter(event => {
-        const matchKeyword = keyword === "" ||
-          event.title?.toLowerCase().includes(keyword.toLowerCase()) ||
-          event.detail?.toLowerCase().includes(keyword.toLowerCase()) ||
-          event.location?.toLowerCase().includes(keyword.toLowerCase()) ||
-          event.organizerName?.toLowerCase().includes(keyword.toLowerCase());
-
-        const selectedGenre = next.filter(t => GENRE_TAGS.includes(t));
-        const selectedRecruit = next.filter(t => RECRUIT_TAGS.includes(t));
-        const selectedTarget = next.filter(t => TARGET_TAGS.includes(t));
-        const selectedCampus = next.filter(t => CAMPUS_TAGS.includes(t));
-        const selectedStyle = next.filter(t => STYLE_TAGS.includes(t));
-        const selectedOrganizer = next.filter(t => ORGANIZER_TAGS.includes(t));
-
-        const matchTags = next.length === 0 || (() => {
-          if (selectedGenre.length > 0 && !selectedGenre.some(t => event.tags?.genre === t)) return false;
-          if (selectedRecruit.length > 0 && !selectedRecruit.some(t => event.tags?.recruit === t)) return false;
-          if (selectedTarget.length > 0 && !selectedTarget.some(t => event.tags?.targets?.includes(t))) return false;
-          if (selectedCampus.length > 0 && !selectedCampus.some(t => event.tags?.campus === t)) return false;
-          if (selectedStyle.length > 0 && !selectedStyle.some(t => event.tags?.style === t)) return false;
-          if (selectedOrganizer.length > 0 && !selectedOrganizer.some(t => event.tags?.organizer === t)) return false;
-          return true;
-        })();
-
-        return matchKeyword && matchTags;
-      });
-      setResults(sortResults(filtered, sortMode));
+      setResults(sortResults(filterEvents(allEvents, keyword, next), sortMode));
     }
     return next;
   });
@@ -267,9 +274,11 @@ const sortResults = (list, mode) => {
                           <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
                         </div>
                         <div style={s.resultTags}>
-                          {event.tags?.genre && <span style={{ ...s.resultTag, background:cs.bg, color:cs.color }}>{event.tags.genre}</span>}
-                          {event.tags?.campus && <span style={s.resultTagGray}>{event.tags.campus}</span>}
-                        </div>
+                          {(Array.isArray(event.tags?.genre) ? event.tags.genre : event.tags?.genre ? [event.tags.genre] : [])
+                          .map(t => <span key={t} style={{ ...s.resultTag, background: GENRE_STYLES[t]?.bg || cs.bg, color: GENRE_STYLES[t]?.color || cs.color }}>{t}</span>)}
+                        {(Array.isArray(event.tags?.campus) ? event.tags.campus : event.tags?.campus ? [event.tags.campus] : [])
+                          .map(t => <span key={t} style={s.resultTagGray}>{t}</span>)}
+                          </div>
                        <div style={{ ...s.resultOrganizer, display: "flex", alignItems: "center", gap: 4 }}>
                           <User size={11} color="#5A7370" /> {event.organizerName}
                         </div>

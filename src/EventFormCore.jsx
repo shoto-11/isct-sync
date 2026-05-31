@@ -2,8 +2,8 @@ import {
   THEME, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS,
   ORGANIZER_TAGS, BG_COLOR, GAKUIN, RECRUIT_TAGS
 } from "./constants";
-import { useState } from "react";
 import { Calendar, Clock, ImageIcon, Paperclip, Plus, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 const s = {
   section: { marginBottom: 18 },
@@ -15,7 +15,7 @@ const s = {
     fontSize: 14, outline: "none", fontFamily: "inherit",
     WebkitAppearance: "none", appearance: "none"
   },
-  textarea: { width: "100%", padding: "11px 13px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.6, boxSizing: "border-box" },
+  tecxtarea: { width: "100%", padding: "11px 13px", border: "1.5px solid #D0DDD9", borderRadius: 8, fontSize: 14, outline: "none", fontFamily: "inherit", resize: "vertical", lineHeight: 1.6, boxSizing: "border-box" },
   imageArea: { width: "100%", aspectRatio: "16/9", height: "auto", borderRadius: 12, overflow: "hidden", border: "2px dashed #D0DDD9", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: BG_COLOR, boxSizing: "border-box" },
   previewImg: { width: "100%", height: "100%", objectFit: "cover" },
   imagePlaceholder: { display: "flex", flexDirection: "column", alignItems: "center", gap: 8 },
@@ -86,6 +86,125 @@ export default function EventFormCore({
   const removeDate = (i) => setDates(prev => prev.filter((_, j) => j !== i));
   const updateDate = (i, field, value) =>
     setDates(prev => prev.map((d, j) => j === i ? { ...d, [field]: value } : d));
+      const detailRef = useRef(null);
+      const isComposing = useRef(false);
+useEffect(() => {
+  if (detailRef.current && detailRef.current.innerHTML !== detail) {
+    detailRef.current.innerHTML = detail || "";
+  }
+}, []); // マウント時のみ
+
+const handleKeyUp = (e) => {
+  const sel = window.getSelection();
+  if (!sel.rangeCount) return;
+  const node = sel.anchorNode;
+  if (!node) return;
+  const text = node.textContent || "";
+
+  // # → 見出し1
+  if (text === "# " || text === "#　") {
+    document.execCommand('selectAll', false, null);
+    // 現在の行だけ選択して変換
+    const range = sel.getRangeAt(0);
+    range.setStart(node, 0);
+    range.setEnd(node, node.length);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('formatBlock', false, 'h1');
+    document.execCommand('delete');
+    return;
+  }
+
+  // ## → 見出し2
+  if (text === "## ") {
+    const range = sel.getRangeAt(0);
+    range.setStart(node, 0);
+    range.setEnd(node, node.length);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('formatBlock', false, 'h2');
+    document.execCommand('delete');
+    return;
+  }
+
+  // ### → 見出し3
+  if (text === "### ") {
+    const range = sel.getRangeAt(0);
+    range.setStart(node, 0);
+    range.setEnd(node, node.length);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('formatBlock', false, 'h3');
+    document.execCommand('delete');
+    return;
+  }
+
+  // - または * → 箇条書き
+  if (text === "- " || text === "* ") {
+    const range = sel.getRangeAt(0);
+    range.setStart(node, 0);
+    range.setEnd(node, node.length);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('insertUnorderedList');
+    document.execCommand('delete');
+    return;
+  }
+
+  // 1. → 番号付きリスト
+  if (text === "1. ") {
+    const range = sel.getRangeAt(0);
+    range.setStart(node, 0);
+    range.setEnd(node, node.length);
+    sel.removeAllRanges();
+    sel.addRange(range);
+    document.execCommand('insertOrderedList');
+    document.execCommand('delete');
+    return;
+  }
+};
+
+// **テキスト** → 太字（スペース入力時に変換）
+const handleKeyDown = (e) => {
+  if (e.key === ' ' || e.key === 'Enter') {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    const node = sel.anchorNode;
+    if (!node) return;
+    const text = node.textContent || "";
+
+    // **text** → 太字
+    const boldMatch = text.match(/\*\*(.+?)\*\*$/);
+    if (boldMatch) {
+      const range = document.createRange();
+      const start = text.lastIndexOf('**', text.lastIndexOf('**') - 1);
+      range.setStart(node, start);
+      range.setEnd(node, text.length);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('bold');
+      document.execCommand('insertText', false, boldMatch[1] + (e.key === ' ' ? ' ' : ''));
+      e.preventDefault();
+      return;
+    }
+
+    // `text` → コード風（下線で代用）
+    const codeMatch = text.match(/`(.+?)`$/);
+    if (codeMatch) {
+      const range = document.createRange();
+      const start = text.lastIndexOf('`', text.lastIndexOf('`') - 1);
+      range.setStart(node, start);
+      range.setEnd(node, text.length);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('insertHTML', false,
+        `<code style="background:#F4F6F5;padding:1px 5px;border-radius:4px;font-family:monospace;font-size:13px">${codeMatch[1]}</code>${e.key === ' ' ? ' ' : ''}`
+      );
+      e.preventDefault();
+      return;
+    }
+  }
+};
 
   return (
     <>
@@ -117,11 +236,49 @@ export default function EventFormCore({
         <input style={s.input} placeholder="例：春フットサル大会" value={title} onChange={e => setTitle(e.target.value)} />
       </div>
 
-      {/* イベント詳細 */}
-      <div style={s.section}>
-        <label style={s.label}>イベント詳細 <span style={s.required}>必須</span></label>
-        <textarea style={s.textarea} placeholder="イベントの内容、持ち物、注意事項などを記入してください" value={detail} onChange={e => setDetail(e.target.value)} rows={4} />
-      </div>
+        {/* イベント詳細 */}
+<div style={s.section}>
+  <label style={s.label}>イベント詳細 <span style={s.required}>必須</span></label>
+  
+  {/* ツールバー */}
+  <div style={{ display:"flex", flexWrap:"wrap", gap:4, padding:8, background:"#F4F6F5", border:"1.5px solid #D0DDD9", borderBottom:"none", borderRadius:"8px 8px 0 0" }}>
+    <select onChange={e => { document.execCommand('formatBlock', false, e.target.value); detailRef.current?.focus(); }}
+      style={{ border:"1px solid #D0DDD9", borderRadius:6, fontSize:12, padding:"2px 6px", height:28, background:"white" }}>
+      <option value="p">本文</option>
+      <option value="h1">見出し1</option>
+      <option value="h2">見出し2</option>
+      <option value="h3">見出し3</option>
+    </select>
+    {[
+      { cmd:"bold", label:<b>B</b> },
+      { cmd:"italic", label:<i>I</i> },
+      { cmd:"underline", label:<u>U</u> },
+      { cmd:"strikeThrough", label:<s>S</s> },
+    ].map(({ cmd, label }) => (
+      <button key={cmd} type="button" onMouseDown={e => { e.preventDefault(); document.execCommand(cmd); }}
+        style={{ background:"white", border:"1px solid #D0DDD9", borderRadius:6, width:30, height:30, cursor:"pointer", fontSize:14 }}>
+        {label}
+      </button>
+    ))}
+    <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('insertUnorderedList'); }}
+      style={{ background:"white", border:"1px solid #D0DDD9", borderRadius:6, width:30, height:30, cursor:"pointer" }}>・</button>
+    <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('insertOrderedList'); }}
+      style={{ background:"white", border:"1px solid #D0DDD9", borderRadius:6, width:30, height:30, cursor:"pointer" }}>1.</button>
+    <button type="button" onMouseDown={e => { e.preventDefault(); document.execCommand('removeFormat'); }}
+      style={{ background:"white", border:"1px solid #D0DDD9", borderRadius:6, width:30, height:30, cursor:"pointer", fontSize:11 }}>×</button>
+  </div>
+  
+  {/* 編集エリア */}
+  <div
+  ref={detailRef}
+  contentEditable
+  suppressContentEditableWarning
+  onInput={e => setDetail(e.currentTarget.innerHTML)}
+  onKeyUp={handleKeyUp}
+  onKeyDown={handleKeyDown}
+    style={{ minHeight:160, padding:"11px 13px", border:"1.5px solid #D0DDD9", borderRadius:"0 0 8px 8px", fontSize:14, lineHeight:1.8, outline:"none", background:"white" }}
+  />
+</div>
 
       {/* 開催日時 */}
       <div style={s.section}>

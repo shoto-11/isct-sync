@@ -463,7 +463,10 @@ const [recruitEvents, setRecruitEvents] = useState([]);
         }
 
       // サークル募集
-      setCircleEvents(list.filter(e => e.tags?.organizer === "#サークル"));
+      setCircleEvents(list.filter(e => {
+        const org = Array.isArray(e.tags?.organizer) ? e.tags.organizer : e.tags?.organizer ? [e.tags.organizer] : [];
+        return org.includes("#サークル");
+      }));
 
       // 今日が締め切り
       const today = now.toISOString().split("T")[0];
