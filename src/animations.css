@@ -244,3 +244,22 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.12);
   filter: brightness(0.98);
 }
+
+
+
+
+
+
+.tiptap-view { font-size: 14px; color: #1A2E2B; line-height: 1.3; }
+.tiptap-view p { margin: 0 0 0.6em 0; line-height: 1.3; }
+.tiptap-view p:last-child { margin-bottom: 0; }
+.tiptap-view h1 { font-size: 1.8em; font-weight: 700; margin: 0.8em 0 0.4em; line-height: 1.3; }
+.tiptap-view h2 { font-size: 1.4em; font-weight: 700; margin: 0.7em 0 0.3em; line-height: 1.3; }
+.tiptap-view h3 { font-size: 1.2em; font-weight: 700; margin: 0.6em 0 0.3em; line-height: 1.3; }
+.tiptap-view ul, .tiptap-view ol { padding-left: 1.5em; margin: 0 0 0.7em; }
+.tiptap-view li { margin: 0.2em 0; }
+.tiptap-view a { color: #185FA5; text-decoration: underline; }
+.tiptap-view strong { font-weight: 700; }
+.tiptap-view em { font-style: italic; }
+.tiptap-view u { text-decoration: underline; }
+.tiptap-view s { text-decoration: line-through; }

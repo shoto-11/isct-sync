@@ -180,7 +180,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
         attachmentUrls.push({ name: file.name, url });
       }
 
-      await addDoc(collection(db, "events"), {
+      const docRef = await addDoc(collection(db, "events"), {
         title: title.trim(),
         detail: detail.trim(),
         location: location.trim(),
@@ -216,7 +216,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
       });
 
       alert("イベントを公開しました！");
-      onPosted();
+      onPosted(docRef.id);
     } catch (err) {
       alert("投稿に失敗しました: " + err.message);
     }

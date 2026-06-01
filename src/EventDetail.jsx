@@ -647,7 +647,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
             <h2 style={s.sectionTitle}>イベント詳細</h2>
             <div
               dangerouslySetInnerHTML={{ __html: event.detail }}
-              style={{ fontSize:14, color:"#1A2E2B", lineHeight:1.8 }}
+              className="tiptap-view"
             />
           </div>
         )}

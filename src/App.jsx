@@ -714,7 +714,7 @@ export default function App() {
       <Route path="/post" element={
         <MainLayout {...layoutProps}>
           {user
-            ? <PostEvent userGroups={userGroups} onPosted={() => navigate("/")} />
+            ? <PostEvent userGroups={userGroups} onPosted={(id) => navigate(`/events/${id}`)} />
             : <div style={s.loginPrompt}>
                 <p style={s.loginPromptText}>イベントを投稿するにはログインが必要です</p>
                 <button style={s.primaryBtn} onClick={() => navigate("/login")}>ログイン</button>
