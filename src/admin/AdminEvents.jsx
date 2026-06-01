@@ -50,9 +50,7 @@ export default function AdminEvents() {
   const [editHasDeadline, setEditHasDeadline] = useState(true);
 
   // タグ（配列対応）
- const [editGenre, setEditGenre] = useState([]);
-// handleOpenEventEdit内も変更
-setEditGenre(Array.isArray(event.tags?.genre) ? event.tags.genre : event.tags?.genre ? [event.tags.genre] : []);
+const [editGenre, setEditGenre] = useState([]);
 
   const [editTargets, setEditTargets] = useState([]);
   const [editCampus, setEditCampus] = useState([]);
@@ -103,7 +101,7 @@ setEditGenre(Array.isArray(event.tags?.genre) ? event.tags.genre : event.tags?.g
     setEditImageFile(null);
     setEditOrganizerId(event.organizerId || event.createdBy || "");
     setEditIsGroup(event.organizerType === "group" || event.isGroup === true);
-    setOrgSearchQuery("");
+    orgSearchQuery && setOrgSearchQuery("");
     setExistingAttachments(event.attachments || []);
     setEditAttachments([]);
 
@@ -124,8 +122,8 @@ setEditGenre(Array.isArray(event.tags?.genre) ? event.tags.genre : event.tags?.g
     setEditDeadline(event.deadline || "");
     setEditDeadlineTime(event.deadlineTime || "");
 
-    // タグ（文字列→配列に変換）
-    setEditGenre(event.tags?.genre || "");
+    // 💡 【ここに格納】安全に配列に変換してから State に一括セット
+    setEditGenre(Array.isArray(event.tags?.genre) ? event.tags.genre : event.tags?.genre ? [event.tags.genre] : []);
     setEditTargets(event.tags?.targets || []);
     setEditCampus(Array.isArray(event.tags?.campus) ? event.tags.campus : event.tags?.campus ? [event.tags.campus] : []);
     setEditStyle(Array.isArray(event.tags?.style) ? event.tags.style : event.tags?.style ? [event.tags.style] : []);

@@ -20,25 +20,59 @@ function EventCard({ event, onSelect, size = "small" }) {
 
   const formatDate = (dateStr) => {
     if (!dateStr) return null;
-    const [, m, d] = dateStr.split("-");
+    const parts = dateStr.split("-");
+    const [, m, d] = parts;
     const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-    const w = weekdays[new Date(dateStr).getDay()];
+    const dateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    const w = weekdays[dateObj.getDay()];
     return `${m}-${d}（${w}）`;
   };
 
+  // 1. 判定用の「今日」を YYYY-MM-DD 形式の文字列で確実に取得（JSTズレ完全防止）
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  const todayStr = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, "0"),
+    String(now.getDate()).padStart(2, "0")
+  ].join("-");
 
-  const allDates = (event.dates?.length > 0
-    ? event.dates
-    : event.date
-      ? [{ date: event.date, startTime: event.startTime }]
-      : []
-  ).filter(d => d.date && new Date(d.date) >= now);
+  // 2. 💡【データ統合の修正】条件分岐のすり抜けを防ぐため、dates と date を完全にフラットな1つの配列に集約
+  const rawDates = [];
+  if (event.dates && event.dates.length > 0) {
+    rawDates.push(...event.dates);
+  } else if (event.date) {
+    rawDates.push({ date: event.date, startTime: event.startTime, endTime: event.endTime });
+  }
+  const today = new Date();
+today.setHours(0, 0, 0, 0);
+  // 3. 💡【完全絞り込み】今日よりも前の過去日を「100%確実に」配列から完全に消し去る
+  const upcomingDates = rawDates
+  .filter(d => {
+    if (!d?.date) return false;
 
-  const firstDate = allDates[0] || null;
-  const extraCount = allDates.length - 1;
-  const hadDates = event.dates?.length > 0 || event.date;
+    const eventDate = new Date(d.date);
+    eventDate.setHours(0, 0, 0, 0);
+
+    return eventDate >= today;
+  })
+  .sort((a, b) => {
+    const da = new Date(a.date);
+    const db = new Date(b.date);
+    return da - db;
+  });
+
+  console.log("today", today);
+console.log("rawDates", rawDates);
+console.log("upcomingDates", upcomingDates);
+
+  // 4. 今日以降で「最も近い開催日（メイン表示される1日分）」
+  const firstDate = upcomingDates[0] || null;
+  
+  // 5. 💡【カウント計算】未来の予定（今日含む）から、今カードに見えている1日分（firstDate）を引き算する
+  const extraCount = upcomingDates.length > 1 ? upcomingDates.length - 1 : 0;
+  
+  // 過去に1つでも日程データが存在していたかどうかの厳密なフラグ
+  const hadAnyDates = (event.dates && event.dates.length > 0) || !!event.date;
 
   return (
     <div
@@ -64,7 +98,7 @@ function EventCard({ event, onSelect, size = "small" }) {
           <span style={s.cardDate}>
             {firstDate
               ? `${formatDate(firstDate.date)}${firstDate.startTime ? ` ${firstDate.startTime}` : ""}${extraCount > 0 ? ` ほか${extraCount}日程` : ""}`
-              : hadDates
+              : hadAnyDates
                 ? "日程終了"
                 : "通年募集"}
           </span>
