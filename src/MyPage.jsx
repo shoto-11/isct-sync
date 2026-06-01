@@ -8,6 +8,7 @@ import { BG_COLOR } from "./constants";
 import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, Calendar, MapPin, Users, ChevronRight, Bell } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./animations.css";
+import TiptapEditor from "./TiptapEditor";
 
 const THEME = "#88203a";
 
@@ -282,11 +283,10 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
             </div>
             <div style={s.editSection}>
               <label style={s.editLabel}>自己紹介（任意）</label>
-              <textarea
-                style={{ ...s.editInput, minHeight: 80, resize: "vertical", lineHeight: 1.6, fontFamily: "inherit" }}
-                placeholder="あなたの自己紹介や活動内容を書いてみましょう"
+              <TiptapEditor
                 value={editBio}
-                onChange={e => setEditBio(e.target.value)}
+                onChange={setEditBio}
+                placeholder="あなたの自己紹介や活動内容を書いてみましょう"
               />
             </div>
             <div style={s.editBtnRow}>
@@ -320,12 +320,14 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
       <span style={s.infoLabel}><User size={14} /> 自己紹介</span>
     </div>
     {profile?.bio ? (
-      <div style={{ fontSize: 13, color: "#1A2E2B", lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-        {profile.bio}
-      </div>
-    ) : (
-      <span style={{ fontSize: 13, color: "#9AADA8", fontStyle: "italic" }}>自己紹介はまだ登録されていません。</span>
-    )}
+  <div
+    dangerouslySetInnerHTML={{ __html: profile.bio }}
+    className="tiptap-view"
+    style={{ fontSize: 13 }}
+  />
+) : (
+  <span style={{ fontSize: 13, color: "#9AADA8", fontStyle: "italic" }}>自己紹介はまだ登録されていません。</span>
+)}
   </div>
 )}
        {/* ── 🔔 【機能変更】フォロー・フォロワー数から新着通知設定の一覧管理へ ── */}

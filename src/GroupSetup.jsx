@@ -16,6 +16,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; 
 import logoRed from "./assets/logo-red.png";
 import { Users, UserCheck, Mail, KeyRound, CheckCircle, ArrowRight, Camera } from "lucide-react"; 
+import TiptapEditor from "./TiptapEditor";
 
 const THEME = "#88203a";
 const BG = "#F4F6F5";
@@ -509,12 +510,11 @@ const [homepageUrl, setHomepageUrl] = useState("");
 
             <div style={s.formGroup}>
               <label style={s.label}>グループ説明（任意）<span style={{ fontSize: 11, color: "#9AADA8", fontWeight: "normal", marginLeft: 4 }}>※ユーザーに公開されます</span></label>
-              <textarea 
-                style={{ ...s.input, minHeight: 90, resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
-                placeholder="サークルの活動内容、新歓情報、練習日程などを自由に入力してください（後からいつでも変更できます）"
-                value={groupDescription}
-                onChange={(e) => setGroupDescription(e.target.value)}
-                disabled={loading}
+              <TiptapEditor 
+                value={groupDescription} 
+                onChange={setGroupDescription} 
+                placeholder="サークルの活動内容、新歓情報、練習日程などを自由に入力してください（後からいつでも変更できます）" 
+                showHint={false} 
               />
             </div>
 

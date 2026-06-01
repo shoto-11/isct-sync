@@ -645,10 +645,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
         {event.detail && (
           <div style={s.section}>
             <h2 style={s.sectionTitle}>イベント詳細</h2>
-            <div
-              dangerouslySetInnerHTML={{ __html: event.detail }}
-              className="tiptap-view"
-            />
+            <div dangerouslySetInnerHTML={{ __html: event.detail }} className="tiptap-view" />
           </div>
         )}
 

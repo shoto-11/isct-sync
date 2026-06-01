@@ -137,10 +137,9 @@ export default function UserProfile({ userId, onBack, onEventSelect }) {
               <span>プロフィール</span>
             </div>
             <div style={s.descriptionBody}>
+              {/* 💡 プレーンテキスト分解を廃止し、装飾HTMLデータを綺麗に再現 */}
               {profile.bio ? (
-                profile.bio.split("\n").map((line, i) => (
-                  <span key={i}>{line}<br /></span>
-                ))
+                <div dangerouslySetInnerHTML={{ __html: profile.bio }} className="tiptap-view" />
               ) : (
                 <span style={{ color: "#9AADA8", fontStyle: "italic" }}>自己紹介はまだ登録されていません。</span>
               )}

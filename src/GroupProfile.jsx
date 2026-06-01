@@ -12,6 +12,7 @@ import { GENRE_STYLES, GENRE_EMOJI, THEME, BG_COLOR } from "./constants";
 import { Users, Calendar, MapPin, ChevronLeft, Info, Bell, BellOff } from "lucide-react"; // 💡 Bell, BellOff を追加
 import { FaXTwitter, FaInstagram } from "react-icons/fa6";
 import { FaGlobe } from "react-icons/fa";
+import TiptapEditor from "./TiptapEditor";
 import "./animations.css";
 
 export default function GroupProfile({ groupId, onBack, onEventSelect }) {
@@ -225,9 +226,7 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
             </div>
             <div style={s.descriptionBody}>
               {group.description ? (
-                group.description.split("\n").map((line, i) => (
-                  <span key={i}>{line}<br /></span>
-                ))
+                <div dangerouslySetInnerHTML={{ __html: group.description }} className="tiptap-view" />
               ) : (
                 <span style={{ color: "#9AADA8", fontStyle: "italic" }}>紹介文はまだ登録されていません。</span>
               )}

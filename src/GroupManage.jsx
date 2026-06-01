@@ -17,6 +17,8 @@ import { User, Camera, LogOut, UserMinus, Award, Users, Edit2, X, Crown, Info, C
 import { FaXTwitter, FaInstagram } from "react-icons/fa6"; // X(Twitter) と Instagram
 import { FaGlobe } from "react-icons/fa"; // 地球儀（ホームページ用）
 import "./animations.css";
+import TiptapEditor from "./TiptapEditor";
+
 export default function GroupManage({ onEventSelect }) {
   const { groupId } = useParams();
   const navigate = useNavigate();
@@ -325,13 +327,13 @@ const handleLeave = async () => {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 4 }}>
                 <label style={s.label}>グループ説明文</label>
-                <textarea 
-                  style={{ ...s.input, minHeight: 90, resize: "vertical", lineHeight: 1.5 }} 
-                  value={editDescription} 
-                  onChange={e => setEditDescription(e.target.value)} 
-                  disabled={saving}
-                  placeholder="サークルの紹介文や新歓情報などを記入してください。"
-                />
+                {!saving && (
+                  <TiptapEditor
+                    value={editDescription}
+                    onChange={setEditDescription}
+                    placeholder="サークルの紹介文や新歓情報などを記入してください。"
+                  />
+                )}
               </div>
               <div style={{ marginTop: 12, display:"flex", flexDirection:"column", gap:8 }}>
                 <label style={s.label}>SNS・リンク編集</label>
@@ -442,9 +444,10 @@ const handleLeave = async () => {
               </div>
               <div style={s.descriptionBody}>
                 {group.description ? (
-                  group.description.split("\n").map((line, i) => (
-                    <span key={i}>{line}<br /></span>
-                  ))
+                  <div
+                    dangerouslySetInnerHTML={{ __html: group.description }}
+                    className="tiptap-view"
+                  />
                 ) : (
                   <span style={{ color: "#9AADA8", fontStyle: "italic" }}>紹介文はまだ登録されていません。</span>
                 )}
