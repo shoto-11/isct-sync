@@ -643,7 +643,7 @@ const [recruitEvents, setRecruitEvents] = useState([]);
     );
 
   const currentRanking = rankTab === "view" ? viewRanking : rankTab === "like" ? likeRanking : joinRanking;
-  const rankLabel = rankTab === "view" ? "閲覧" : rankTab === "like" ? "いいね" : "参加予定";
+  const rankLabel = rankTab === "view" ? "閲覧" : rankTab === "like" ? "いいね" : "マイリスト";
   return (
   <div>
     {/* ── 💡 完全に元のスタイルを適用した Notice Bar ── */}
@@ -755,7 +755,7 @@ const [recruitEvents, setRecruitEvents] = useState([]);
         {[
             { id:"view", label:"閲覧数", icon:<Eye size={14} /> },
             { id:"like", label:"いいね", icon:<Heart size={14} /> },
-            { id:"join", label:"参加予定", icon:<CalendarCheck size={14} /> },
+            { id:"join", label:"マイリスト", icon:<CalendarCheck size={14} /> },
             ].map(t => (
             <button
                 key={t.id}

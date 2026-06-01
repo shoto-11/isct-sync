@@ -151,7 +151,7 @@
 
 
 
-/* ─── いいね・参加予定ボタン 通常/アクティブスタイル ─── */
+/* ─── いいね・マイリストボタン 通常/アクティブスタイル ─── */
 .reaction-btn {
   background-color: white;
   border: 1.5px solid #D0DDD9;
@@ -186,7 +186,7 @@
   100% { transform: scale(1); }
 }
 
-/* 参加予定：アクティブ */
+/* マイリスト：アクティブ */
 .reaction-btn.join-active {
   background-color: #E8F5E9;
   border-color: #2E7D32;

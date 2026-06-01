@@ -7,10 +7,10 @@ const THEME = "#88203a";
 const features = [
   { icon: <Search size={20} />, title: "タグ検索", desc: "ジャンル・キャンパス・募集種別など複数タグで絞り込み" },
   { icon: <Bell size={20} />, title: "新着通知", desc: "フォロー中のサークルの新着をリアルタイムで通知" },
-  { icon: <Heart size={20} />, title: "いいね・参加予定", desc: "気になるイベントをブックマーク感覚で保存" },
+  { icon: <Heart size={20} />, title: "いいね・マイリスト", desc: "気になるイベントをブックマーク感覚で保存" },
   { icon: <Users size={20} />, title: "グループ管理", desc: "サークル・団体名義でイベントを投稿・管理" },
   { icon: <Calendar size={20} />, title: "今日の締め切り", desc: "本日締め切りのイベントを自動でピックアップ" },
-  { icon: <Star size={20} />, title: "週間ランキング", desc: "閲覧・いいね・参加予定数で人気イベントを表示" },
+  { icon: <Star size={20} />, title: "週間ランキング", desc: "閲覧・いいね・マイリスト数で人気イベントを表示" },
   { icon: <Zap size={20} />, title: "おすすめ機能", desc: "プロフィールを元にあなた向けイベントを自動表示" },
   { icon: <ArrowRight size={20} />, title: "メンバー募集", desc: "サークル・団体のメンバー募集専用セクション" },
 ];

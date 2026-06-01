@@ -126,7 +126,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
       );
       const allEvents = eventSnaps.flatMap((s) => s.docs.map((d) => ({ id: d.id, ...d.data() })));
       setMyEvents(allEvents);
-      // いいね・参加予定
+      // いいね・マイリスト
       const statsSnap = await getDocs(collection(db, "eventStats"));
       const eventsSnap = await getDocs(collection(db, "events"));
       const allEventsMap = Object.fromEntries(eventsSnap.docs.map((d) => [d.id, { id: d.id, ...d.data() }]));
@@ -407,7 +407,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
             { id: "events", label: "募集中" },
             { id: "expired", label: "募集終了" },
             { id: "liked", label: "いいね" },
-            { id: "joined", label: "参加予定" },
+            { id: "joined", label: "マイリスト" },
             { id: "history", label: "閲覧履歴" },
           ].map((t) => {
             const isActive = activeTab === t.id;
@@ -472,7 +472,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
           )}
           {activeTab === "joined" && (
             joinedEvents.length === 0
-              ? <p style={s.empty}>参加予定のイベントはありません</p>
+              ? <p style={s.empty}>マイリストのイベントはありません</p>
               : joinedEvents.map((event) => <EventCard key={event.id} event={event} onEventSelect={onEventSelect} userGroups={userGroups} />)
           )}
           {activeTab === "history" && (

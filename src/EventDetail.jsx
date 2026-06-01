@@ -761,7 +761,7 @@ export default function EventDetail({ event: initialEvent, onBack }) {
               style={{ ...s.actionBtn, ...(joining ? s.actionBtnJoinActive : {}) }}
               onClick={handleJoin}
             >
-              {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} 参加予定 {joinCount > 0 && joinCount}
+              {joining ? <CalendarCheck size={16} color="#2E7D32" /> : <CalendarCheck size={16} />} マイリスト {joinCount > 0 && joinCount}
             </button>
           </div>
         )}

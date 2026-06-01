@@ -216,7 +216,7 @@ const sortResults = (list, mode) => {
         <option value="newest">新着順</option>
         <option value="views">閲覧数順</option>
         <option value="likes">いいね数順</option>
-        <option value="joins">参加予定数順</option>
+        <option value="joins">マイリスト数順</option>
         <option value="applies">申し込み数順</option>
       </select>
     </div>
