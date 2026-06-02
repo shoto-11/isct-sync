@@ -5,7 +5,8 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { GENRE_STYLES, GENRE_EMOJI, GAKUIN, GAKUNEN, GENDER } from "./constants";
 import GroupManage from "./GroupManage";
 import { BG_COLOR } from "./constants";
-import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, Calendar, MapPin, Users, ChevronRight, Bell } from "lucide-react";
+import { Camera, Pencil, GraduationCap, BookOpen, User, Building2, 
+  Calendar, MapPin, Users, ChevronRight, Bell, ExternalLink } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import "./animations.css";
 import TiptapEditor from "./TiptapEditor";
@@ -191,6 +192,15 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
 
         {/* ── プロフィールヘッダー ── */}
         <div style={s.profileHeader}>
+
+          {/* 右上：公開ページボタン */}
+          <button
+            className="tag-tab-btn"
+            onClick={() => navigate(`/users/${uid}`)}
+            style={{ position: "absolute", top: 12, right: 12, fontSize: 11, fontWeight: 700, padding: "5px 10px", borderRadius: 6, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+          >
+            <ExternalLink size={12} /> 公開ページ
+          </button>
           <div style={s.avatarWrap}>
             {avatarUrl
               ? <img src={avatarUrl} alt="avatar" style={s.avatar} />
@@ -507,7 +517,7 @@ export default function MyPage({ user, userGroups = [], onEventSelect, onGroupsC
 const s = {
   outer: { background: BG_COLOR, minHeight: "100vh", padding: "0 0 40px" },
   container: { maxWidth: 720, margin: "0 auto", display: "flex", flexDirection: "column", gap: 12 },
-  profileHeader: { background: "white", padding: "24px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.06)" },
+  profileHeader: { background: "white", padding: "24px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.06)", position: "relative" },
   avatarWrap: { position: "relative", width: 90, height: 90 },
   avatar: { width: 90, height: 90, borderRadius: "50%", objectFit: "cover" },
   avatarPlaceholder: { width: 90, height: 90, borderRadius: "50%", background: BG_COLOR, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #E0E8E7" },

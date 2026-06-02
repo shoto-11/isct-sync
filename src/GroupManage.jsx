@@ -13,7 +13,7 @@ import { auth, db, storage } from "./firebase"; // 💡 auth を追加インポ�
 import { doc, getDoc, updateDoc, arrayRemove, collection, query, where, getDocs} from "firebase/firestore";// 💡 collection群を追加
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { THEME, GENRE_STYLES, GENRE_EMOJI, BG_COLOR } from "./constants"; // 💡 THEMEなどを constants から統合// 💡 「Instagram」の最後のTは大文字ではなく小文字の「t」にします
-import { User, Camera, LogOut, UserMinus, Award, Users, Edit2, X, Crown, Info, Calendar, MapPin, Mail } from "lucide-react";
+import { User, Camera, LogOut, UserMinus, Award, Users, Edit2, X, Crown, Info, Calendar, MapPin, Mail, ExternalLink } from "lucide-react";
 import { FaXTwitter, FaInstagram } from "react-icons/fa6"; // X(Twitter) と Instagram
 import { FaGlobe } from "react-icons/fa"; // 地球儀（ホームページ用）
 import "./animations.css";
@@ -246,7 +246,6 @@ const handleLeave = async () => {
     <div style={s.container}>
       {/* ヘッダー */}
       <div style={s.header}>
-        {/* <button style={s.backBtn} onClick={onBack}>← 戻る</button> */}
         <h1 style={s.headerTitle}>グループ管理</h1>
         <div style={{ width: 44 }} />
       </div>
@@ -256,29 +255,28 @@ const handleLeave = async () => {
 
         {/* グループ基本情報カード */}
         <div style={s.infoCardRelative}>
-          {/* 代表者のみ、カードの右上に絶対配置 */}
-          {isLeader && (
-            <button 
-              className={`imp-tab-btn`}
-              style={s.cardEditBtn}
-              onClick={() => editMode ? handleCancelEdit() : setEditMode(true)}
+          {/* カード右上：公開ページ＋編集ボタン */}
+            <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 6 }}>
+            <button
+              onClick={() => navigate(`/groups/${groupId}`)}
+              className="tag-tab-btn"
+              style={{ borderRadius: 6, fontSize: 12, fontWeight: 700, padding: "7px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
             >
-              {editMode ? (
-                <>
-                  <X size={13} />
-                  <span>閉じる</span>
-                </>
-              ) : (
-                <>
-                  <Edit2 size={12} />
-                  <span>編集</span>
-                </>
-              )}
+              <ExternalLink size={13} /> 公開ページ
             </button>
-          )}
+            {isLeader && (
+              <button
+                className="imp-tab-btn"
+                style={{ borderRadius: 6, fontSize: 12, fontWeight: 700, padding: "7px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+                onClick={() => editMode ? handleCancelEdit() : setEditMode(true)}
+              >
+                {editMode ? <><X size={14} /> 閉じる</> : <><Edit2 size={13} /> 編集</>}
+              </button>
+            )}
+          </div>
 
           {editMode ? (
-            <div style={s.editForm}>
+            <div style={{ ...s.editForm, paddingTop: 48 }}>
               {/* アイコン編集 */}
               <div style={s.avatarRow}>
                 <div style={s.avatarWrap} onClick={() => !saving && document.getElementById("groupAvatarEdit").click()}>
