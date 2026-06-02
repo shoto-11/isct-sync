@@ -251,6 +251,37 @@ const sortResults = (list, mode) => {
                 {results.map(event => {
                   const cs = GENRE_STYLES[event.tags?.genre] || { bg:"#F5F5F5", color:"#616161" };
                   const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const rawDates = [];
+                  if (event.dates && event.dates.length > 0) {
+                    rawDates.push(...event.dates);
+                  } else if (event.date) {
+                    rawDates.push({ date: event.date, startTime: event.startTime });
+                  }
+                  const upcomingDates = rawDates
+                    .filter(d => {
+                      if (!d?.date) return false;
+                      const ed = new Date(d.date);
+                      ed.setHours(0, 0, 0, 0);
+                      return ed >= today;
+                    })
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                  const firstDate = upcomingDates[0] || null;
+                  const extraCount = upcomingDates.length > 1 ? upcomingDates.length - 1 : 0;
+                  const hadAnyDates = (event.dates && event.dates.length > 0) || !!event.date;
+                  const formatDate = (dateStr) => {
+                    if (!dateStr) return null;
+                    const [, m, d] = dateStr.split("-");
+                    const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+                    const w = weekdays[new Date(dateStr).getDay()];
+                    return `${m}-${d}（${w}）`;
+                  };
+                  const dateLabel = firstDate
+                    ? `${formatDate(firstDate.date)}${firstDate.startTime ? ` ${firstDate.startTime}` : ""}${extraCount > 0 ? ` ほか${extraCount}日程` : ""}`
+                    : hadAnyDates ? "日程終了" : "通年募集";
+                    
                   return (
                     <div 
                       key={event.id} 
@@ -270,8 +301,15 @@ const sortResults = (list, mode) => {
                         <div className="hover-title-underline" style={s.resultTitle}>
                           {event.title}
                         </div>
-                        <div style={{ ...s.resultMeta, display:"flex", alignItems:"center", gap:6 }}>
-                          <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
+                        <div style={{ ...s.resultMeta, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                          <span style={{ display:"flex", alignItems:"center", gap:3 }}>
+                            <Calendar size={11} /> {dateLabel}
+                          </span>
+                          {event.location && (
+                            <span style={{ display:"flex", alignItems:"center", gap:3 }}>
+                              <MapPin size={11} /> {event.location}
+                            </span>
+                          )}
                         </div>
                         <div style={s.resultTags}>
                           {(Array.isArray(event.tags?.genre) ? event.tags.genre : event.tags?.genre ? [event.tags.genre] : [])

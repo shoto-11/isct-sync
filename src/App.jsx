@@ -34,7 +34,7 @@ import logo from "./assets/logo.png";
 import { BG_COLOR, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import {
   Search as SearchIcon, User, Menu, Home, PenLine,
-  Mail, LogOut, LogIn, Settings, ChevronRight, Bell, Megaphone, LockKeyhole, HelpCircle
+  Mail, LogOut, LogIn, Settings, ChevronRight, Bell, Megaphone, LockKeyhole, HelpCircle,Calendar
 } from "lucide-react";
 import GroupProfile from "./GroupProfile";
 
@@ -237,9 +237,26 @@ function MainLayout({
                                 <div style={{ fontSize: 13, fontWeight: 700, color: "#111", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                   {ev.title}
                                 </div>
-                                <div style={{ fontSize: 11, color: "#5A7370", marginTop: 1 }}>
-                                  開催: {ev.date}
-                                </div>
+                                  <div style={{ fontSize: 11, color: "#5A7370", marginTop: 1, display: "flex", alignItems: "center", gap: 3 }}>
+                                    {(() => {
+                                      const today = new Date();
+                                      today.setHours(0, 0, 0, 0);
+                                      const rawDates = [];
+                                      if (ev.dates && ev.dates.length > 0) rawDates.push(...ev.dates);
+                                      else if (ev.date) rawDates.push({ date: ev.date, startTime: ev.startTime });
+                                      const upcoming = rawDates
+                                        .filter(d => { if (!d?.date) return false; const ed = new Date(d.date); ed.setHours(0,0,0,0); return ed >= today; })
+                                        .sort((a, b) => new Date(a.date) - new Date(b.date));
+                                      const first = upcoming[0] || null;
+                                      const extra = upcoming.length > 1 ? upcoming.length - 1 : 0;
+                                      const had = (ev.dates && ev.dates.length > 0) || !!ev.date;
+                                      const fmt = (s) => { const [,m,d] = s.split("-"); const w = ["日","月","火","水","木","金","土"][new Date(s).getDay()]; return `${m}-${d}（${w}）`; };
+                                      const label = first
+                                        ? `${fmt(first.date)}${first.startTime ? ` ${first.startTime}` : ""}${extra > 0 ? ` ほか${extra}日程` : ""}`
+                                        : had ? "日程終了" : "通年募集";
+                                      return <><Calendar size={11} color="#5A7370" />{label}</>;
+                                    })()}
+                                  </div>
                               </div>
                             </div>
                           );

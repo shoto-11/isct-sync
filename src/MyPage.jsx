@@ -29,8 +29,26 @@ function EventCard({ event, onEventSelect, userGroups }) {
       )}
       <div style={s.eventInfo}>
         <div className="hover-title-underline" style={s.eventTitle}>{event.title}</div>
-        <div style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 6 }}>
-          <Calendar size={11} /> {event.date} <MapPin size={11} /> {event.location}
+        <div style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          {(() => {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const rawDates = [];
+            if (event.dates && event.dates.length > 0) rawDates.push(...event.dates);
+            else if (event.date) rawDates.push({ date: event.date, startTime: event.startTime });
+            const upcoming = rawDates
+              .filter(d => { if (!d?.date) return false; const ed = new Date(d.date); ed.setHours(0,0,0,0); return ed >= today; })
+              .sort((a, b) => new Date(a.date) - new Date(b.date));
+            const first = upcoming[0] || null;
+            const extra = upcoming.length > 1 ? upcoming.length - 1 : 0;
+            const had = (event.dates && event.dates.length > 0) || !!event.date;
+            const fmt = (s) => { const [,m,d] = s.split("-"); const w = ["日","月","火","水","木","金","土"][new Date(s).getDay()]; return `${m}-${d}（${w}）`; };
+            const label = first
+              ? `${fmt(first.date)}${first.startTime ? ` ${first.startTime}` : ""}${extra > 0 ? ` ほか${extra}日程` : ""}`
+              : had ? "日程終了" : "通年募集";
+            return <><Calendar size={11} />{label}</>;
+          })()}
+          {event.location && <><MapPin size={11} />{event.location}</>}
         </div>
         {isGroupEvent && (
           <span style={{ ...s.groupBadge, display: "inline-flex", alignItems: "center", gap: 4 }}>

@@ -61,10 +61,6 @@ today.setHours(0, 0, 0, 0);
     return da - db;
   });
 
-  console.log("today", today);
-console.log("rawDates", rawDates);
-console.log("upcomingDates", upcomingDates);
-
   // 4. 今日以降で「最も近い開催日（メイン表示される1日分）」
   const firstDate = upcomingDates[0] || null;
   
@@ -131,12 +127,29 @@ function RankItem({ event, rank, count, label, onSelect }) {
     return `${m}-${d}（${w}）`;
   };
 
-  const firstDate = event.dates?.length > 0
-    ? event.dates[0]
-    : event.date
-      ? { date: event.date, startTime: event.startTime }
-      : null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
+  const rawDates = [];
+  if (event.dates && event.dates.length > 0) {
+    rawDates.push(...event.dates);
+  } else if (event.date) {
+    rawDates.push({ date: event.date, startTime: event.startTime });
+  }
+
+  const upcomingDates = rawDates
+    .filter(d => {
+      if (!d?.date) return false;
+      const eventDate = new Date(d.date);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate >= today;
+    })
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  const firstDate = upcomingDates[0] || null;
+  const extraCount = upcomingDates.length > 1 ? upcomingDates.length - 1 : 0;
+  const hadAnyDates = (event.dates && event.dates.length > 0) || !!event.date;
+    
   return (
     <div className="event-hover-card" style={s.rankItem} onClick={() => onSelect(event)}>
       <div style={{ ...s.rankNum, color: rankColors[rank] }}>{rank+1}</div>
@@ -152,8 +165,10 @@ function RankItem({ event, rank, count, label, onSelect }) {
         <div style={s.rankMeta}>
           <span style={{ display:"flex", alignItems:"center", gap:4 }}>
             <Calendar size={11} color="#5A7370" />
-            {firstDate ? `${formatDate(firstDate.date)}${firstDate.startTime ? `  ${firstDate.startTime}` : ""}` : "通年募集"}
-          </span>
+            {firstDate
+              ? `${formatDate(firstDate.date)}${firstDate.startTime ? ` ${firstDate.startTime}` : ""}${extraCount > 0 ? ` ほか${extraCount}日程` : ""}`
+              : hadAnyDates ? "日程終了" : "通年募集"}
+            </span>
           {event.location && (
             <span style={{ display:"flex", alignItems:"center", gap:4 }}>
               <MapPin size={11} color="#5A7370" /> {event.location}

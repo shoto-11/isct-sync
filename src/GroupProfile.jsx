@@ -250,6 +250,19 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
             {groupEvents.map(event => {
               const style = GENRE_STYLES[event.tags?.genre] || { bg: "#F5F5F5", color: "#5A7370" };
               const emoji = GENRE_EMOJI[event.tags?.genre] || "📌";
+
+              const today = new Date(); today.setHours(0,0,0,0);
+              const rawDates = [];
+              if (event.dates && event.dates.length > 0) rawDates.push(...event.dates);
+              else if (event.date) rawDates.push({ date: event.date, startTime: event.startTime });
+              const upcoming = rawDates.filter(d => { if (!d?.date) return false; const ed = new Date(d.date); ed.setHours(0,0,0,0); return ed >= today; }).sort((a,b) => new Date(a.date)-new Date(b.date));
+              const firstDate = upcoming[0] || null;
+              const extraCount = upcoming.length > 1 ? upcoming.length - 1 : 0;
+              const hadAnyDates = (event.dates && event.dates.length > 0) || !!event.date;
+              const fmt = (s) => { const [,m,d] = s.split("-"); const w=["日","月","火","水","木","金","土"][new Date(s).getDay()]; return `${m}-${d}（${w}）`; };
+              const dateLabel = firstDate ? `${fmt(firstDate.date)}${firstDate.startTime?` ${firstDate.startTime}`:""}${extraCount>0?` ほか${extraCount}日程`:""}` : hadAnyDates ? "日程終了" : "通年募集";
+
+              
               return (
                 <div 
                   key={event.id} 
@@ -270,8 +283,8 @@ export default function GroupProfile({ groupId, onBack, onEventSelect }) {
                     {/* 💡 イベントタイトルにホバー時下線連動クラスを追加 */}
                     <div className="hover-title-underline" style={s.eventTitle}>{event.title}</div>
                     <div style={s.eventMeta}>
-                      <div style={s.metaItem}><Calendar size={11} /> {event.date}</div>
-                      <div style={s.metaItem}><MapPin size={11} /> {event.location}</div>
+                      <div style={s.metaItem}><Calendar size={11} /> {dateLabel}</div>
+                      {event.location && <div style={s.metaItem}><MapPin size={11} /> {event.location}</div>}
                     </div>
                     {event.tags?.genre && (
                       <span style={{ ...s.genreTag, background: style.bg, color: style.color }}>{event.tags.genre}</span>

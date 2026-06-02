@@ -2,9 +2,23 @@ import {
   THEME, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS, STYLE_TAGS,
   ORGANIZER_TAGS, BG_COLOR, GAKUIN, RECRUIT_TAGS
 } from "./constants";
-import { Calendar, ImageIcon, Paperclip, Plus, X } from "lucide-react";
+import { Calendar, ImageIcon, Paperclip, Plus, X, GripVertical } from "lucide-react";
 import { useState } from "react";
 import TiptapEditor from "./TiptapEditor";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 const s = {
   section: { marginBottom: 18 },
@@ -30,6 +44,30 @@ const s = {
 
 const inputSm = { ...s.input, padding: "10px 8px", fontSize: 13, height: "40px", textAlign: "center" };
 
+const THIS_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => THIS_YEAR - 1 + i);
+
+// 日付文字列 "YYYY-MM-DD" を年・月・日に分解
+const parseDate = (dateStr) => {
+  if (!dateStr) return { year: "", month: "", day: "" };
+  const [y, m, d] = dateStr.split("-");
+  return {
+    year:  parseInt(y) || "",
+    month: parseInt(m) || "",  // "00" → 0 → ""
+    day:   parseInt(d) || "",
+  };
+};
+
+const buildDate = (year, month, day) => {
+  if (!year && !month && !day) return "";
+  const y = year  ? String(year)                    : "0000";
+  const m = month ? String(month).padStart(2, "0")  : "00";
+  const d = day   ? String(day).padStart(2, "0")    : "00";
+  return `${y}-${m}-${d}`;
+};
+
+export { parseDate, buildDate };
+
 const resolveYear = (mmdd) => {
   const [m, d] = mmdd.split("-").map(Number);
   const now = new Date();
@@ -39,6 +77,77 @@ const resolveYear = (mmdd) => {
 };
 
 export { resolveYear };
+function SortableDateItem({ id, d, i, datesLength, updateDate, updateDatePart, removeDate }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  const { year, month, day } = parseDate(d.date);
+
+  return (
+    <div ref={setNodeRef} style={{ ...style, paddingBottom: i < datesLength - 1 ? 12 : 0, borderBottom: i < datesLength - 1 ? "1px solid #E0E8E7" : "none", display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
+          {/* ドラッグハンドル */}
+          {datesLength > 1 && (
+            <div {...attributes} {...listeners} style={{ cursor: "grab", color: "#BACFCB", display: "flex", alignItems: "center", touchAction: "none" }}>
+              <GripVertical size={16} />
+            </div>
+          )}
+          <Calendar size={14} strokeWidth={2.5} />
+          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>
+            {datesLength > 1 ? `日程 #${i + 1}` : "開催日"}
+          </span>
+        </div>
+        {datesLength > 1 && (
+          <button type="button" onClick={() => removeDate(i)}
+            style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", padding: "4px" }}>
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
+      {/* 年・月・日 */}
+      <div style={{ display: "flex", gap: 6, alignItems: "center", width: "100%" }}>
+        <div style={{ flex: "1.6", minWidth: 0 }}>
+          <select style={inputSm} value={year} onChange={e => updateDatePart(i, "year", parseInt(e.target.value) || "")}>
+            <option value="">年</option>
+            {YEARS.map(y => <option key={y} value={y}>{y}年</option>)}
+          </select>
+        </div>
+        <div style={{ flex: "1.2", minWidth: 0 }}>
+          <select style={inputSm} value={month} onChange={e => updateDatePart(i, "month", parseInt(e.target.value) || "")}>
+            <option value="">月</option>
+            {Array.from({ length: 12 }, (_, j) => j + 1).map(m => <option key={m} value={m}>{m}月</option>)}
+          </select>
+        </div>
+        <div style={{ flex: "1.2", minWidth: 0 }}>
+          <select style={inputSm} value={day} onChange={e => updateDatePart(i, "day", parseInt(e.target.value) || "")}>
+            <option value="">日</option>
+            {Array.from({ length: 31 }, (_, j) => j + 1).map(d => <option key={d} value={d}>{d}日</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* 開始〜終了時間 */}
+      <div style={{ display: "flex", gap: 6, alignItems: "center", width: "100%" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <input style={inputSm} type="time" value={d.startTime}
+            onChange={e => updateDate(i, "startTime", e.target.value)}
+            onFocus={e => e.target.showPicker()} />
+        </div>
+        <span style={{ color: "#5A7370", fontWeight: 700, fontSize: 13, flexShrink: 0 }}>〜</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <input style={inputSm} type="time" value={d.endTime}
+            onChange={e => updateDate(i, "endTime", e.target.value)}
+            onFocus={e => e.target.showPicker()} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function EventFormCore({
   preview, onImageChange, imageInputId = "imgInput",
@@ -72,6 +181,43 @@ export default function EventFormCore({
   const removeDate = (i) => setDates(prev => prev.filter((_, j) => j !== i));
   const updateDate = (i, field, value) =>
     setDates(prev => prev.map((d, j) => j === i ? { ...d, [field]: value } : d));
+
+  // 開催日の年・月・日を個別に更新
+  const updateDatePart = (i, part, value) => {
+  setDates(prev => prev.map((d, j) => {
+    if (j !== i) return d;
+    const { year, month, day } = parseDate(d.date);
+    console.log("before:", d.date, "part:", part, "value:", value);
+    const newYear  = part === "year"  ? value : year;
+    const newMonth = part === "month" ? value : month;
+    const newDay   = part === "day"   ? value : day;
+    const built = buildDate(newYear, newMonth, newDay);
+    console.log("after:", built);
+    return { ...d, date: built };
+  }));
+};
+
+  // 締切の年・月・日を個別に更新
+  const updateDeadlinePart = (part, value) => {
+    const { year, month, day } = parseDate(deadline);
+    const newYear  = part === "year"  ? value : year;
+    const newMonth = part === "month" ? value : month;
+    const newDay   = part === "day"   ? value : day;
+    setDeadline(buildDate(newYear, newMonth, newDay));
+  };
+
+  const sensors = useSensors(useSensor(PointerSensor));
+
+const handleDragEnd = (event) => {
+  const { active, over } = event;
+  if (active.id !== over?.id) {
+    setDates(prev => {
+      const oldIndex = prev.findIndex((_, i) => `date-${i}` === active.id);
+      const newIndex = prev.findIndex((_, i) => `date-${i}` === over.id);
+      return arrayMove(prev, oldIndex, newIndex);
+    });
+  }
+};
 
   return (
     <>
@@ -127,48 +273,22 @@ export default function EventFormCore({
           </div>
           {hasDate && (
             <div style={{ background: "#FAFDFC", border: `2px solid ${THEME}`, borderRadius: 12, padding: "16px", display: "flex", flexDirection: "column", gap: 12, width: "100%", boxSizing: "border-box", boxShadow: "0 4px 12px rgba(136,32,58,0.04)" }}>
-              {dates.map((d, i) => (
-                <div key={i} style={{ paddingBottom: i < dates.length - 1 ? 12 : 0, borderBottom: i < dates.length - 1 ? "1px solid #E0E8E7" : "none", display: "flex", flexDirection: "column", gap: 6 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
-                      <Calendar size={14} strokeWidth={2.5} />
-                      <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>
-                        {dates.length > 1 ? `日程 #${i + 1}` : "開催日"}
-                      </span>
-                    </div>
-                    {dates.length > 1 && (
-                      <button type="button" onClick={() => removeDate(i)}
-                        style={{ background: "none", border: "none", color: "#BACFCB", cursor: "pointer", padding: "4px" }}>
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center", width: "100%" }}>
-                    <div style={{ flex: "1.2", minWidth: 0 }}>
-                      <select style={inputSm} value={d.date ? parseInt(d.date.split("-")[1]) : ""}
-                        onChange={e => { const m = String(e.target.value).padStart(2, "0"); const day = d.date ? d.date.split("-")[2] : "01"; const mmdd = `${m}-${day}`; updateDate(i, "date", `${resolveYear(mmdd)}-${mmdd}`); }}>
-                        <option value="">月</option>
-                        {Array.from({ length: 12 }, (_, j) => j + 1).map(m => <option key={m} value={m}>{m}月</option>)}
-                      </select>
-                    </div>
-                    <div style={{ flex: "1.2", minWidth: 0 }}>
-                      <select style={inputSm} value={d.date ? parseInt(d.date.split("-")[2]) : ""}
-                        onChange={e => { const day = String(e.target.value).padStart(2, "0"); const m = d.date ? d.date.split("-")[1] : "01"; const mmdd = `${m}-${day}`; updateDate(i, "date", `${resolveYear(mmdd)}-${mmdd}`); }}>
-                        <option value="">日</option>
-                        {Array.from({ length: 31 }, (_, j) => j + 1).map(day => <option key={day} value={day}>{day}日</option>)}
-                      </select>
-                    </div>
-                    <div style={{ width: 1, height: 24, background: "#E0E8E7", margin: "0 2px", flexShrink: 0 }} />
-                    <div style={{ flex: "2", minWidth: 0 }}>
-                      <input style={inputSm} type="time" value={d.startTime} onChange={e => updateDate(i, "startTime", e.target.value)} onFocus={e => e.target.showPicker()} />
-                    </div>
-                    <span style={{ color: "#5A7370", fontWeight: 700, fontSize: 13, flexShrink: 0, padding: "0 2px" }}>〜</span>
-                    <div style={{ flex: "2", minWidth: 0 }}>
-                      <input style={inputSm} type="time" value={d.endTime} onChange={e => updateDate(i, "endTime", e.target.value)} onFocus={e => e.target.showPicker()} />
-                    </div>
-                  </div>
-                </div>
-              ))}
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+  <SortableContext items={dates.map((_, i) => `date-${i}`)} strategy={verticalListSortingStrategy}>
+    {dates.map((d, i) => (
+      <SortableDateItem
+        key={`date-${i}`}
+        id={`date-${i}`}
+        d={d}
+        i={i}
+        datesLength={dates.length}
+        updateDate={updateDate}
+        updateDatePart={updateDatePart}
+        removeDate={removeDate}
+      />
+    ))}
+  </SortableContext>
+</DndContext>
               <button type="button" onClick={addDate} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", background: "white", border: `1.5px dashed ${THEME}`, borderRadius: 8, color: THEME, fontSize: 13, fontWeight: 700, cursor: "pointer", width: "100%", marginTop: 4 }}>
                 <Plus size={15} /> 日程を追加する
               </button>
@@ -193,34 +313,52 @@ export default function EventFormCore({
               onClick={() => setHasDeadline(true)}>期限あり</button>
             <button type="button" className={`tag-tab-btn ${!hasDeadline ? "tag-active-tab" : ""}`}
               style={{ ...s.tagBtn, padding: "10px 14px", borderRadius: 8, flex: 1 }}
-              onClick={() => { setHasDeadline(false); setDeadline(""); setDeadlineTime(""); }}>無期限</button>
+              onClick={() => { setHasDeadline(false); setDeadline(""); setDeadlineTime(""); }}>期限なし</button>
           </div>
           {hasDeadline && (
-            <div style={{ background: "#FAFDFC", border: `2px solid ${THEME}`, borderRadius: 12, padding: "16px", display: "flex", flexDirection: "column", gap: 6, width: "100%", boxSizing: "border-box", boxShadow: "0 4px 12px rgba(136,32,58,0.04)" }}>
+            <div style={{ background: "#FAFDFC", border: `2px solid ${THEME}`, borderRadius: 12, padding: "16px", display: "flex", flexDirection: "column", gap: 8, width: "100%", boxSizing: "border-box", boxShadow: "0 4px 12px rgba(136,32,58,0.04)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, color: THEME }}>
                 <Calendar size={14} strokeWidth={2.5} />
                 <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.03em" }}>締切日時</span>
               </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center", width: "100%" }}>
-                <div style={{ flex: "1.2", minWidth: 0 }}>
-                  <select style={inputSm} value={deadline ? parseInt(deadline.split("-")[1]) : ""}
-                    onChange={e => { const m = String(e.target.value).padStart(2, "0"); const day = deadline ? deadline.split("-")[2] : "01"; const mmdd = `${m}-${day}`; setDeadline(`${resolveYear(mmdd)}-${mmdd}`); }}>
-                    <option value="">月</option>
-                    {Array.from({ length: 12 }, (_, j) => j + 1).map(m => <option key={m} value={m}>{m}月</option>)}
-                  </select>
-                </div>
-                <div style={{ flex: "1.2", minWidth: 0 }}>
-                  <select style={inputSm} value={deadline ? parseInt(deadline.split("-")[2]) : ""}
-                    onChange={e => { const day = String(e.target.value).padStart(2, "0"); const m = deadline ? deadline.split("-")[1] : "01"; const mmdd = `${m}-${day}`; setDeadline(`${resolveYear(mmdd)}-${mmdd}`); }}>
-                    <option value="">日</option>
-                    {Array.from({ length: 31 }, (_, j) => j + 1).map(day => <option key={day} value={day}>{day}日</option>)}
-                  </select>
-                </div>
-                <div style={{ width: 1, height: 24, background: "#E0E8E7", margin: "0 2px", flexShrink: 0 }} />
-                <div style={{ flex: "4", minWidth: 0 }}>
-                  <input style={inputSm} type="time" value={deadlineTime} onChange={e => setDeadlineTime(e.target.value)} onFocus={e => e.target.showPicker()} />
-                </div>
-              </div>
+
+              {/* 1行目：年・月・日 */}
+              {(() => {
+                const { year, month, day } = parseDate(deadline);
+                return (
+                  <>
+                    {/* 1行：年・月・日・時間 */}
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", width: "100%" }}>
+                        <div style={{ flex: "1.6", minWidth: 0 }}>
+                            <select style={inputSm} value={year}
+                            onChange={e => updateDeadlinePart("year", parseInt(e.target.value) || "")}>
+                            <option value="">年</option>
+                            {YEARS.map(y => <option key={y} value={y}>{y}年</option>)}
+                            </select>
+                        </div>
+                        <div style={{ flex: "1.2", minWidth: 0 }}>
+                            <select style={inputSm} value={month}
+                            onChange={e => updateDeadlinePart("month", parseInt(e.target.value) || "")}>
+                            <option value="">月</option>
+                            {Array.from({ length: 12 }, (_, j) => j + 1).map(m => <option key={m} value={m}>{m}月</option>)}
+                            </select>
+                        </div>
+                        <div style={{ flex: "1.2", minWidth: 0 }}>
+                            <select style={inputSm} value={day}
+                            onChange={e => updateDeadlinePart("day", parseInt(e.target.value) || "")}>
+                            <option value="">日</option>
+                            {Array.from({ length: 31 }, (_, j) => j + 1).map(d => <option key={d} value={d}>{d}日</option>)}
+                            </select>
+                        </div>
+                        <div style={{ flex: "1.4", minWidth: 0 }}>
+                            <input style={inputSm} type="time" value={deadlineTime}
+                            onChange={e => setDeadlineTime(e.target.value)}
+                            onFocus={e => e.target.showPicker()} />
+                        </div>
+                        </div>
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
