@@ -5,7 +5,7 @@ import { collection, addDoc, serverTimestamp, getDoc, doc, getDocs, query, where
 import {
   THEME, GENRE_TAGS, BG_COLOR, GENRE_STYLES, GENRE_EMOJI
 } from "./constants";
-import { Calendar, Clock, User, Plus } from "lucide-react";
+import { Calendar, Clock, User, Plus,MapPin } from "lucide-react";
 import heic2any from "heic2any";
 import EventFormFields from "./EventFormFields";
 
@@ -284,7 +284,7 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
                           )}
                           {tmpl.location && (
                             <span style={{ fontSize: 11, color: "#5A7370", display: "flex", alignItems: "center", gap: 3 }}>
-                              📍 {tmpl.location}
+                              <MapPin size={11} />  {tmpl.location}
                             </span>
                           )}
                         </div>
