@@ -6,6 +6,7 @@ import { THEME, GENRE_STYLES, GENRE_EMOJI, GENRE_TAGS, TARGET_TAGS, CAMPUS_TAGS,
 import { BG_COLOR } from "./constants";
 import { Calendar, MapPin,User } from "lucide-react";
 import "./animations.css";
+import { auth } from "./firebase";
 const filterEvents = (events, kw, tags) => {
   return events.filter(event => {
     const matchKeyword = kw === "" ||
@@ -163,7 +164,19 @@ const sortResults = (list, mode) => {
     return next;
   });
 };
-
+if (!auth.currentUser) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", gap: 16, minHeight: "60vh" }}>
+      <p style={{ fontSize: 15, color: "#5A7370", fontWeight: 600 }}>イベントを検索するにはログインが必要です</p>
+      <button
+        style={{ padding: "12px 32px", background: "#88203a", color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }}
+        onClick={() => navigate("/login")}
+      >
+        ログイン
+      </button>
+    </div>
+  );
+}
   return (
     <div style={s.container}>
       <div style={s.inner}>

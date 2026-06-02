@@ -9,7 +9,7 @@ import { Calendar, Clock, User, Plus,MapPin } from "lucide-react";
 import heic2any from "heic2any";
 import EventFormFields from "./EventFormFields";
 
-export default function PostEvent({ onPosted, userGroups = [] }) {
+export default function PostEvent({ user, onPosted, userGroups = [] }) {
   const [title, setTitle] = useState("");
   const [detail, setDetail] = useState("");
   const [location, setLocation] = useState("");
@@ -230,6 +230,19 @@ export default function PostEvent({ onPosted, userGroups = [] }) {
     btn: { marginTop: 8, padding: 14, background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer", width: "100%" },
   };
 
+if (!user) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", gap: 16, minHeight: "60vh" }}>
+      <p style={{ fontSize: 15, color: "#5A7370", fontWeight: 600 }}>イベントを投稿するにはログインが必要です</p>
+      <button
+        style={{ padding: "12px 32px", background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 15, fontWeight: 700, cursor: "pointer" }}
+        onClick={() => window.location.href = "/login"}
+      >
+        ログイン
+      </button>
+    </div>
+  );
+}
   return (
     <div style={s.container}>
 
