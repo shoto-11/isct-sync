@@ -30,15 +30,19 @@ export default function AdminCarousel() {
   }, []);
 
   const handleSave = async () => {
-    setSaving(true);
-    try {
-      await updateDoc(doc(db, "adminSettings", "display"), { carouselEventIds });
-    } catch {
-      await setDoc(doc(db, "adminSettings", "display"), { carouselEventIds });
-    }
-    setSaving(false);
-    alert("保存しました！");
-  };
+  setSaving(true);
+  try {
+    // 存在するイベントのIDだけに絞り込んで保存
+    const validIds = carouselEventIds.filter(id => events.some(e => e.id === id));
+    setCarouselEventIds(validIds);
+    localStorage.setItem("carouselEventIds", JSON.stringify(validIds));
+    await updateDoc(doc(db, "adminSettings", "display"), { carouselEventIds: validIds });
+  } catch {
+    await setDoc(doc(db, "adminSettings", "display"), { carouselEventIds });
+  }
+  setSaving(false);
+  alert("保存しました！");
+};
 
   const toggleCarousel = (eventId) => {
     setCarouselEventIds(prev => {
@@ -124,7 +128,7 @@ export default function AdminCarousel() {
             className={`tag-tab-btn ${carouselEventIds.includes(event.id) ? "tag-active-tab" : ""}`}
             style={{ padding: "6px 16px", borderRadius: 999, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
             onClick={() => toggleCarousel(event.id)}
-            disabled={!carouselEventIds.includes(event.id) && carouselEventIds.length >= 10}
+            disabled={!carouselEventIds.includes(event.id) && carouselEventIds.filter(id => events.some(e => e.id === id)).length >= 10}
           >
             {carouselEventIds.includes(event.id) ? "選択中" : "選択"}
           </button>
