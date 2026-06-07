@@ -1,9 +1,119 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { db } from "../firebase";
 import { doc, getDoc, updateDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { THEME } from "../constants";
 import "../animations.css";
+function SortableCarouselItem({ id, i, event, total, onMove, onRemove, onDragStart, onDragOver, onDragEnd, draggedIndex, dragOverIndex, setCarouselEventIds, events }) {
+  const [touching, setTouching] = useState(false);
+  const [touchPos, setTouchPos] = useState({ x: 0, y: 0 });
+  const touchStartY = useRef(null);
+  const itemRef = useRef(null);
+  const [itemRect, setItemRect] = useState(null);
+
+  const handleTouchStart = (e) => {
+    const rect = itemRef.current?.getBoundingClientRect();
+    setItemRect(rect);
+    touchStartY.current = e.touches[0].clientY;
+    setTouchPos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    setTouching(true);
+    onDragStart(i);
+  };
+
+  const handleTouchEnd = () => {
+    setTouching(false);
+    onDragEnd();
+  };
+
+  // passive: false で touchmove を登録
+  useEffect(() => {
+    const el = itemRef.current;
+    if (!el) return;
+    const handleTouchMove = (e) => {
+      e.preventDefault();
+      const currentY = e.touches[0].clientY;
+      setTouchPos({ x: e.touches[0].clientX, y: currentY });
+      const els = document.querySelectorAll(".carousel-sort-item");
+      els.forEach((el, idx) => {
+        const rect = el.getBoundingClientRect();
+        if (currentY >= rect.top && currentY <= rect.bottom) {
+          onDragOver(idx);
+        }
+      });
+    };
+    el.addEventListener("touchmove", handleTouchMove, { passive: false });
+    return () => el.removeEventListener("touchmove", handleTouchMove);
+  }, [i, onDragOver]);
+
+  if (!event) return null;
+
+  const isDragging = draggedIndex === i;
+
+  return (
+    <>
+      {/* 浮いたゴースト */}
+      {touching && isDragging && itemRect && (
+        <div style={{
+          position: "fixed",
+          left: itemRect.left,
+          top: touchPos.y - itemRect.height / 2,
+          width: itemRect.width,
+          height: itemRect.height,
+          background: "white",
+          borderRadius: 8,
+          boxShadow: "0 8px 24px rgba(0,0,0,0.22)",
+          zIndex: 9999,
+          display: "flex", alignItems: "center", gap: 12, padding: "10px 8px",
+          opacity: 0.95,
+          pointerEvents: "none",
+          transform: "scale(1.03)",
+          transition: "box-shadow 0.15s",
+        }}>
+          <div style={{ color: "#B0BEC5", fontSize: 16 }}>☰</div>
+          <div style={{ fontSize: 13, fontWeight: 700, minWidth: 20 }}>{i + 1}.</div>
+          {event.imageUrl
+            ? <img src={event.imageUrl} alt="" style={{ width: 50, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
+            : <div style={{ width: 50, height: 28, background: "#F4F6F5", borderRadius: 4, flexShrink: 0 }} />
+          }
+          <div style={{ fontSize: 13, fontWeight: 700, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{event.title}</div>
+        </div>
+      )}
+
+      {/* 実際のアイテム */}
+      <div
+        ref={itemRef}
+        className="carousel-sort-item"
+        draggable
+        onDragStart={() => onDragStart(i)}
+        onDragOver={(e) => { e.preventDefault(); onDragOver(i); }}
+        onDragEnd={onDragEnd}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{
+          display: "flex", alignItems: "center", gap: 12, padding: "10px 8px",
+          borderBottom: "1px solid #F0F0F0",
+          cursor: "grab",
+          backgroundColor: dragOverIndex === i && !isDragging ? "#F9EAED" : "transparent",
+          opacity: isDragging && touching ? 0.3 : 1,
+          transition: "background-color 0.2s, opacity 0.2s",
+          borderRadius: 6,
+          touchAction: "none",
+        }}
+      >
+        <div style={{ color: "#B0BEC5", fontSize: 16, userSelect: "none" }}>☰</div>
+        <div style={{ fontSize: 13, fontWeight: 700, minWidth: 20 }}>{i + 1}.</div>
+        {event.imageUrl
+          ? <img src={event.imageUrl} alt="" style={{ width: 50, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0, pointerEvents: "none" }} />
+          : <div style={{ width: 50, height: 28, background: "#F4F6F5", borderRadius: 4, flexShrink: 0, pointerEvents: "none" }} />
+        }
+        <div style={{ fontSize: 13, fontWeight: 700, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", pointerEvents: "none" }}>{event.title}</div>
+        <button type="button" style={s.smallBtn} onClick={(e) => { e.stopPropagation(); onMove(id, -1); }} disabled={i === 0}>↑</button>
+        <button type="button" style={s.smallBtn} onClick={(e) => { e.stopPropagation(); onMove(id, 1); }} disabled={i === total - 1}>↓</button>
+        <button type="button" style={{ ...s.smallBtn, color: "#E53935" }} onClick={(e) => { e.stopPropagation(); onRemove(id); }}>✕</button>
+      </div>
+    </>
+  );
+}
 
 export default function AdminCarousel() {
   const navigate = useNavigate();
@@ -16,18 +126,19 @@ export default function AdminCarousel() {
   const [dragOverIndex, setDragOverIndex] = useState(null);
 
   useEffect(() => {
-    const fetch = async () => {
-      const snap = await getDoc(doc(db, "adminSettings", "display"));
-      if (snap.exists()) {
-        const saved = localStorage.getItem("carouselEventIds");
-        setCarouselEventIds(saved ? JSON.parse(saved) : (snap.data().carouselEventIds || []));
-      }
-      const eventsSnap = await getDocs(collection(db, "events"));
-      setEvents(eventsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    };
-    fetch();
-  }, []);
+  const fetch = async () => {
+    const snap = await getDoc(doc(db, "adminSettings", "display"));
+    if (snap.exists()) {
+      const firestoreIds = snap.data().carouselEventIds || [];
+      setCarouselEventIds(firestoreIds);
+      localStorage.setItem("carouselEventIds", JSON.stringify(firestoreIds));
+    }
+    const eventsSnap = await getDocs(collection(db, "events"));
+    setEvents(eventsSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+    setLoading(false);
+  };
+  fetch();
+}, []);
 
   const handleSave = async () => {
   setSaving(true);
@@ -78,11 +189,17 @@ export default function AdminCarousel() {
           </h3>
           {carouselEventIds.map((id, i) => {
             const event = events.find(e => e.id === id);
-            if (!event) return null;
             return (
-              <div key={id} draggable
-                onDragStart={() => setDraggedIndex(i)}
-                onDragOver={(e) => { e.preventDefault(); if (dragOverIndex !== i) setDragOverIndex(i); }}
+              <SortableCarouselItem
+                key={id}
+                id={id}
+                i={i}
+                event={event}
+                total={carouselEventIds.length}
+                onMove={moveCarousel}
+                onRemove={toggleCarousel}
+                onDragStart={setDraggedIndex}
+                onDragOver={(idx) => { if (dragOverIndex !== idx) setDragOverIndex(idx); }}
                 onDragEnd={() => {
                   if (draggedIndex !== null && dragOverIndex !== null && draggedIndex !== dragOverIndex) {
                     setCarouselEventIds(prev => {
@@ -95,16 +212,10 @@ export default function AdminCarousel() {
                   }
                   setDraggedIndex(null); setDragOverIndex(null);
                 }}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderBottom: "1px solid #F0F0F0", cursor: "grab", backgroundColor: draggedIndex === i ? "#F4F6F5" : dragOverIndex === i ? "#F9EAED" : "transparent", opacity: draggedIndex === i ? 0.5 : 1, transition: "background-color 0.2s ease, opacity 0.2s ease", borderRadius: 6 }}
-              >
-                <div style={{ color: "#B0BEC5", fontSize: 16, cursor: "grab", userSelect: "none", paddingRight: 4 }}>☰</div>
-                <div style={{ fontSize: 13, fontWeight: 700, minWidth: 20 }}>{i + 1}.</div>
-                {event.imageUrl ? <img src={event.imageUrl} alt="" style={{ width: 50, height: 28, objectFit: "cover", borderRadius: 4, flexShrink: 0, pointerEvents: "none" }} /> : <div style={{ width: 50, height: 28, background: "#F4F6F5", borderRadius: 4, flexShrink: 0, pointerEvents: "none" }} />}
-                <div style={{ fontSize: 13, fontWeight: 700, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", pointerEvents: "none" }}>{event.title}</div>
-                <button type="button" style={s.smallBtn} onClick={(e) => { e.stopPropagation(); moveCarousel(id, -1); }} disabled={i === 0}>↑</button>
-                <button type="button" style={s.smallBtn} onClick={(e) => { e.stopPropagation(); moveCarousel(id, 1); }} disabled={i === carouselEventIds.length - 1}>↓</button>
-                <button type="button" style={{ ...s.smallBtn, color: "#E53935" }} onClick={(e) => { e.stopPropagation(); toggleCarousel(id); }}>✕</button>
-              </div>
+                draggedIndex={draggedIndex}
+                dragOverIndex={dragOverIndex}
+                setCarouselEventIds={setCarouselEventIds}
+              />
             );
           })}
         </div>

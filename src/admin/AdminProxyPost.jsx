@@ -126,7 +126,7 @@ export default function AdminProxyPost({ user }) {
         organizerType: proxyIsGroup ? "group" : "user",
         organizerId: proxyOrganizerId,
         createdBy: proxyOrganizerId,
-        createdByPersonal: user?.uid,
+        createdByPersonal: user?.uid || "",
         createdAt: serverTimestamp(),
         organizerName: finalOrganizerName,
         organizerAvatar: finalOrganizerAvatar,
