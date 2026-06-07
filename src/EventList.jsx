@@ -181,7 +181,8 @@ function RankItem({ event, rank, count, label, onSelect }) {
           </span>
         </div>
       </div>
-      <div style={s.rankParticipants}>{count} {label}</div>
+      {/* ランキング数非表示 */}
+       {/*<div style={s.rankParticipants}>{count} {label}</div> */}
     </div>
   );
 }
