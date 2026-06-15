@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { THEME, BG_COLOR, GENRE_STYLES } from "./constants";
@@ -30,11 +30,12 @@ export default function CalendarPage({ onEventSelect }) {
   const [allEvents, setAllEvents] = useState([]);
   const [statsMap, setStatsMap] = useState({});
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("active");
+  const [filter, setFilter] = useState("all");
 
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [selectedDayEvents, setSelectedDayEvents] = useState([]);
+  const detailPanelRef = useRef(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -94,30 +95,56 @@ export default function CalendarPage({ onEventSelect }) {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   const prevMonth = () => {
-    if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); }
-    else setCurrentMonth(m => m - 1);
-    setSelectedDate(null);
-  };
+  if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); }
+  else setCurrentMonth(m => m - 1);
+  setSelectedDate("");
+  setSelectedDayEvents([]);
+};
 
-  const nextMonth = () => {
-    if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); }
-    else setCurrentMonth(m => m + 1);
-    setSelectedDate(null);
-  };
+const nextMonth = () => {
+  if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); }
+  else setCurrentMonth(m => m + 1);
+  setSelectedDate("");
+  setSelectedDayEvents([]);
+};
 
   const isToday = (day) =>
     day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
 
   const handleDayClick = (day) => {
-    if (!day) return;
-    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const evs = eventsByDate[dateStr] || [];
-    const timeSorted = [...evs].sort((a, b) =>
-      (a._thisDateInfo?.startTime || "").localeCompare(b._thisDateInfo?.startTime || "")
-    );
+  if (!day) return;
+  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  const evs = eventsByDate[dateStr] || [];
+  const timeSorted = [...evs].sort((a, b) =>
+    (a._thisDateInfo?.startTime || "").localeCompare(b._thisDateInfo?.startTime || "")
+  );
+
+  if (dateStr === selectedDate) {
+  // ふわっとスムーズスクロール
+  const target = detailPanelRef.current;
+  if (!target) return;
+  const targetY = target.getBoundingClientRect().top + window.scrollY - 16;
+  const startY = window.scrollY;
+  const distance = targetY - startY;
+  const duration = 600;
+  const startTime = performance.now();
+
+  const easeInOutCubic = (t) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+  const step = (currentTime) => {
+    const elapsed = currentTime - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    window.scrollTo(0, startY + distance * easeInOutCubic(progress));
+    if (progress < 1) requestAnimationFrame(step);
+  };
+
+  requestAnimationFrame(step);
+} else {
     setSelectedDate(dateStr);
     setSelectedDayEvents(timeSorted);
-  };
+  }
+};
 
   const formatDateLabel = (dateStr) => {
     if (!dateStr) return "";
@@ -141,7 +168,7 @@ export default function CalendarPage({ onEventSelect }) {
   );
 
   return (
-    <div style={{ background: BG_COLOR, minHeight: "100vh", paddingBottom: 40 }}>
+    <div style={{ background: BG_COLOR, minHeight: "100vh", paddingBottom: "60vh"  }}>
       <div style={{ background: THEME, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <h1 style={{ flex: 1, color: "white", fontSize: 17, fontWeight: 700, margin: 0, textAlign: "center" }}>イベントカレンダー</h1>
       </div>
@@ -151,15 +178,40 @@ export default function CalendarPage({ onEventSelect }) {
         {/* フィルター */}
         <div style={{ display: "flex", gap: 8, marginBottom: 12, padding: "0 8px" }}>
           <button
-            className={`tag-tab-btn ${filter === "active" ? "tag-active-tab" : ""}`}
-            style={{ flex: 1, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-            onClick={() => { setFilter("active"); setSelectedDate(todayStr); setSelectedDayEvents([]); }}
-          >募集中のみ</button>
-          <button
             className={`tag-tab-btn ${filter === "all" ? "tag-active-tab" : ""}`}
             style={{ flex: 1, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-            onClick={() => { setFilter("all"); setSelectedDate(todayStr); setSelectedDayEvents([]); }}
+            onClick={() => {
+                setFilter("all");
+                if (selectedDate) {
+                    const newFiltered = allEvents;
+                    const newMap = buildEventsByDate(newFiltered);
+                    const evs = (newMap[selectedDate] || []).sort((a, b) =>
+                    (a._thisDateInfo?.startTime || "").localeCompare(b._thisDateInfo?.startTime || "")
+                    );
+                    setSelectedDayEvents(evs);
+                }
+                }}
           >すべて表示</button>
+        <button
+            className={`tag-tab-btn ${filter === "active" ? "tag-active-tab" : ""}`}
+            style={{ flex: 1, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+            onClick={() => {
+  setFilter("active");
+  if (selectedDate) {
+    const now = new Date();
+    const newFiltered = allEvents.filter(event => {
+      if (!event.deadline) return true;
+      const ds = event.deadlineTime ? `${event.deadline}T${event.deadlineTime}` : `${event.deadline}T23:59`;
+      return new Date(ds) >= now;
+    });
+    const newMap = buildEventsByDate(newFiltered);
+    const evs = (newMap[selectedDate] || []).sort((a, b) =>
+      (a._thisDateInfo?.startTime || "").localeCompare(b._thisDateInfo?.startTime || "")
+    );
+    setSelectedDayEvents(evs);
+  }
+}}
+          >募集中のみ</button>
         </div>
 
         {/* カレンダー */}
@@ -194,7 +246,7 @@ export default function CalendarPage({ onEventSelect }) {
               const totalCount = dayEvents.length;
               const displayEvents = dayEvents.slice(0, 6);
               const isTodayCell = day && isToday(day);
-              const isSelected = dateStr === selectedDate;
+              const isSelected = selectedDate && dateStr === selectedDate;
               const isSun = idx % 7 === 0;
               const isSat = idx % 7 === 6;
 
@@ -267,8 +319,8 @@ export default function CalendarPage({ onEventSelect }) {
         </div>
 
         {/* 選択日パネル */}
-        {selectedDate && (
-          <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", overflow: "hidden", margin: "0 0 12px" }}>
+        {selectedDate && selectedDate.length > 0 && (
+        <div ref={detailPanelRef} style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", overflow: "hidden", margin: "0 0 12px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #F0F0F0", background: "#FAFAFA" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 14, fontWeight: 800, color: "#111" }}>{formatDateLabel(selectedDate)}</span>

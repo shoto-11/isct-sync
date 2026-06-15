@@ -6,7 +6,8 @@ import logo from "./assets/logo.png";
 import { THEME, GENRE_STYLES, GENRE_EMOJI } from "./constants";
 import { useEffect, useState, useRef } from "react";
 import { BG_COLOR } from "./constants";
-import { Calendar, Users, Clock, Target, Star, Eye, Heart, CalendarCheck, MapPin, Zap, TrendingUp,User } from "lucide-react";
+import { Calendar, Users, Clock, Target, 
+  Star, Eye, Heart, CalendarCheck, MapPin, Zap, TrendingUp,User, CalendarDays, ChevronRight, } from "lucide-react";
 import "./animations.css";
 
 // 💡 【共通定義】アプリ内のすべてのイベント要素で使い回すYouTubeライクな高品質アニメーション
@@ -726,6 +727,28 @@ const [recruitEvents, setRecruitEvents] = useState([]);
 
   <div style={{ maxWidth:1200, margin:"0 auto", padding: window.innerWidth > 768 ? "0 24px" : "0", overflow:"hidden", width:"100%", boxSizing:"border-box" }}>
     {user && <Section title="あなたへのおすすめ" icon={<Target size={20} color="#88203a" />} events={recommendedEvents} onSelect={handleSelect} cardSize="large" />}
+    <div
+      className="banner-hover"
+      style={s.ctaBanner}
+      onClick={() => navigate("/calendar")}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 12,
+          background: "rgba(255,255,255,0.2)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          <CalendarDays size={24} color="white" />
+        </div>
+        <div>
+          <div style={s.ctaText}>カレンダーでイベントを見る</div>
+          <div style={s.ctaSub}>今月のイベントをまとめて確認</div>
+        </div>
+      </div>
+      <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
+    </div>
+
       <Section title="新着イベント" icon={<Calendar size={20} color="#88203a" />} events={events} onSelect={handleSelect} />
         <Section title="サークルイベント" icon={<Users size={20} color="#88203a" />} events={circleEvents} onSelect={handleSelect} />
         <Section title="今週の人気イベント" icon={<TrendingUp size={20} color="#88203a" />} events={popularWeekEvents} onSelect={handleSelect} />
@@ -733,19 +756,6 @@ const [recruitEvents, setRecruitEvents] = useState([]);
         <Section title="今日参加できるイベント" icon={<Zap size={20} color="#88203a" />} events={todayEvents} onSelect={handleSelect} />
         <Section title="長期メンバー募集中" icon={<Users size={20} color="#88203a" />} events={recruitEvents} onSelect={handleSelect} />
 
-      {/* CTA 
-      {/*
-      <div
-        className="banner-hover"
-        style={s.ctaBanner}
-        onClick={() => window.open("https://www.youtube.com/", "_blank")}
-      >
-        <div>
-          <div style={s.ctaText}>現在募集中のイベントを見る</div>
-          <div style={s.ctaSub}>全{events.length}件のイベントが掲載中</div>
-        </div>
-        <div style={s.ctaArrow}>›</div>
-      </div>*/}
 
       {/* Survey */}
       {/*
@@ -847,7 +857,7 @@ noticeBar: {
   cardOrganizer: { fontSize: 11, color: "#5A7370", overflow: "hidden", whiteSpace: "nowrap" },
   cardFooter: { display:"flex", justifyContent:"flex-end", alignItems:"center", marginTop:2 },
   cardLocation: { fontSize:11, color:"#5A7370", overflow:"hidden", whiteSpace:"nowrap", textAlign:"right" },
-  ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"16px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)`, width:"calc(100% - 28px)", boxSizing:"border-box" },
+  ctaBanner: { margin:"4px 14px 16px", background:`linear-gradient(135deg, ${THEME}, #c0394f)`, borderRadius:12, padding:"14px 18px", display:"flex", alignItems:"center", justifyContent:"space-between", cursor:"pointer", boxShadow:`0 4px 16px rgba(136,32,58,0.25)`, width:"calc(100% - 28px)", boxSizing:"border-box" },
   ctaText: { color:"white", fontSize:15, fontWeight:700 },
   ctaSub: { color:"rgba(255,255,255,0.75)", fontSize:11, marginTop:2 },
   ctaArrow: { background:"#F5A623", width:36, height:36, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", color:"#111", fontSize:18, fontWeight:700 },
