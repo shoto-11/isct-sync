@@ -38,6 +38,9 @@ import {
 } from "lucide-react";
 import GroupProfile from "./GroupProfile";
 
+import CalendarPage from "./CalendarPage";
+
+
 const THEME = "#88203a";
 
 // ─── MainLayout: App の外で定義することで再マウントを防ぐ ────────────
@@ -772,6 +775,12 @@ export default function App() {
         </MainLayout>
       } />
       <Route path="/guide" element={<MainLayout {...layoutProps}><Guide /></MainLayout>} />
+
+      <Route path="/calendar" element={
+        <MainLayout {...layoutProps}>
+          <CalendarPage onEventSelect={(event) => navigate(`/events/${event.id}`)} />
+        </MainLayout>
+      } />
 
     </Routes>
   );
