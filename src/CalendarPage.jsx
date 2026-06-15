@@ -1,10 +1,27 @@
 import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { THEME, BG_COLOR, GENRE_STYLES, GENRE_EMOJI } from "./constants";
+import { THEME, BG_COLOR, GENRE_STYLES } from "./constants";
 import { ChevronLeft, ChevronRight, X, Clock, MapPin, User } from "lucide-react";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+const buildEventsByDate = (events) => {
+  const map = {};
+  events.forEach(event => {
+    const dates = [];
+    if (event.dates && event.dates.length > 0) {
+      event.dates.forEach(d => { if (d.date && !d.date.includes("00")) dates.push(d); });
+    } else if (event.date) {
+      dates.push({ date: event.date, startTime: event.startTime, endTime: event.endTime });
+    }
+    dates.forEach(dateObj => {
+      if (!map[dateObj.date]) map[dateObj.date] = [];
+      map[dateObj.date].push({ ...event, _thisDateInfo: dateObj });
+    });
+  });
+  return map;
+};
 
 export default function CalendarPage({ onEventSelect }) {
   const [today] = useState(new Date());
@@ -14,16 +31,17 @@ export default function CalendarPage({ onEventSelect }) {
   const [statsMap, setStatsMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("active");
-  const [selectedDate, setSelectedDate] = useState(null);
+
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [selectedDayEvents, setSelectedDayEvents] = useState([]);
 
   useEffect(() => {
     const fetch = async () => {
       const q = query(collection(db, "events"), orderBy("createdAt", "desc"));
       const snap = await getDocs(q);
-      setAllEvents(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-      // 人気度スコア取得
       const statsSnap = await getDocs(collection(db, "eventStats"));
       const map = {};
       statsSnap.docs.forEach(d => {
@@ -31,7 +49,23 @@ export default function CalendarPage({ onEventSelect }) {
         const key = data.eventId || d.id;
         map[key] = (data.views || []).length + (data.likes || []).length * 3 + (data.joins || []).length * 5;
       });
+
       setStatsMap(map);
+      setAllEvents(list);
+
+      // 今日のイベントを初期セット（募集中フィルター適用）
+      const now = new Date();
+      const activeList = list.filter(event => {
+        if (!event.deadline) return true;
+        const ds = event.deadlineTime ? `${event.deadline}T${event.deadlineTime}` : `${event.deadline}T23:59`;
+        return new Date(ds) >= now;
+      });
+      const todayMap = buildEventsByDate(activeList);
+      const todayEvs = (todayMap[todayStr] || []).sort((a, b) =>
+        (a._thisDateInfo?.startTime || "").localeCompare(b._thisDateInfo?.startTime || "")
+      );
+      setSelectedDayEvents(todayEvs);
+
       setLoading(false);
     };
     fetch();
@@ -46,20 +80,7 @@ export default function CalendarPage({ onEventSelect }) {
     return new Date(deadlineStr) >= new Date();
   });
 
-  // 日付 → イベントマップ（人気順ソート済み）
-  const eventsByDate = {};
-  filteredEvents.forEach(event => {
-    const dates = [];
-    if (event.dates && event.dates.length > 0) {
-      event.dates.forEach(d => { if (d.date && !d.date.includes("00")) dates.push(d); });
-    } else if (event.date) {
-      dates.push({ date: event.date, startTime: event.startTime, endTime: event.endTime });
-    }
-    dates.forEach(dateObj => {
-      if (!eventsByDate[dateObj.date]) eventsByDate[dateObj.date] = [];
-      eventsByDate[dateObj.date].push({ ...event, _thisDateInfo: dateObj });
-    });
-  });
+  const eventsByDate = buildEventsByDate(filteredEvents);
 
   // 各日を人気順でソート
   Object.keys(eventsByDate).forEach(date => {
@@ -88,16 +109,15 @@ export default function CalendarPage({ onEventSelect }) {
     day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
 
   const handleDayClick = (day) => {
-  if (!day) return;
-  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-  const evs = eventsByDate[dateStr] || [];
-  // 詳細パネルは時間順
-  const timeSorted = [...evs].sort((a, b) =>
-    (a._thisDateInfo?.startTime || "").localeCompare(b._thisDateInfo?.startTime || "")
-  );
-  setSelectedDate(dateStr);
-  setSelectedDayEvents(timeSorted);
-};
+    if (!day) return;
+    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const evs = eventsByDate[dateStr] || [];
+    const timeSorted = [...evs].sort((a, b) =>
+      (a._thisDateInfo?.startTime || "").localeCompare(b._thisDateInfo?.startTime || "")
+    );
+    setSelectedDate(dateStr);
+    setSelectedDayEvents(timeSorted);
+  };
 
   const formatDateLabel = (dateStr) => {
     if (!dateStr) return "";
@@ -122,7 +142,6 @@ export default function CalendarPage({ onEventSelect }) {
 
   return (
     <div style={{ background: BG_COLOR, minHeight: "100vh", paddingBottom: 40 }}>
-      {/* ヘッダー */}
       <div style={{ background: THEME, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <h1 style={{ flex: 1, color: "white", fontSize: 17, fontWeight: 700, margin: 0, textAlign: "center" }}>イベントカレンダー</h1>
       </div>
@@ -134,19 +153,17 @@ export default function CalendarPage({ onEventSelect }) {
           <button
             className={`tag-tab-btn ${filter === "active" ? "tag-active-tab" : ""}`}
             style={{ flex: 1, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-            onClick={() => { setFilter("active"); setSelectedDate(null); }}
+            onClick={() => { setFilter("active"); setSelectedDate(todayStr); setSelectedDayEvents([]); }}
           >募集中のみ</button>
           <button
             className={`tag-tab-btn ${filter === "all" ? "tag-active-tab" : ""}`}
             style={{ flex: 1, padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
-            onClick={() => { setFilter("all"); setSelectedDate(null); }}
+            onClick={() => { setFilter("all"); setSelectedDate(todayStr); setSelectedDayEvents([]); }}
           >すべて表示</button>
         </div>
 
         {/* カレンダー */}
         <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", overflow: "hidden", marginBottom: 12 }}>
-
-          {/* 月ナビ */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #F0F0F0" }}>
             <button onClick={prevMonth} style={{ background: "none", border: "none", cursor: "pointer", color: THEME, display: "flex", alignItems: "center", padding: 4 }}>
               <ChevronLeft size={22} />
@@ -159,7 +176,6 @@ export default function CalendarPage({ onEventSelect }) {
             </button>
           </div>
 
-          {/* 曜日ヘッダー */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #EEEEEE" }}>
             {WEEKDAYS.map((w, i) => (
               <div key={w} style={{
@@ -169,7 +185,6 @@ export default function CalendarPage({ onEventSelect }) {
             ))}
           </div>
 
-          {/* 日付グリッド */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
             {cells.map((day, idx) => {
               const dateStr = day
@@ -177,7 +192,7 @@ export default function CalendarPage({ onEventSelect }) {
                 : null;
               const dayEvents = dateStr ? (eventsByDate[dateStr] || []) : [];
               const totalCount = dayEvents.length;
-              const displayEvents = dayEvents.slice(0, 6); // 最大6件
+              const displayEvents = dayEvents.slice(0, 6);
               const isTodayCell = day && isToday(day);
               const isSelected = dateStr === selectedDate;
               const isSun = idx % 7 === 0;
@@ -200,7 +215,6 @@ export default function CalendarPage({ onEventSelect }) {
                 >
                   {day && (
                     <>
-                      {/* 日付番号 */}
                       <div style={{
                         width: 22, height: 22, borderRadius: "50%",
                         background: isTodayCell ? THEME : "none",
@@ -211,7 +225,6 @@ export default function CalendarPage({ onEventSelect }) {
                         flexShrink: 0,
                       }}>{day}</div>
 
-                      {/* イベントタグ（最大6件） */}
                       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                         {displayEvents.map((ev, i) => {
                           const genre = Array.isArray(ev.tags?.genre) ? ev.tags.genre[0] : ev.tags?.genre;
@@ -225,11 +238,11 @@ export default function CalendarPage({ onEventSelect }) {
                                 borderLeft: `2px solid ${color}`,
                                 borderRadius: "0 3px 3px 0",
                                 padding: "1px 3px",
-                                fontSize: "clamp(8px, 2vw, 10px)",
+                                fontSize: "clamp(8px, 2.6vw, 10px)",
                                 fontWeight: 700,
                                 color: "#111",
                                 overflow: "hidden",
-                                textOverflow: "ellipsis",
+                                textOverflow: "clip",
                                 whiteSpace: "nowrap",
                                 lineHeight: 1.4,
                                 minWidth: 0,
@@ -239,17 +252,11 @@ export default function CalendarPage({ onEventSelect }) {
                             </div>
                           );
                         })}
-
-                        {/* 件数オーバー表示 */}
                         {totalCount > 6 && (
-                            <div style={{
-                                fontSize: "clamp(7px, 1.8vw, 9px)",
-                                color: "#9AADA8", fontWeight: 800,
-                                paddingLeft: 3, lineHeight: 1.4,
-                            }}>
-                                ...
-                            </div>
-                            )}
+                          <div style={{ fontSize: "clamp(7px, 1.8vw, 9px)", color: "#9AADA8", fontWeight: 800, paddingLeft: 3, lineHeight: 1.4 }}>
+                            ...
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
@@ -259,7 +266,7 @@ export default function CalendarPage({ onEventSelect }) {
           </div>
         </div>
 
-        {/* 選択日のイベント詳細パネル */}
+        {/* 選択日パネル */}
         {selectedDate && (
           <div style={{ background: "white", borderRadius: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.07)", overflow: "hidden", margin: "0 0 12px" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderBottom: "1px solid #F0F0F0", background: "#FAFAFA" }}>
@@ -297,7 +304,6 @@ export default function CalendarPage({ onEventSelect }) {
                         opacity: expired ? 0.65 : 1,
                       }}
                     >
-                      {/* 時間列 */}
                       <div style={{
                         width: 56, flexShrink: 0, padding: "12px 6px",
                         display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start",
@@ -314,7 +320,6 @@ export default function CalendarPage({ onEventSelect }) {
                         )}
                       </div>
 
-                      {/* イベント情報 */}
                       <div style={{ flex: 1, padding: "12px 12px", minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4, flexWrap: "wrap" }}>
                           {expired && <span style={{ fontSize: 9, fontWeight: 800, color: "#9AADA8", background: "#F5F5F5", padding: "1px 6px", borderRadius: 999 }}>締切済</span>}
