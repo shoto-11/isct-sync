@@ -3,6 +3,7 @@ import { db } from "./firebase";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { THEME, BG_COLOR, GENRE_STYLES } from "./constants";
 import { ChevronLeft, ChevronRight, X, Clock, MapPin, User } from "lucide-react";
+import { auth } from "./firebase";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
@@ -333,11 +334,21 @@ const nextMonth = () => {
               </button>
             </div>
 
-            {selectedDayEvents.length === 0 ? (
-              <div style={{ padding: "32px 16px", textAlign: "center", color: "#9AADA8", fontSize: 13 }}>
-                この日のイベントはありません
-              </div>
-            ) : (
+            {!auth.currentUser ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "32px 24px", gap: 12 }}>
+                    <p style={{ fontSize: 14, color: "#5A7370", fontWeight: 600, margin: 0 }}>イベントを閲覧するにはログインが必要です</p>
+                    <button
+                    style={{ padding: "10px 28px", background: THEME, color: "white", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: "pointer" }}
+                    onClick={() => window.location.href = "/login"}
+                    >
+                    ログイン
+                    </button>
+                </div>
+                ) : selectedDayEvents.length === 0 ? (
+                <div style={{ padding: "32px 16px", textAlign: "center", color: "#9AADA8", fontSize: 13 }}>
+                    この日のイベントはありません
+                </div>
+                ) : (
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {selectedDayEvents.map((event, i) => {
                   const genre = Array.isArray(event.tags?.genre) ? event.tags.genre[0] : event.tags?.genre;

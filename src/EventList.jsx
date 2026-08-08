@@ -314,10 +314,12 @@ function Carousel({ events, onSelect }) {
   const total = items.length;
 
   // 💡 解決策：前後に2枚ずつダミーを結合して、広い画面でも絶対に隙間（空白）が見えないようにする
+  // total が1件のときに items[-1] などが undefined になるのを防ぐため、循環参照で取得する
+  const wrap = i => items[((i % total) + total) % total];
   const extendedItems = [
-    items[total - 2], items[total - 1], 
-    ...items, 
-    items[0], items[1]
+    wrap(total - 2), wrap(total - 1),
+    ...items,
+    wrap(0), wrap(1)
   ];
 
   // 💡 ダミーが前に2枚入ったので、初期位置（本物の1枚目）はインデックス「2」からスタート
@@ -546,14 +548,15 @@ const [recruitEvents, setRecruitEvents] = useState([]);
             if (userSnap.exists()) {
                 const userData = userSnap.data();
                 const recommended = updatedList
-                .filter(e =>
+                  .filter(e =>
                     e.tags?.targets?.includes(`#${userData.gakunen}向け`) ||
                     e.tags?.targets?.includes("#全学対象") ||
                     e.tags?.targets?.includes("#学部生向け") ||
+                    e.tags?.targets?.includes("#教員向け") && userData.gakunen === "教員" ||
                     (e.targetGakuin?.length === 0 || !e.targetGakuin) ||
                     e.targetGakuin?.includes(userData.gakuin) ||
                     e.targetGakukei?.includes(userData.gakukei)
-                )
+                  )
                 .sort((a, b) => {
                     // マッチスコア計算
                     const matchScore = (event) => {
@@ -565,6 +568,8 @@ const [recruitEvents, setRecruitEvents] = useState([]);
                         if (event.tags?.targets?.includes(`#${userData.gakunen}向け`)) score += 15;
                         if (event.tags?.targets?.includes("#全学対象")) score += 5;
                         if (event.tags?.targets?.includes("#学部生向け") && userData.gakunen?.includes("学部")) score += 8;
+                        // matchScore関数内に追加
+                        if (event.tags?.targets?.includes("#教員向け") && userData.gakunen === "教員") score += 15;
 
                         // タグが多いほど減点（絞り込みが甘いペナルティ）
                         const gakuinCount = event.targetGakuin?.length || 0;
